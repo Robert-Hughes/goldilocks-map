@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "goldilocks-map"
+version = "0.1.0"
+description = "Build a single-file location suitability map from preprocessed geospatial data."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "numpy>=2.0",
+  "xarray>=2025.1",
+  "h5netcdf>=1.4",
+  "pyproj>=3.7",
+]
+
+[tool.setuptools]
+py-modules = []

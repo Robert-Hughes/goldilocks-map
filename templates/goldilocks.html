@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Goldilocks Map</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <style>
+    html, body { height: 100%; margin: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #17212b; }
+    body { display: grid; grid-template-rows: auto 1fr; background: #f7f8f8; }
+    header { padding: 0.75rem 1rem; border-bottom: 1px solid #cfd6dc; background: white; display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap; }
+    h1 { margin: 0; font-size: 1.2rem; }
+    header p { margin: 0; color: #4d5b66; font-size: 0.92rem; }
+    #map { min-height: 420px; height: 100%; width: 100%; }
+    .legend { background: rgba(255,255,255,0.96); padding: 0.65rem 0.75rem; box-shadow: 0 1px 5px rgba(0,0,0,0.25); border-radius: 4px; line-height: 1.25; }
+    .legend-title { font-weight: 700; margin-bottom: 0.45rem; max-width: 190px; }
+    .legend-row { display: flex; align-items: center; gap: 0.45rem; margin: 0.18rem 0; white-space: nowrap; }
+    .legend-swatch { display: inline-block; width: 18px; height: 12px; border: 1px solid rgba(0,0,0,0.35); }
+    .info-control { max-width: 330px; background: rgba(255,255,255,0.96); padding: 0.65rem 0.75rem; box-shadow: 0 1px 5px rgba(0,0,0,0.25); border-radius: 4px; font-size: 0.82rem; line-height: 1.35; }
+    .info-control strong { display: block; margin-bottom: 0.25rem; }
+    .leaflet-popup-content { line-height: 1.45; }
+    .leaflet-popup-content dl { display: grid; grid-template-columns: auto 1fr; gap: 0.15rem 0.55rem; margin: 0; }
+    .leaflet-popup-content dt { font-weight: 600; }
+    .leaflet-popup-content dd { margin: 0; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Goldilocks Map</h1>
+    <p>Prototype climate suitability layer: July 2026 heat exposure around York</p>
+  </header>
+  <main id="map" aria-label="Interactive map"></main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script id="goldilocks-data" type="application/json">__GOLDILOCKS_DATA__</script>
+  <script>__GOLDILOCKS_APP_JS__</script>
+</body>
+</html>

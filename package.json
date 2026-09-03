@@ -1,0 +1,12 @@
+{
+  "name": "goldilocks",
+  "private": true,
+  "version": "0.1.0",
+  "devDependencies": {
+    "esbuild": "^0.25.9",
+    "typescript": "^5.9.2"
+  },
+  "scripts": {
+    "build": "esbuild src/app.ts --bundle --minify --format=iife --target=es2020 --outfile=dist/app.js"
+  }
+}
