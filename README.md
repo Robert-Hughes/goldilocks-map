@@ -1,6 +1,6 @@
 # Goldilocks Map
 
-Goldilocks Map is an experimental single-file UK location-suitability explorer. This proof of concept currently renders one derived Met Office HadUK-Grid climate metric over a 10 km x 10 km area around York.
+Goldilocks Map is an experimental single-file UK location-suitability explorer. This proof of concept currently renders one derived Met Office HadUK-Grid climate metric over a 20 km x 20 km area around York.
 
 ## Current metric
 
@@ -35,7 +35,7 @@ On platforms where binary Python wheels are available, a normal virtualenv and `
 1. download/cache the July 2026 HadUK-Grid NetCDF file under `data/` if needed;
 2. verify that it contains `tasmax`, expected spatial coordinates, 31 daily observations, and recognised temperature units;
 3. transform the York centre from WGS84 to British National Grid (EPSG:27700);
-4. select the nearest 10 x 10 HadUK 1 km cells;
+4. select the nearest 20 x 20 HadUK 1 km cells;
 5. derive `count(tasmax > 25°C)` by reading one daily spatial raster at a time rather than materialising the whole 31-day cube;
 6. encode the result as a regular row-major raster with one-byte-compatible values (`0..31`, with `255` reserved for no-data);
 7. install the minimal npm frontend dependencies if needed (`esbuild`, TypeScript and `proj4`);
@@ -52,6 +52,8 @@ The climate layer is a custom Leaflet canvas layer rather than one Leaflet polyg
 On each redraw, the renderer projects the current Leaflet viewport into British National Grid, clips that to raster row/column bounds, adds a one-cell safety margin, and iterates only over that visible raster range. It does not scan the whole dataset when only a small part of the grid is on screen. Clicking the map performs the inverse operation: WGS84 click coordinate -> BNG -> raster row/column -> metric value.
 
 During pinch or animated zooms, the already-rendered canvas is continuously translated/scaled using the same Leaflet zoom transform as the basemap, so it stays visually registered without rerunning the raster loop every gesture frame. At zoom end the canvas is redrawn at the final resolution and visible-cell range.
+
+The information panel remembers its collapsed/expanded state in `localStorage`; the responsive mobile/desktop default is only used until the user makes a choice.
 
 This is deliberately the same basic data model intended for later full-UK coverage. Whole-UK overview rendering will eventually need additional level-of-detail/downsampling so that a view containing most of Britain does not attempt to draw every 1 km cell at once.
 

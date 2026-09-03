@@ -361,10 +361,18 @@ legend.onAdd = () => {
 };
 legend.addTo(map);
 
+const INFO_PANEL_STORAGE_KEY = "goldilocks.infoPanelCollapsed";
 const info = L.control({ position: "topright" });
 info.onAdd = () => {
   const div = L.DomUtil.create("div", "info-control");
-  const initiallyCollapsed = window.matchMedia("(max-width: 600px)").matches;
+  let initiallyCollapsed = window.matchMedia("(max-width: 600px)").matches;
+  try {
+    const storedState = window.localStorage.getItem(INFO_PANEL_STORAGE_KEY);
+    if (storedState === "true") initiallyCollapsed = true;
+    if (storedState === "false") initiallyCollapsed = false;
+  } catch {
+    // localStorage can be unavailable in privacy-restricted contexts; keep the responsive default.
+  }
   if (initiallyCollapsed) div.classList.add("collapsed");
   div.innerHTML = `
     <div class="info-header">
@@ -384,6 +392,11 @@ info.onAdd = () => {
     button.textContent = collapsed ? "+" : "−";
     button.setAttribute("aria-expanded", String(!collapsed));
     button.setAttribute("aria-label", `${collapsed ? "Expand" : "Collapse"} information panel`);
+    try {
+      window.localStorage.setItem(INFO_PANEL_STORAGE_KEY, String(collapsed));
+    } catch {
+      // The control still works when storage is unavailable; only persistence is lost.
+    }
   });
   L.DomEvent.disableClickPropagation(div);
   L.DomEvent.disableScrollPropagation(div);
