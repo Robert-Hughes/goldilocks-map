@@ -51,6 +51,8 @@ The climate layer is a custom Leaflet canvas layer rather than one Leaflet polyg
 
 On each redraw, the renderer projects the current Leaflet viewport into British National Grid, clips that to raster row/column bounds, adds a one-cell safety margin, and iterates only over that visible raster range. It does not scan the whole dataset when only a small part of the grid is on screen. Clicking the map performs the inverse operation: WGS84 click coordinate -> BNG -> raster row/column -> metric value.
 
+During pinch or animated zooms, the already-rendered canvas is continuously translated/scaled using the same Leaflet zoom transform as the basemap, so it stays visually registered without rerunning the raster loop every gesture frame. At zoom end the canvas is redrawn at the final resolution and visible-cell range.
+
 This is deliberately the same basic data model intended for later full-UK coverage. Whole-UK overview rendering will eventually need additional level-of-detail/downsampling so that a view containing most of Britain does not attempt to draw every 1 km cell at once.
 
 ## Basemap selection

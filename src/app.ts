@@ -196,27 +196,63 @@ function visibleRasterRange(mapInstance: any): { rowMin: number; rowMax: number;
 const RasterCanvasLayer = L.Layer.extend({
   initialize(this: any) {
     this._selectedIndex = null;
+    this._renderCenter = null;
+    this._renderZoom = null;
   },
 
   onAdd(this: any, mapInstance: any) {
     this._map = mapInstance;
-    this._canvas = L.DomUtil.create("canvas", "goldilocks-raster-layer");
+    this._canvas = L.DomUtil.create("canvas", "goldilocks-raster-layer leaflet-zoom-animated");
     this._canvas.style.pointerEvents = "none";
     mapInstance.getPane("overlayPane").appendChild(this._canvas);
     mapInstance.on("moveend zoomend resize viewreset", this._reset, this);
+    mapInstance.on("zoom", this._onZoom, this);
+    mapInstance.on("zoomanim", this._onZoomAnim, this);
     this._reset();
   },
 
   onRemove(this: any, mapInstance: any) {
     mapInstance.off("moveend zoomend resize viewreset", this._reset, this);
+    mapInstance.off("zoom", this._onZoom, this);
+    mapInstance.off("zoomanim", this._onZoomAnim, this);
     this._canvas.remove();
     this._map = null;
     this._canvas = null;
+    this._renderCenter = null;
+    this._renderZoom = null;
   },
 
   setSelectedIndex(this: any, index: number | null) {
     this._selectedIndex = index;
     if (this._map) this._reset();
+  },
+
+  _onZoom(this: any) {
+    if (!this._map) return;
+    this._updateTransform(this._map.getCenter(), this._map.getZoom());
+  },
+
+  _onZoomAnim(this: any, event: any) {
+    this._updateTransform(event.center, event.zoom);
+  },
+
+  _updateTransform(this: any, center: any, zoom: number) {
+    const mapInstance = this._map;
+    const canvas = this._canvas as HTMLCanvasElement | null;
+    if (!mapInstance || !canvas || this._renderCenter === null || this._renderZoom === null) return;
+
+    // Match Leaflet's own Renderer zoom transform. Pinch zoom fires `zoom`
+    // continuously, while animated discrete zooms fire `zoomanim`; transforming
+    // the existing bitmap keeps it locked to the basemap without rerasterising
+    // every gesture frame. `_reset` redraws it crisply when the zoom finishes.
+    const scale = mapInstance.getZoomScale(zoom, this._renderZoom);
+    const viewHalf = mapInstance.getSize().multiplyBy(0.5);
+    const currentCenterPoint = mapInstance.project(this._renderCenter, zoom);
+    const topLeftOffset = viewHalf
+      .multiplyBy(-scale)
+      .add(currentCenterPoint)
+      .subtract(mapInstance._getNewPixelOrigin(center, zoom));
+    L.DomUtil.setTransform(canvas, topLeftOffset, scale);
   },
 
   _reset(this: any) {
@@ -239,6 +275,8 @@ const RasterCanvasLayer = L.Layer.extend({
     context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
     context.clearRect(0, 0, size.x, size.y);
     this._draw(context);
+    this._renderCenter = mapInstance.getCenter();
+    this._renderZoom = mapInstance.getZoom();
   },
 
   _draw(this: any, context: CanvasRenderingContext2D) {
