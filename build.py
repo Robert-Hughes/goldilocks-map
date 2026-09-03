@@ -26,6 +26,12 @@ YORK_LAT = 53.96
 YORK_LON = -1.08
 GRID_SIZE = 10
 THRESHOLD_C = 25.0
+NO_DATA_VALUE = 255
+BNG_PROJ4 = (
+    "+proj=tmerc +lat_0=49 +lon_0=-2 +k=0.9996012717 +x_0=400000 +y_0=-100000 "
+    "+ellps=airy +towgs84=446.448,-125.157,542.06,0.1502,0.247,0.8421,-20.4894 "
+    "+units=m +no_defs"
+)
 
 
 def download_source(refresh: bool = False) -> Path:
@@ -69,12 +75,22 @@ def select_nearest(values: np.ndarray, target: float, count: int) -> np.ndarray:
     return np.sort(indices)
 
 
+def contiguous_slice(indices: np.ndarray) -> slice:
+    indices = np.asarray(indices, dtype=int)
+    if not indices.size or not np.array_equal(indices, np.arange(indices[0], indices[-1] + 1)):
+        raise RuntimeError(f"Expected a contiguous grid selection, got indices {indices.tolist()}")
+    return slice(int(indices[0]), int(indices[-1]) + 1)
+
+
 def coord_step(values: np.ndarray) -> float:
-    diffs = np.diff(np.sort(np.asarray(values, dtype=float)))
-    diffs = np.abs(diffs[np.abs(diffs) > 0])
-    if not diffs.size:
+    diffs = np.diff(np.asarray(values, dtype=float))
+    nonzero = np.abs(diffs[np.abs(diffs) > 0])
+    if not nonzero.size:
         raise RuntimeError("Unable to determine grid spacing")
-    return float(np.median(diffs))
+    step = float(np.median(nonzero))
+    if not np.allclose(nonzero, step):
+        raise RuntimeError("Expected regular spatial coordinates")
+    return step
 
 
 def open_dataset(path: Path) -> xr.Dataset:
@@ -106,73 +122,80 @@ def make_metric_data(path: Path) -> dict:
         if x_name not in tasmax.dims or y_name not in tasmax.dims:
             raise RuntimeError(f"tasmax dimensions {tasmax.dims} do not contain x={x_name!r} y={y_name!r}")
 
-        x_all = np.asarray(ds[x_name].values, dtype=float)
-        y_all = np.asarray(ds[y_name].values, dtype=float)
-        x_idx = select_nearest(x_all, york_e, GRID_SIZE)
-        y_idx = select_nearest(y_all, york_n, GRID_SIZE)
-        x_vals = x_all[x_idx]
-        y_vals = y_all[y_idx]
-        x_step = coord_step(x_all)
-        y_step = coord_step(y_all)
-
-        subset = tasmax.isel({x_name: x_idx, y_name: y_idx}).transpose("time", y_name, x_name)
-        values = np.asarray(subset.values, dtype=float)
         units = str(tasmax.attrs.get("units", "")).strip()
-        if units.lower() in {"k", "kelvin"}:
-            values = values - 273.15
-            source_units = units
-        elif units.lower() in {"degc", "degree_celsius", "degrees_celsius", "c", "°c", "celsius"}:
-            source_units = units
+        units_key = units.lower()
+        if units_key in {"k", "kelvin"}:
+            kelvin_source = True
+        elif units_key in {"degc", "degree_celsius", "degrees_celsius", "c", "°c", "celsius"}:
+            kelvin_source = False
         else:
             raise RuntimeError(f"Unexpected tasmax units {units!r}; refusing to assume Celsius")
 
-        valid = np.isfinite(values)
-        metric_values = np.sum(valid & (values > THRESHOLD_C), axis=0).astype(int)
-        valid_days = np.sum(valid, axis=0).astype(int)
-        if np.any(valid_days == 0):
-            raise RuntimeError("At least one selected York-area cell has no valid daily observations")
-
-        time_values = ds["time"].values
-        time_count = int(np.size(time_values))
+        time_count = int(tasmax.sizes["time"])
         if time_count != 31:
             raise RuntimeError(f"Expected 31 daily observations for July 2026, found {time_count}")
 
-        cells = []
-        for yi, northing in enumerate(y_vals):
-            for xi, easting in enumerate(x_vals):
-                west = float(easting - x_step / 2)
-                east = float(easting + x_step / 2)
-                south = float(northing - y_step / 2)
-                north = float(northing + y_step / 2)
-                corner_bng = [(west, south), (east, south), (east, north), (west, north)]
-                corners = []
-                for e, n in corner_bng:
-                    lon, lat = bng_to_wgs84.transform(e, n)
-                    corners.append([round(lat, 7), round(lon, 7)])
-                center_lon, center_lat = bng_to_wgs84.transform(float(easting), float(northing))
-                cells.append({
-                    "id": f"BNG-{int(round(easting))}-{int(round(northing))}",
-                    "value": int(metric_values[yi, xi]),
-                    "valid_days": int(valid_days[yi, xi]),
-                    "easting": int(round(float(easting))),
-                    "northing": int(round(float(northing))),
-                    "lat": round(center_lat, 7),
-                    "lon": round(center_lon, 7),
-                    "corners": corners,
-                })
+        x_all = np.asarray(ds[x_name].values, dtype=float)
+        y_all = np.asarray(ds[y_name].values, dtype=float)
+        x_step = coord_step(x_all)
+        y_step = coord_step(y_all)
+        if x_step != 1000.0 or y_step != 1000.0:
+            raise RuntimeError(f"Expected a 1 km grid, found spacing {x_step:g}m x {y_step:g}m")
+        if x_all[1] < x_all[0] or y_all[1] < y_all[0]:
+            raise RuntimeError("Prototype raster encoding currently expects west-to-east and south-to-north source coordinates")
+
+        x_idx = select_nearest(x_all, york_e, GRID_SIZE)
+        y_idx = select_nearest(y_all, york_n, GRID_SIZE)
+        x_slice = contiguous_slice(x_idx)
+        y_slice = contiguous_slice(y_idx)
+        x_vals = x_all[x_slice]
+        y_vals = y_all[y_slice]
+        width = int(x_vals.size)
+        height = int(y_vals.size)
+
+        # Keep only two tiny uint8 accumulators resident. Each iteration loads one
+        # spatial raster from the NetCDF rather than materialising the time cube.
+        metric_values = np.zeros((height, width), dtype=np.uint8)
+        valid_days = np.zeros((height, width), dtype=np.uint8)
+        for time_index in range(time_count):
+            day = tasmax.isel({"time": time_index, x_name: x_slice, y_name: y_slice}).transpose(y_name, x_name)
+            day_values = np.asarray(day.values, dtype=np.float32)
+            if kelvin_source:
+                day_values -= np.float32(273.15)
+            valid = np.isfinite(day_values)
+            metric_values += (valid & (day_values > THRESHOLD_C)).astype(np.uint8)
+            valid_days += valid.astype(np.uint8)
+
+        has_data = valid_days > 0
+        if not np.any(has_data):
+            raise RuntimeError("Selected York-area grid has no valid daily observations")
+        encoded_values = metric_values.copy()
+        encoded_values[~has_data] = NO_DATA_VALUE
+
+        west = float(x_vals[0] - x_step / 2)
+        east = float(x_vals[-1] + x_step / 2)
+        south = float(y_vals[0] - y_step / 2)
+        north = float(y_vals[-1] + y_step / 2)
+        corner_bng = [(west, south), (east, south), (east, north), (west, north)]
+        bounds_wgs84 = []
+        for easting, northing in corner_bng:
+            lon, lat = bng_to_wgs84.transform(easting, northing)
+            bounds_wgs84.append([round(lat, 7), round(lon, 7)])
 
         projection = None
         grid_mapping_name = tasmax.attrs.get("grid_mapping")
         if grid_mapping_name and grid_mapping_name in ds.variables:
             projection = {k: str(v) for k, v in ds[grid_mapping_name].attrs.items()}
 
-        metric_min = int(metric_values.min())
-        metric_max = int(metric_values.max())
-        print(f"tasmax dims: {tasmax.dims}; shape: {tasmax.shape}; units: {source_units}")
+        metric_min = int(metric_values[has_data].min())
+        metric_max = int(metric_values[has_data].max())
+        valid_cell_count = int(np.count_nonzero(has_data))
+        print(f"tasmax dims: {tasmax.dims}; shape: {tasmax.shape}; units: {units}")
         print(f"Selected coordinate names: x={x_name}, y={y_name}; spacing={x_step:g}m x {y_step:g}m")
         print(f"York BNG coordinate: E={york_e:.1f}, N={york_n:.1f}")
-        print(f"Extracted grid: {len(y_vals)} x {len(x_vals)} = {len(cells)} cells")
+        print(f"Extracted raster: {height} x {width} = {width * height} positions ({valid_cell_count} valid)")
         print(f"Metric range: {metric_min} to {metric_max} days")
+        print(f"Processing mode: one {height} x {width} daily raster at a time; no 31-day cube materialised")
 
         return {
             "metric": {
@@ -185,19 +208,33 @@ def make_metric_data(path: Path) -> dict:
             },
             "grid": {
                 "crs": "EPSG:27700",
-                "resolution_m": [x_step, y_step],
-                "shape": [len(y_vals), len(x_vals)],
-                "cell_count": len(cells),
-                "x_centres": [int(round(v)) for v in x_vals.tolist()],
-                "y_centres": [int(round(v)) for v in y_vals.tolist()],
+                "proj4": BNG_PROJ4,
+                "cell_size_m": int(x_step),
+                "width": width,
+                "height": height,
+                "cell_count": width * height,
+                "valid_cell_count": valid_cell_count,
+                "west": int(round(west)),
+                "south": int(round(south)),
+                "east": int(round(east)),
+                "north": int(round(north)),
+                "row_order": "south_to_north",
+                "column_order": "west_to_east",
+                "bounds_wgs84": bounds_wgs84,
                 "selection_center_wgs84": {"lat": YORK_LAT, "lon": YORK_LON},
                 "selection_center_bng": {"easting": round(york_e, 1), "northing": round(york_n, 1)},
                 "projection_metadata": projection,
             },
+            "raster": {
+                "encoding": "row-major uint8-compatible integers",
+                "nodata": NO_DATA_VALUE,
+                "values": encoded_values.ravel(order="C").astype(int).tolist(),
+                "valid_days": valid_days.ravel(order="C").astype(int).tolist(),
+            },
             "source": {
                 "provider": "Met Office HadUK-Grid",
                 "variable": "tasmax",
-                "source_units": source_units,
+                "source_units": units,
                 "file": path.name,
                 "url": SOURCE_URL,
                 "status": "provisional July 2026 data",
@@ -206,24 +243,24 @@ def make_metric_data(path: Path) -> dict:
                 "note": "HadUK-Grid is a gridded/interpolated climate-observation dataset; a grid cell is not a physical thermometer measurement at that exact point.",
             },
             "summary": {"min": metric_min, "max": metric_max},
-            "cells": cells,
         }
 
 
-def ensure_esbuild() -> Path:
+def ensure_frontend_dependencies() -> Path:
     executable = ROOT / "node_modules" / ".bin" / "esbuild"
-    if executable.exists():
+    proj4_package = ROOT / "node_modules" / "proj4" / "package.json"
+    if executable.exists() and proj4_package.exists():
         return executable
     print("Installing frontend build dependencies with npm...")
     subprocess.run(["npm", "install", "--no-audit", "--no-fund"], cwd=ROOT, check=True)
-    if not executable.exists():
-        raise RuntimeError("npm install completed but node_modules/.bin/esbuild was not created")
+    if not executable.exists() or not proj4_package.exists():
+        raise RuntimeError("npm install completed but required frontend dependencies are still missing")
     return executable
 
 
 def bundle_typescript() -> str:
     DIST_DIR.mkdir(parents=True, exist_ok=True)
-    esbuild = ensure_esbuild()
+    esbuild = ensure_frontend_dependencies()
     subprocess.run([
         str(esbuild), str(APP_TS), "--bundle", "--minify", "--format=iife", "--target=es2020", f"--outfile={APP_JS}"
     ], cwd=ROOT, check=True)

@@ -1,6 +1,6 @@
 # Goldilocks Map
 
-Goldilocks Map is an experimental single-file UK location-suitability explorer. This first proof of concept renders one derived Met Office HadUK-Grid climate metric over a 10 km x 10 km area around York.
+Goldilocks Map is an experimental single-file UK location-suitability explorer. This proof of concept currently renders one derived Met Office HadUK-Grid climate metric over a 10 km x 10 km area around York.
 
 ## Current metric
 
@@ -35,22 +35,38 @@ On platforms where binary Python wheels are available, a normal virtualenv and `
 1. download/cache the July 2026 HadUK-Grid NetCDF file under `data/` if needed;
 2. verify that it contains `tasmax`, expected spatial coordinates, 31 daily observations, and recognised temperature units;
 3. transform the York centre from WGS84 to British National Grid (EPSG:27700);
-4. select the nearest 10 x 10 HadUK 1 km cell centres;
-5. derive `count(tasmax > 25°C)` for each cell;
-6. install the minimal npm build dependencies if `node_modules/.bin/esbuild` is absent;
-7. bundle/minify `src/app.ts` with esbuild;
-8. inject the derived JSON and bundled JavaScript into the HTML template;
-9. write the single-file application to `dist/goldilocks.html`.
+4. select the nearest 10 x 10 HadUK 1 km cells;
+5. derive `count(tasmax > 25°C)` by reading one daily spatial raster at a time rather than materialising the whole 31-day cube;
+6. encode the result as a regular row-major raster with one-byte-compatible values (`0..31`, with `255` reserved for no-data);
+7. install the minimal npm frontend dependencies if needed (`esbuild`, TypeScript and `proj4`);
+8. bundle/minify `src/app.ts` with esbuild;
+9. inject the derived raster JSON and bundled JavaScript into the HTML template;
+10. write the single-file application to `dist/goldilocks.html`.
 
 Use `python build.py --refresh-data` to force a fresh NetCDF download.
 
-The generated HTML embeds the derived climate data and application JavaScript. It still uses the internet at viewing time for Leaflet and CARTO's OpenStreetMap-backed basemap tiles; OpenStreetMap and CARTO attribution are shown on the map.
+## Browser architecture
+
+The climate layer is a custom Leaflet canvas layer rather than one Leaflet polygon per HadUK cell. The embedded grid contains its BNG extent, 1 km cell size, dimensions and flat metric arrays. In the browser those JSON arrays are immediately converted to `Uint8Array`s.
+
+On each redraw, the renderer projects the current Leaflet viewport into British National Grid, clips that to raster row/column bounds, adds a one-cell safety margin, and iterates only over that visible raster range. It does not scan the whole dataset when only a small part of the grid is on screen. Clicking the map performs the inverse operation: WGS84 click coordinate -> BNG -> raster row/column -> metric value.
+
+This is deliberately the same basic data model intended for later full-UK coverage. Whole-UK overview rendering will eventually need additional level-of-detail/downsampling so that a view containing most of Britain does not attempt to draw every 1 km cell at once.
+
+## Basemap selection
+
+The generated page needs internet access for Leaflet and map tiles.
+
+- When served over `http:` or `https:`, it uses the standard OpenStreetMap tile server.
+- When opened directly as a `file:` URL, it uses CARTO's OpenStreetMap-backed tiles because the standard OSM tile service rejects referrer-less `file://` requests.
+
+Attribution is changed accordingly.
 
 ## Project layout
 
-- `build.py` — download, validation, preprocessing, TypeScript bundling and HTML generation
+- `build.py` — download, validation, streaming preprocessing, raster encoding, TypeScript bundling and HTML generation
 - `templates/goldilocks.html` — single-page HTML shell
-- `src/app.ts` — Leaflet frontend
+- `src/app.ts` — Leaflet/custom-canvas frontend
 - `data/` — cached raw input data (git-ignored)
 - `dist/goldilocks.html` — generated artifact (git-ignored)
 

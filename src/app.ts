@@ -1,15 +1,6 @@
-declare const L: any;
+import proj4 from "proj4";
 
-type Cell = {
-  id: string;
-  value: number;
-  valid_days: number;
-  easting: number;
-  northing: number;
-  lat: number;
-  lon: number;
-  corners: [number, number][];
-};
+declare const L: any;
 
 type GoldilocksData = {
   metric: {
@@ -22,10 +13,26 @@ type GoldilocksData = {
   };
   grid: {
     crs: string;
-    resolution_m: [number, number];
-    shape: [number, number];
+    proj4: string;
+    cell_size_m: number;
+    width: number;
+    height: number;
     cell_count: number;
+    valid_cell_count: number;
+    west: number;
+    south: number;
+    east: number;
+    north: number;
+    row_order: "south_to_north";
+    column_order: "west_to_east";
+    bounds_wgs84: [number, number][];
     selection_center_wgs84: { lat: number; lon: number };
+  };
+  raster: {
+    encoding: string;
+    nodata: number;
+    values: number[];
+    valid_days: number[];
   };
   source: {
     provider: string;
@@ -37,7 +44,18 @@ type GoldilocksData = {
     note: string;
   };
   summary: { min: number; max: number };
-  cells: Cell[];
+};
+
+type RasterCell = {
+  row: number;
+  column: number;
+  index: number;
+  value: number;
+  validDays: number;
+  easting: number;
+  northing: number;
+  lat: number;
+  lon: number;
 };
 
 const dataElement = document.getElementById("goldilocks-data");
@@ -45,16 +63,38 @@ if (!dataElement?.textContent) {
   throw new Error("Embedded Goldilocks data was not found");
 }
 const data = JSON.parse(dataElement.textContent) as GoldilocksData;
+if (data.raster.values.length !== data.grid.width * data.grid.height) {
+  throw new Error("Raster value count does not match grid dimensions");
+}
+if (data.raster.valid_days.length !== data.raster.values.length) {
+  throw new Error("Raster valid-day count does not match metric value count");
+}
+const rasterValues = Uint8Array.from(data.raster.values);
+const rasterValidDays = Uint8Array.from(data.raster.valid_days);
+// The JSON arrays are only the transport representation; keep compact typed
+// arrays as the runtime form so the same code scales to much larger rasters.
+data.raster.values = [];
+data.raster.valid_days = [];
+
+proj4.defs(data.grid.crs, data.grid.proj4);
 
 const map = L.map("map", {
   center: [data.grid.selection_center_wgs84.lat, data.grid.selection_center_wgs84.lon],
   zoom: 12,
 });
 
-L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png", {
-  maxZoom: 20,
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-}).addTo(map);
+const useFileBasemap = window.location.protocol === "file:";
+if (useFileBasemap) {
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png", {
+    maxZoom: 20,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+  }).addTo(map);
+} else {
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  }).addTo(map);
+}
 
 function colorForValue(value: number): string {
   const min = data.summary.min;
@@ -64,38 +104,207 @@ function colorForValue(value: number): string {
   return `hsl(${hue.toFixed(0)} 78% 48%)`;
 }
 
-function popupHtml(cell: Cell): string {
+function latLngToBng(latlng: any): [number, number] {
+  return proj4("EPSG:4326", data.grid.crs, [latlng.lng, latlng.lat]) as [number, number];
+}
+
+function bngToLatLng(easting: number, northing: number): any {
+  const [lon, lat] = proj4(data.grid.crs, "EPSG:4326", [easting, northing]) as [number, number];
+  return L.latLng(lat, lon);
+}
+
+function rasterIndex(row: number, column: number): number {
+  return row * data.grid.width + column;
+}
+
+function cellAtLatLng(latlng: any): RasterCell | null {
+  const [easting, northing] = latLngToBng(latlng);
+  const column = Math.floor((easting - data.grid.west) / data.grid.cell_size_m);
+  const row = Math.floor((northing - data.grid.south) / data.grid.cell_size_m);
+  if (column < 0 || column >= data.grid.width || row < 0 || row >= data.grid.height) {
+    return null;
+  }
+  const index = rasterIndex(row, column);
+  const value = rasterValues[index];
+  if (value === data.raster.nodata) {
+    return null;
+  }
+  const centerEasting = data.grid.west + (column + 0.5) * data.grid.cell_size_m;
+  const centerNorthing = data.grid.south + (row + 0.5) * data.grid.cell_size_m;
+  const center = bngToLatLng(centerEasting, centerNorthing);
+  return {
+    row,
+    column,
+    index,
+    value,
+    validDays: rasterValidDays[index],
+    easting: Math.round(centerEasting),
+    northing: Math.round(centerNorthing),
+    lat: center.lat,
+    lon: center.lng,
+  };
+}
+
+function popupHtml(cell: RasterCell): string {
   return `
     <strong>${data.metric.label}</strong>
     <dl>
       <dt>Value</dt><dd>${cell.value} ${data.metric.units}</dd>
       <dt>Period</dt><dd>${data.metric.period}</dd>
-      <dt>Cell</dt><dd>${cell.id}</dd>
+      <dt>Cell</dt><dd>BNG-${cell.easting}-${cell.northing}</dd>
+      <dt>Raster</dt><dd>row ${cell.row}, column ${cell.column}</dd>
       <dt>BNG</dt><dd>E ${cell.easting.toLocaleString()}, N ${cell.northing.toLocaleString()}</dd>
       <dt>WGS84</dt><dd>${cell.lat.toFixed(5)}, ${cell.lon.toFixed(5)}</dd>
-      <dt>Valid days</dt><dd>${cell.valid_days}</dd>
+      <dt>Valid days</dt><dd>${cell.validDays}</dd>
     </dl>`;
 }
 
-const overlay = L.featureGroup();
-for (const cell of data.cells) {
-  const polygon = L.polygon(cell.corners, {
-    color: "#263238",
-    weight: 0.7,
-    opacity: 0.72,
-    fillColor: colorForValue(cell.value),
-    fillOpacity: 0.62,
-  });
-  polygon.bindPopup(popupHtml(cell));
-  polygon.on("mouseover", () => polygon.setStyle({ weight: 2, fillOpacity: 0.78 }));
-  polygon.on("mouseout", () => polygon.setStyle({ weight: 0.7, fillOpacity: 0.62 }));
-  polygon.addTo(overlay);
-}
-overlay.addTo(map);
+function visibleRasterRange(mapInstance: any): { rowMin: number; rowMax: number; colMin: number; colMax: number } | null {
+  const bounds = mapInstance.getBounds();
+  const projected = [
+    bounds.getNorthWest(),
+    bounds.getNorthEast(),
+    bounds.getSouthWest(),
+    bounds.getSouthEast(),
+  ].map(latLngToBng);
+  const eastings = projected.map(([easting]) => easting);
+  const northings = projected.map(([, northing]) => northing);
+  const minEasting = Math.min(...eastings);
+  const maxEasting = Math.max(...eastings);
+  const minNorthing = Math.min(...northings);
+  const maxNorthing = Math.max(...northings);
 
-if (data.cells.length) {
-  map.fitBounds(overlay.getBounds(), { padding: [18, 18] });
+  const rawColMin = Math.floor((minEasting - data.grid.west) / data.grid.cell_size_m);
+  const rawColMax = Math.floor((maxEasting - data.grid.west) / data.grid.cell_size_m);
+  const rawRowMin = Math.floor((minNorthing - data.grid.south) / data.grid.cell_size_m);
+  const rawRowMax = Math.floor((maxNorthing - data.grid.south) / data.grid.cell_size_m);
+
+  if (rawColMax < 0 || rawRowMax < 0 || rawColMin >= data.grid.width || rawRowMin >= data.grid.height) {
+    return null;
+  }
+
+  // One extra cell prevents projection/rounding artefacts at viewport edges,
+  // while keeping redraw work proportional to the visible raster area.
+  const marginCells = 1;
+  const colMin = Math.max(0, rawColMin - marginCells);
+  const rowMin = Math.max(0, rawRowMin - marginCells);
+  const colMax = Math.min(data.grid.width - 1, rawColMax + marginCells);
+  const rowMax = Math.min(data.grid.height - 1, rawRowMax + marginCells);
+  return { rowMin, rowMax, colMin, colMax };
 }
+
+const RasterCanvasLayer = L.Layer.extend({
+  initialize(this: any) {
+    this._selectedIndex = null;
+  },
+
+  onAdd(this: any, mapInstance: any) {
+    this._map = mapInstance;
+    this._canvas = L.DomUtil.create("canvas", "goldilocks-raster-layer");
+    this._canvas.style.pointerEvents = "none";
+    mapInstance.getPane("overlayPane").appendChild(this._canvas);
+    mapInstance.on("moveend zoomend resize viewreset", this._reset, this);
+    this._reset();
+  },
+
+  onRemove(this: any, mapInstance: any) {
+    mapInstance.off("moveend zoomend resize viewreset", this._reset, this);
+    this._canvas.remove();
+    this._map = null;
+    this._canvas = null;
+  },
+
+  setSelectedIndex(this: any, index: number | null) {
+    this._selectedIndex = index;
+    if (this._map) this._reset();
+  },
+
+  _reset(this: any) {
+    const mapInstance = this._map;
+    const canvas = this._canvas as HTMLCanvasElement;
+    if (!mapInstance || !canvas) return;
+
+    const size = mapInstance.getSize();
+    const topLeft = mapInstance.containerPointToLayerPoint([0, 0]);
+    L.DomUtil.setPosition(canvas, topLeft);
+
+    const pixelRatio = Math.max(1, window.devicePixelRatio || 1);
+    canvas.width = Math.max(1, Math.round(size.x * pixelRatio));
+    canvas.height = Math.max(1, Math.round(size.y * pixelRatio));
+    canvas.style.width = `${size.x}px`;
+    canvas.style.height = `${size.y}px`;
+
+    const context = canvas.getContext("2d");
+    if (!context) return;
+    context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+    context.clearRect(0, 0, size.x, size.y);
+    this._draw(context);
+  },
+
+  _draw(this: any, context: CanvasRenderingContext2D) {
+    const range = visibleRasterRange(this._map);
+    if (!range) return;
+    const cellSize = data.grid.cell_size_m;
+    const cornerRows: any[][] = [];
+
+    // Adjacent cells share corners. Project every visible grid intersection once
+    // per redraw rather than doing four proj4 transforms for every cell.
+    for (let rowEdge = range.rowMin; rowEdge <= range.rowMax + 1; rowEdge += 1) {
+      const northing = data.grid.south + rowEdge * cellSize;
+      const cornerRow: any[] = [];
+      for (let columnEdge = range.colMin; columnEdge <= range.colMax + 1; columnEdge += 1) {
+        const easting = data.grid.west + columnEdge * cellSize;
+        cornerRow.push(this._map.latLngToContainerPoint(bngToLatLng(easting, northing)));
+      }
+      cornerRows.push(cornerRow);
+    }
+
+    for (let row = range.rowMin; row <= range.rowMax; row += 1) {
+      const localRow = row - range.rowMin;
+      for (let column = range.colMin; column <= range.colMax; column += 1) {
+        const index = rasterIndex(row, column);
+        const value = rasterValues[index];
+        if (value === data.raster.nodata) continue;
+
+        const localColumn = column - range.colMin;
+        const points = [
+          cornerRows[localRow][localColumn],
+          cornerRows[localRow][localColumn + 1],
+          cornerRows[localRow + 1][localColumn + 1],
+          cornerRows[localRow + 1][localColumn],
+        ];
+
+        context.beginPath();
+        context.moveTo(points[0].x, points[0].y);
+        for (let pointIndex = 1; pointIndex < points.length; pointIndex += 1) {
+          context.lineTo(points[pointIndex].x, points[pointIndex].y);
+        }
+        context.closePath();
+        context.globalAlpha = 0.62;
+        context.fillStyle = colorForValue(value);
+        context.fill();
+        context.globalAlpha = 1;
+        context.strokeStyle = index === this._selectedIndex ? "#111" : "rgba(38,50,56,0.72)";
+        context.lineWidth = index === this._selectedIndex ? 2.2 : 0.7;
+        context.stroke();
+      }
+    }
+  },
+});
+
+const rasterLayer = new RasterCanvasLayer();
+rasterLayer.addTo(map);
+map.fitBounds(L.latLngBounds(data.grid.bounds_wgs84), { padding: [18, 18] });
+
+map.on("click", (event: any) => {
+  const cell = cellAtLatLng(event.latlng);
+  if (!cell) {
+    rasterLayer.setSelectedIndex(null);
+    return;
+  }
+  rasterLayer.setSelectedIndex(cell.index);
+  L.popup().setLatLng(bngToLatLng(cell.easting, cell.northing)).setContent(popupHtml(cell)).openOn(map);
+});
 
 const legend = L.control({ position: "bottomright" });
 legend.onAdd = () => {
