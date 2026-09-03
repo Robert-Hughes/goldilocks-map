@@ -16,8 +16,19 @@
     .legend-title { font-weight: 700; margin-bottom: 0.45rem; max-width: 190px; }
     .legend-row { display: flex; align-items: center; gap: 0.45rem; margin: 0.18rem 0; white-space: nowrap; }
     .legend-swatch { display: inline-block; width: 18px; height: 12px; border: 1px solid rgba(0,0,0,0.35); }
-    .info-control { max-width: 330px; background: rgba(255,255,255,0.96); padding: 0.65rem 0.75rem; box-shadow: 0 1px 5px rgba(0,0,0,0.25); border-radius: 4px; font-size: 0.82rem; line-height: 1.35; }
-    .info-control strong { display: block; margin-bottom: 0.25rem; }
+    .info-control { max-width: min(330px, calc(100vw - 70px)); background: rgba(255,255,255,0.96); padding: 0.45rem 0.55rem; box-shadow: 0 1px 5px rgba(0,0,0,0.25); border-radius: 4px; font-size: 0.82rem; line-height: 1.35; }
+    .info-header { display: flex; align-items: center; gap: 0.45rem; }
+    .info-header strong { flex: 1; margin: 0; }
+    .info-toggle { width: 2rem; height: 2rem; padding: 0; border: 1px solid #aeb8c0; border-radius: 4px; background: #fff; color: #17212b; font-size: 1.15rem; line-height: 1; cursor: pointer; }
+    .info-body { margin-top: 0.4rem; }
+    .info-body strong { display: block; margin: 0.65rem 0 0.25rem; }
+    .info-control.collapsed .info-body { display: none; }
+    .info-control.collapsed { width: auto; }
+    @media (max-width: 600px) {
+      header { padding: 0.5rem 0.7rem; gap: 0.25rem 0.6rem; }
+      header p { font-size: 0.8rem; }
+      .info-control { max-width: calc(100vw - 70px); }
+    }
     .leaflet-popup-content { line-height: 1.45; }
     .leaflet-popup-content dl { display: grid; grid-template-columns: auto 1fr; gap: 0.15rem 0.55rem; margin: 0; }
     .leaflet-popup-content dt { font-weight: 600; }

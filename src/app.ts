@@ -117,8 +117,29 @@ legend.addTo(map);
 const info = L.control({ position: "topright" });
 info.onAdd = () => {
   const div = L.DomUtil.create("div", "info-control");
-  div.innerHTML = `<strong>${data.metric.label}</strong>${data.metric.definition}<br><br><strong>Data provenance</strong>${data.source.provider}, ${data.source.status}, ${data.source.resolution}. Variable: <code>${data.source.variable}</code>.<br>Source: <a href="${data.source.url}" target="_blank" rel="noopener">${data.source.file}</a>.<br>${data.source.note}`;
+  const initiallyCollapsed = window.matchMedia("(max-width: 600px)").matches;
+  if (initiallyCollapsed) div.classList.add("collapsed");
+  div.innerHTML = `
+    <div class="info-header">
+      <strong>${data.metric.label}</strong>
+      <button class="info-toggle" type="button" aria-label="${initiallyCollapsed ? "Expand" : "Collapse"} information panel" aria-expanded="${!initiallyCollapsed}">${initiallyCollapsed ? "+" : "−"}</button>
+    </div>
+    <div class="info-body">
+      ${data.metric.definition}
+      <strong>Data provenance</strong>
+      ${data.source.provider}, ${data.source.status}, ${data.source.resolution}. Variable: <code>${data.source.variable}</code>.<br>
+      Source: <a href="${data.source.url}" target="_blank" rel="noopener">${data.source.file}</a>.<br>
+      ${data.source.note}
+    </div>`;
+  const button = div.querySelector(".info-toggle") as HTMLButtonElement;
+  button.addEventListener("click", () => {
+    const collapsed = div.classList.toggle("collapsed");
+    button.textContent = collapsed ? "+" : "−";
+    button.setAttribute("aria-expanded", String(!collapsed));
+    button.setAttribute("aria-label", `${collapsed ? "Expand" : "Collapse"} information panel`);
+  });
   L.DomEvent.disableClickPropagation(div);
+  L.DomEvent.disableScrollPropagation(div);
   return div;
 };
 info.addTo(map);
