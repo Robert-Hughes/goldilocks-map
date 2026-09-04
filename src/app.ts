@@ -193,7 +193,7 @@ const LOD_MIN_CELL_PIXELS = 4;
 const LOD_REFERENCE_LAT = 54.5;
 const LOD_REFERENCE_LON = -2.0;
 
-function chooseLodLevel(mapInstance: any): RasterLevel {
+function chooseLodLevel(mapInstance: any, zoom = mapInstance.getZoom()): RasterLevel {
   // Use a fixed representative UK location for the screen-size calculation.
   // Web Mercator scale varies with latitude, so using the live map centre made
   // LOD change merely by panning north/south at a fixed zoom. A fixed reference
@@ -203,12 +203,11 @@ function chooseLodLevel(mapInstance: any): RasterLevel {
   // rounds layer/container coordinates to whole CSS pixels; once a 1 km base cell
   // is sub-pixel, its two endpoints can round to the same pixel and falsely
   // measure as zero, which would select the coarsest LOD in one jump. project()
-  // retains floating-point pixel coordinates at the current (including fractional)
-  // zoom, so adjacent zoom levels advance through adjacent LOD levels as intended.
+  // retains floating-point pixel coordinates at the requested zoom, so adjacent
+  // zoom levels advance through adjacent LOD levels as intended.
   const reference = L.latLng(LOD_REFERENCE_LAT, LOD_REFERENCE_LON);
   const [referenceEasting, referenceNorthing] = latLngToBng(reference);
   const baseCellEast = bngToLatLng(referenceEasting + data.grid.cell_size_m, referenceNorthing);
-  const zoom = mapInstance.getZoom();
   const basePixels = mapInstance.project(reference, zoom).distanceTo(
     mapInstance.project(baseCellEast, zoom),
   );
@@ -234,25 +233,21 @@ const gridWgs84Envelope = (() => {
   };
 })();
 
-function visibleRasterRange(
-  mapInstance: any,
+function rasterRangeForBounds(
+  bounds: any,
   level: RasterLevel,
+  marginCells = 1,
 ): { rowMin: number; rowMax: number; colMin: number; colMax: number } | null {
-  const bounds = mapInstance.getBounds();
-
-  // Never project remote viewport corners into BNG. At low zoom they can be
-  // thousands of kilometres from Britain, where their projected extrema are a
-  // poor description of the small UK area we actually care about. Intersect in
-  // WGS84 first, then project only that clipped rectangle around the raster.
+  // Never project remote viewport/tile corners into BNG. Intersect in WGS84
+  // first and transform only the small rectangle near our UK raster.
   const south = Math.max(bounds.getSouth(), gridWgs84Envelope.south);
   const north = Math.min(bounds.getNorth(), gridWgs84Envelope.north);
   const west = Math.max(bounds.getWest(), gridWgs84Envelope.west);
   const east = Math.min(bounds.getEast(), gridWgs84Envelope.east);
   if (south > north || west > east) return null;
 
-  // Include edge midpoints as well as corners. This is cheap (eight transforms
-  // per redraw) and avoids assuming BNG extrema always occur at the corners of
-  // a geographic rectangle as the covered area grows toward full-UK scale.
+  // Include edge midpoints as well as corners so BNG curvature does not require
+  // us to assume extrema occur exactly at geographic rectangle corners.
   const midLat = (south + north) / 2;
   const midLon = (west + east) / 2;
   const projected = [
@@ -281,122 +276,87 @@ function visibleRasterRange(
     return null;
   }
 
-  // One extra cell prevents projection/rounding artefacts at viewport edges,
-  // while keeping redraw work proportional to the visible part of the chosen LOD.
-  const marginCells = 1;
-  const colMin = Math.max(0, rawColMin - marginCells);
-  const rowMin = Math.max(0, rawRowMin - marginCells);
-  const colMax = Math.min(level.width - 1, rawColMax + marginCells);
-  const rowMax = Math.min(level.height - 1, rawRowMax + marginCells);
-  return { rowMin, rowMax, colMin, colMax };
+  return {
+    colMin: Math.max(0, rawColMin - marginCells),
+    rowMin: Math.max(0, rawRowMin - marginCells),
+    colMax: Math.min(level.width - 1, rawColMax + marginCells),
+    rowMax: Math.min(level.height - 1, rawRowMax + marginCells),
+  };
 }
 
-const RasterCanvasLayer = L.Layer.extend({
-  initialize(this: any) {
+const RasterGridLayer = L.GridLayer.extend({
+  initialize(this: any, options: any) {
+    L.GridLayer.prototype.initialize.call(this, options);
     this._selectedIndex = null;
-    this._renderCenter = null;
-    this._renderZoom = null;
-    this._activeLevel = lodLevels[0];
   },
 
-  onAdd(this: any, mapInstance: any) {
-    this._map = mapInstance;
-    this._canvas = L.DomUtil.create("canvas", "goldilocks-raster-layer leaflet-zoom-animated");
-    this._canvas.style.pointerEvents = "none";
-    mapInstance.getPane("overlayPane").appendChild(this._canvas);
-    mapInstance.on("moveend zoomend resize viewreset", this._reset, this);
-    mapInstance.on("zoom", this._onZoom, this);
-    mapInstance.on("zoomanim", this._onZoomAnim, this);
-    this._reset();
-  },
+  createTile(this: any, coords: any) {
+    const tileSize = this.getTileSize();
+    const pixelRatio = Math.max(1, window.devicePixelRatio || 1);
+    const canvas = L.DomUtil.create("canvas", "goldilocks-raster-tile") as HTMLCanvasElement;
+    canvas.width = Math.max(1, Math.round(tileSize.x * pixelRatio));
+    canvas.height = Math.max(1, Math.round(tileSize.y * pixelRatio));
+    canvas.style.width = `${tileSize.x}px`;
+    canvas.style.height = `${tileSize.y}px`;
+    canvas.style.pointerEvents = "none";
 
-  onRemove(this: any, mapInstance: any) {
-    mapInstance.off("moveend zoomend resize viewreset", this._reset, this);
-    mapInstance.off("zoom", this._onZoom, this);
-    mapInstance.off("zoomanim", this._onZoomAnim, this);
-    this._canvas.remove();
-    this._map = null;
-    this._canvas = null;
-    this._renderCenter = null;
-    this._renderZoom = null;
+    const context = canvas.getContext("2d");
+    if (!context) return canvas;
+    context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+
+    // Leaflet owns tile lifecycle and zoom animation. Each requested tile has a
+    // definite integer map zoom, so all tiles at that zoom independently choose
+    // the same climate LOD. updateWhenZooming=false keeps the old tile set/LOD
+    // scaled during pinch and asks for the new zoom's tiles only when it settles.
+    const level = chooseLodLevel(this._map, coords.z);
+    canvas.dataset.lod = String(level.level);
+    canvas.dataset.lodCellSizeM = String(level.cell_size_m);
+    this._drawTile(context, coords, tileSize, level);
+    this._drawSelectionTile(context, coords, tileSize);
+    return canvas;
   },
 
   setSelectedIndex(this: any, index: number | null) {
     this._selectedIndex = index;
-    if (this._map) this._reset();
+    if (this._map) this.redraw();
   },
 
-  _onZoom(this: any) {
-    if (!this._map) return;
-    this._updateTransform(this._map.getCenter(), this._map.getZoom());
+  _tileBounds(this: any, coords: any, tileSize: any) {
+    const northWestPoint = L.point(coords.x * tileSize.x, coords.y * tileSize.y);
+    const southEastPoint = northWestPoint.add(tileSize);
+    return L.latLngBounds(
+      this._map.unproject(northWestPoint, coords.z),
+      this._map.unproject(southEastPoint, coords.z),
+    );
   },
 
-  _onZoomAnim(this: any, event: any) {
-    this._updateTransform(event.center, event.zoom);
+  _toTilePoint(this: any, latlng: any, coords: any, tileSize: any) {
+    const tileOrigin = L.point(coords.x * tileSize.x, coords.y * tileSize.y);
+    return this._map.project(latlng, coords.z).subtract(tileOrigin);
   },
 
-  _updateTransform(this: any, center: any, zoom: number) {
-    const mapInstance = this._map;
-    const canvas = this._canvas as HTMLCanvasElement | null;
-    if (!mapInstance || !canvas || this._renderCenter === null || this._renderZoom === null) return;
-
-    // Keep the currently rendered LOD fixed for the whole zoom gesture. Leaflet
-    // continuously transforms this bitmap; only `_reset` after the gesture chooses
-    // a new LOD and rerasterises it at the final zoom.
-    const scale = mapInstance.getZoomScale(zoom, this._renderZoom);
-    const viewHalf = mapInstance.getSize().multiplyBy(0.5);
-    const currentCenterPoint = mapInstance.project(this._renderCenter, zoom);
-    const topLeftOffset = viewHalf
-      .multiplyBy(-scale)
-      .add(currentCenterPoint)
-      .subtract(mapInstance._getNewPixelOrigin(center, zoom));
-    L.DomUtil.setTransform(canvas, topLeftOffset, scale);
-  },
-
-  _reset(this: any) {
-    const mapInstance = this._map;
-    const canvas = this._canvas as HTMLCanvasElement;
-    if (!mapInstance || !canvas) return;
-
-    this._activeLevel = chooseLodLevel(mapInstance);
-    canvas.dataset.lod = String(this._activeLevel.level);
-    canvas.dataset.lodCellSizeM = String(this._activeLevel.cell_size_m);
-
-    const size = mapInstance.getSize();
-    const topLeft = mapInstance.containerPointToLayerPoint([0, 0]);
-    L.DomUtil.setPosition(canvas, topLeft);
-
-    const pixelRatio = Math.max(1, window.devicePixelRatio || 1);
-    canvas.width = Math.max(1, Math.round(size.x * pixelRatio));
-    canvas.height = Math.max(1, Math.round(size.y * pixelRatio));
-    canvas.style.width = `${size.x}px`;
-    canvas.style.height = `${size.y}px`;
-
-    const context = canvas.getContext("2d");
-    if (!context) return;
-    context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-    context.clearRect(0, 0, size.x, size.y);
-    this._draw(context, this._activeLevel);
-    this._drawSelection(context);
-    this._renderCenter = mapInstance.getCenter();
-    this._renderZoom = mapInstance.getZoom();
-  },
-
-  _draw(this: any, context: CanvasRenderingContext2D, level: RasterLevel) {
-    const range = visibleRasterRange(this._map, level);
+  _drawTile(
+    this: any,
+    context: CanvasRenderingContext2D,
+    coords: any,
+    tileSize: any,
+    level: RasterLevel,
+  ) {
+    const range = rasterRangeForBounds(this._tileBounds(coords, tileSize), level, 1);
     if (!range) return;
     const cellSize = level.cell_size_m;
     const cornerRows: any[][] = [];
 
-    // Adjacent cells share corners. Project every visible grid intersection once
-    // per redraw rather than doing four proj4 transforms for every cell. The final
-    // coarse cell on an odd-sized level is clipped to the original raster extent.
+    // Tiles naturally clip drawing at their 256 px boundary. Include a one-cell
+    // range margin so cells crossing a tile edge are drawn into both neighbouring
+    // canvases; Leaflet's clipping then joins them without requiring shared state.
+    // Shared BNG intersections are still projected only once within each tile.
     for (let rowEdge = range.rowMin; rowEdge <= range.rowMax + 1; rowEdge += 1) {
       const northing = Math.min(data.grid.north, data.grid.south + rowEdge * cellSize);
       const cornerRow: any[] = [];
       for (let columnEdge = range.colMin; columnEdge <= range.colMax + 1; columnEdge += 1) {
         const easting = Math.min(data.grid.east, data.grid.west + columnEdge * cellSize);
-        cornerRow.push(this._map.latLngToContainerPoint(bngToLatLng(easting, northing)));
+        cornerRow.push(this._toTilePoint(bngToLatLng(easting, northing), coords, tileSize));
       }
       cornerRows.push(cornerRow);
     }
@@ -433,7 +393,7 @@ const RasterCanvasLayer = L.Layer.extend({
     }
   },
 
-  _drawSelection(this: any, context: CanvasRenderingContext2D) {
+  _drawSelectionTile(this: any, context: CanvasRenderingContext2D, coords: any, tileSize: any) {
     if (this._selectedIndex === null) return;
     const row = Math.floor(this._selectedIndex / data.grid.width);
     const column = this._selectedIndex % data.grid.width;
@@ -448,7 +408,7 @@ const RasterCanvasLayer = L.Layer.extend({
       bngToLatLng(east, south),
       bngToLatLng(east, north),
       bngToLatLng(west, north),
-    ].map((latlng) => this._map.latLngToContainerPoint(latlng));
+    ].map((latlng) => this._toTilePoint(latlng, coords, tileSize));
 
     context.beginPath();
     context.moveTo(points[0].x, points[0].y);
@@ -463,7 +423,17 @@ const RasterCanvasLayer = L.Layer.extend({
   },
 });
 
-const rasterLayer = new RasterCanvasLayer();
+const rasterLayer = new RasterGridLayer({
+  tileSize: 256,
+  pane: "overlayPane",
+  bounds: L.latLngBounds(data.grid.bounds_wgs84),
+  noWrap: true,
+  updateWhenIdle: false,
+  updateWhenZooming: false,
+  updateInterval: 100,
+  keepBuffer: 2,
+  className: "goldilocks-raster-grid",
+});
 rasterLayer.addTo(map);
 map.fitBounds(L.latLngBounds(data.grid.bounds_wgs84), { padding: [18, 18] });
 
