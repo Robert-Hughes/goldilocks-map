@@ -122,12 +122,19 @@ if (useFileBasemap) {
   }).addTo(map);
 }
 
+const colorByValue = new Map<number, string>();
+
 function colorForValue(value: number): string {
+  const cached = colorByValue.get(value);
+  if (cached !== undefined) return cached;
+
   const min = data.summary.min;
   const max = data.summary.max;
   const ratio = max === min ? 0.5 : Math.max(0, Math.min(1, (value - min) / (max - min)));
   const hue = 210 - ratio * 210;
-  return `hsl(${hue.toFixed(0)} 78% 48%)`;
+  const color = `hsl(${hue.toFixed(0)} 78% 48%)`;
+  colorByValue.set(value, color);
+  return color;
 }
 
 function latLngToBng(latlng: any): [number, number] {
@@ -373,6 +380,22 @@ function cachedCornerTilePoint(
   };
 }
 
+type TilePoint = { x: number; y: number };
+
+function appendCellPath(
+  path: Path2D,
+  southWest: TilePoint,
+  southEast: TilePoint,
+  northEast: TilePoint,
+  northWest: TilePoint,
+) {
+  path.moveTo(southWest.x, southWest.y);
+  path.lineTo(southEast.x, southEast.y);
+  path.lineTo(northEast.x, northEast.y);
+  path.lineTo(northWest.x, northWest.y);
+  path.closePath();
+}
+
 const RasterGridLayer = L.GridLayer.extend({
   initialize(this: any, options: any) {
     L.GridLayer.prototype.initialize.call(this, options);
@@ -438,6 +461,12 @@ const RasterGridLayer = L.GridLayer.extend({
     // geometry itself is never reprojected here: each valid cell resolves its four
     // corners from the startup world-coordinate lookup and only applies the cheap
     // zoom scale + tile-origin translation.
+    // Group fill geometry by the actual metric value encountered in this tile.
+    // This deliberately does not assume a fixed value domain: a future metric may
+    // have many more distinct encoded values than the current July day count.
+    const fillPaths = new Map<number, Path2D>();
+    const gridPath = new Path2D();
+
     for (let row = range.rowMin; row <= range.rowMax; row += 1) {
       for (let column = range.colMin; column <= range.colMax; column += 1) {
         const index = rasterIndex(row, column, level.width);
@@ -449,21 +478,27 @@ const RasterGridLayer = L.GridLayer.extend({
         const northEast = cachedCornerTilePoint(level, row + 1, column + 1, worldScale, tileOriginX, tileOriginY);
         const northWest = cachedCornerTilePoint(level, row + 1, column, worldScale, tileOriginX, tileOriginY);
 
-        context.beginPath();
-        context.moveTo(southWest.x, southWest.y);
-        context.lineTo(southEast.x, southEast.y);
-        context.lineTo(northEast.x, northEast.y);
-        context.lineTo(northWest.x, northWest.y);
-        context.closePath();
-        context.globalAlpha = 0.62;
-        context.fillStyle = colorForValue(value);
-        context.fill();
-        context.globalAlpha = 1;
-        context.strokeStyle = "rgba(38,50,56,0.72)";
-        context.lineWidth = 0.7;
-        context.stroke();
+        let fillPath = fillPaths.get(value);
+        if (!fillPath) {
+          fillPath = new Path2D();
+          fillPaths.set(value, fillPath);
+        }
+        appendCellPath(fillPath, southWest, southEast, northEast, northWest);
+        appendCellPath(gridPath, southWest, southEast, northEast, northWest);
       }
     }
+
+    // A tile now needs one fill operation per distinct value rather than one fill
+    // per cell. The whole cell-outline grid is then stroked in a single operation.
+    context.globalAlpha = 0.62;
+    for (const [value, path] of fillPaths) {
+      context.fillStyle = colorForValue(value);
+      context.fill(path);
+    }
+    context.globalAlpha = 1;
+    context.strokeStyle = "rgba(38,50,56,0.72)";
+    context.lineWidth = 0.7;
+    context.stroke(gridPath);
   },
 
   _drawSelectionTile(this: any, context: CanvasRenderingContext2D, coords: any, tileSize: any) {
