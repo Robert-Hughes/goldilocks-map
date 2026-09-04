@@ -22,9 +22,6 @@ OUTPUT_HTML = DIST_DIR / "goldilocks.html"
 
 SOURCE_URL = "https://www.metoffice.gov.uk/hadobs/hadukgrid/data/2026/tasmax_hadukgrid_uk_1km_day_20260701-20260731.nc"
 SOURCE_PATH = DATA_DIR / Path(SOURCE_URL).name
-YORK_LAT = 53.96
-YORK_LON = -1.08
-GRID_SIZE = 640
 THRESHOLD_C = 25.0
 NO_DATA_VALUE = 255
 BNG_PROJ4 = (
@@ -66,20 +63,6 @@ def find_coord_name(ds: xr.Dataset, candidates: tuple[str, ...], axis: str) -> s
             return name
     raise RuntimeError(f"Could not identify {axis}-coordinate in dataset; coords={list(ds.coords)} dims={list(ds.dims)}")
 
-
-def select_nearest(values: np.ndarray, target: float, count: int) -> np.ndarray:
-    values = np.asarray(values, dtype=float)
-    if values.ndim != 1 or values.size < count:
-        raise RuntimeError(f"Need at least {count} one-dimensional coordinate values")
-    indices = np.argsort(np.abs(values - target), kind="stable")[:count]
-    return np.sort(indices)
-
-
-def contiguous_slice(indices: np.ndarray) -> slice:
-    indices = np.asarray(indices, dtype=int)
-    if not indices.size or not np.array_equal(indices, np.arange(indices[0], indices[-1] + 1)):
-        raise RuntimeError(f"Expected a contiguous grid selection, got indices {indices.tolist()}")
-    return slice(int(indices[0]), int(indices[-1]) + 1)
 
 
 def coord_step(values: np.ndarray) -> float:
@@ -154,8 +137,6 @@ def build_lod_levels(values: np.ndarray, cell_size_m: int, nodata: int) -> list[
 
 def make_metric_data(path: Path) -> dict:
     bng_to_wgs84 = Transformer.from_crs("EPSG:27700", "EPSG:4326", always_xy=True)
-    wgs84_to_bng = Transformer.from_crs("EPSG:4326", "EPSG:27700", always_xy=True)
-    york_e, york_n = wgs84_to_bng.transform(YORK_LON, YORK_LAT)
 
     with open_dataset(path) as ds:
         if "tasmax" not in ds.data_vars:
@@ -181,30 +162,24 @@ def make_metric_data(path: Path) -> dict:
         if time_count != 31:
             raise RuntimeError(f"Expected 31 daily observations for July 2026, found {time_count}")
 
-        x_all = np.asarray(ds[x_name].values, dtype=float)
-        y_all = np.asarray(ds[y_name].values, dtype=float)
-        x_step = coord_step(x_all)
-        y_step = coord_step(y_all)
+        x_vals = np.asarray(ds[x_name].values, dtype=float)
+        y_vals = np.asarray(ds[y_name].values, dtype=float)
+        x_step = coord_step(x_vals)
+        y_step = coord_step(y_vals)
         if x_step != 1000.0 or y_step != 1000.0:
             raise RuntimeError(f"Expected a 1 km grid, found spacing {x_step:g}m x {y_step:g}m")
-        if x_all[1] < x_all[0] or y_all[1] < y_all[0]:
-            raise RuntimeError("Prototype raster encoding currently expects west-to-east and south-to-north source coordinates")
+        if x_vals[1] < x_vals[0] or y_vals[1] < y_vals[0]:
+            raise RuntimeError("Raster encoding expects west-to-east and south-to-north source coordinates")
 
-        x_idx = select_nearest(x_all, york_e, GRID_SIZE)
-        y_idx = select_nearest(y_all, york_n, GRID_SIZE)
-        x_slice = contiguous_slice(x_idx)
-        y_slice = contiguous_slice(y_idx)
-        x_vals = x_all[x_slice]
-        y_vals = y_all[y_slice]
         width = int(x_vals.size)
         height = int(y_vals.size)
 
-        # Keep only two tiny uint8 accumulators resident. Each iteration loads one
-        # spatial raster from the NetCDF rather than materialising the time cube.
+        # Keep only two uint8 accumulators resident. Each iteration loads one
+        # full spatial raster from the NetCDF rather than materialising the 31-day cube.
         metric_values = np.zeros((height, width), dtype=np.uint8)
         valid_days = np.zeros((height, width), dtype=np.uint8)
         for time_index in range(time_count):
-            day = tasmax.isel({"time": time_index, x_name: x_slice, y_name: y_slice}).transpose(y_name, x_name)
+            day = tasmax.isel({"time": time_index}).transpose(y_name, x_name)
             day_values = np.asarray(day.values, dtype=np.float32)
             if kelvin_source:
                 day_values -= np.float32(273.15)
@@ -214,7 +189,7 @@ def make_metric_data(path: Path) -> dict:
 
         has_data = valid_days > 0
         if not np.any(has_data):
-            raise RuntimeError("Selected York-area grid has no valid daily observations")
+            raise RuntimeError("Full HadUK-Grid domain has no valid daily observations")
         encoded_values = metric_values.copy()
         encoded_values[~has_data] = NO_DATA_VALUE
         lod_levels = build_lod_levels(encoded_values, int(x_step), NO_DATA_VALUE)
@@ -239,10 +214,9 @@ def make_metric_data(path: Path) -> dict:
         valid_cell_count = int(np.count_nonzero(has_data))
         print(f"tasmax dims: {tasmax.dims}; shape: {tasmax.shape}; units: {units}")
         print(f"Selected coordinate names: x={x_name}, y={y_name}; spacing={x_step:g}m x {y_step:g}m")
-        print(f"York BNG coordinate: E={york_e:.1f}, N={york_n:.1f}")
-        print(f"Extracted raster: {height} x {width} = {width * height} positions ({valid_cell_count} valid)")
+        print(f"Full source raster: {height} x {width} = {width * height} positions ({valid_cell_count} valid)")
         print(f"Metric range: {metric_min} to {metric_max} days")
-        print(f"Processing mode: one {height} x {width} daily raster at a time; no 31-day cube materialised")
+        print(f"Processing mode: one full {height} x {width} daily raster at a time; no 31-day cube materialised")
         lod_shapes = " -> ".join(f"{level['width']}x{level['height']}" for level in lod_levels)
         lod_value_count = sum(level["width"] * level["height"] for level in lod_levels)
         base_value_count = width * height
@@ -274,8 +248,6 @@ def make_metric_data(path: Path) -> dict:
                 "row_order": "south_to_north",
                 "column_order": "west_to_east",
                 "bounds_wgs84": bounds_wgs84,
-                "selection_center_wgs84": {"lat": YORK_LAT, "lon": YORK_LON},
-                "selection_center_bng": {"easting": round(york_e, 1), "northing": round(york_n, 1)},
                 "projection_metadata": projection,
             },
             "raster": {

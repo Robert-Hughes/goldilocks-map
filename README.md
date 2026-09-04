@@ -1,6 +1,6 @@
 # Goldilocks Map
 
-Goldilocks Map is an experimental single-file UK location-suitability explorer. This proof of concept currently renders one derived Met Office HadUK-Grid climate metric over a 640 km x 640 km area around York.
+Goldilocks Map is an experimental single-file UK location-suitability explorer. This proof of concept currently renders one derived Met Office HadUK-Grid climate metric across the full source grid.
 
 ## Current metric
 
@@ -10,7 +10,7 @@ Goldilocks Map is an experimental single-file UK location-suitability explorer. 
 - **Input:** `tasmax_hadukgrid_uk_1km_day_20260701-20260731.nc`
 - **Output:** `dist/goldilocks.html`
 
-York is only the current extraction centre and initial viewport. The stored metric is an absolute climate quantity, not a York-relative score.
+The stored metric is an absolute climate quantity over the full HadUK-Grid source domain.
 
 HadUK-Grid is a gridded/interpolated climate-observation dataset. A 1 km grid-cell value should not be interpreted as a thermometer measurement physically made at that exact location.
 
@@ -34,15 +34,13 @@ On platforms where binary Python wheels are available, a normal virtualenv and `
 
 1. download/cache the July 2026 HadUK-Grid NetCDF file under `data/` if needed;
 2. verify that it contains `tasmax`, expected spatial coordinates, 31 daily observations, and recognised temperature units;
-3. transform the York centre from WGS84 to British National Grid (EPSG:27700);
-4. select the nearest 640 x 640 HadUK 1 km cells;
-5. derive `count(tasmax > 25°C)` by reading one daily spatial raster at a time rather than materialising the whole 31-day cube;
-6. encode the result as a regular row-major raster with one-byte-compatible values (`0..31`, with `255` reserved for no-data);
-7. repeatedly average nodata-aware 2 x 2 regions, rounding each mean to the nearest integer, to build a full LOD pyramid down to 1 x 1;
-8. install the minimal npm frontend dependencies if needed (`esbuild`, TypeScript and `proj4`);
-9. bundle/minify `src/app.ts` with esbuild;
-10. inject the derived raster pyramid JSON and bundled JavaScript into the HTML template;
-11. write the single-file application to `dist/goldilocks.html`.
+3. derive `count(tasmax > 25°C)` over the complete spatial grid by reading one full daily raster at a time rather than materialising the whole 31-day cube;
+4. encode the result as a regular row-major raster with one-byte-compatible values (`0..31`, with `255` reserved for no-data);
+5. repeatedly average nodata-aware 2 x 2 regions, rounding each mean to the nearest integer, to build a full LOD pyramid down to 1 x 1;
+6. install the minimal npm frontend dependencies if needed (`esbuild`, TypeScript and `proj4`);
+7. bundle/minify `src/app.ts` with esbuild;
+8. inject the derived raster pyramid JSON and bundled JavaScript into the HTML template;
+9. write the single-file application to `dist/goldilocks.html`.
 
 Use `python build.py --refresh-data` to force a fresh NetCDF download.
 

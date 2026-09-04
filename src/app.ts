@@ -36,7 +36,6 @@ type GoldilocksData = {
     row_order: "south_to_north";
     column_order: "west_to_east";
     bounds_wgs84: [number, number][];
-    selection_center_wgs84: { lat: number; lon: number };
   };
   raster: {
     encoding: string;
@@ -108,10 +107,7 @@ data.raster.valid_days = [];
 
 proj4.defs(data.grid.crs, data.grid.proj4);
 
-const map = L.map("map", {
-  center: [data.grid.selection_center_wgs84.lat, data.grid.selection_center_wgs84.lon],
-  zoom: 12,
-});
+const map = L.map("map");
 
 const useFileBasemap = window.location.protocol === "file:";
 if (useFileBasemap) {
