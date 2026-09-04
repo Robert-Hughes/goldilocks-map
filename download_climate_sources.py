@@ -144,15 +144,7 @@ def discover_ceda_files(variables: Iterable[str]) -> list[SourceFile]:
         for year, month, item in selected:
             archive_path = item["path"]
             url = item.get("download") or f"{CEDA_DAP_ROOT}{archive_path}?download=1"
-            destination = (
-                SOURCE_ROOT
-                / "v1.3.2.ceda"
-                / "1km"
-                / variable
-                / "day"
-                / version
-                / item["name"]
-            )
+            destination = SOURCE_ROOT / "historical" / variable / item["name"]
             files.append(
                 SourceFile(
                     source="ceda-v1.3.2.ceda",
@@ -201,7 +193,7 @@ def discover_provisional_files(variables: Iterable[str]) -> list[SourceFile]:
                     continue
                 raise
             found_any = True
-            destination = SOURCE_ROOT / "provisional" / str(PROVISIONAL_YEAR) / "1km" / variable / "day" / filename
+            destination = SOURCE_ROOT / f"provisional-{PROVISIONAL_YEAR}" / variable / filename
             files.append(
                 SourceFile(
                     source="met-office-provisional",

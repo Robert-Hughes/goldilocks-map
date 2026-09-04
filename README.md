@@ -69,7 +69,9 @@ python download_climate_sources.py --source ceda --check-auth
 python download_climate_sources.py --workers 3
 ```
 
-Downloads go under `data/source/hadukgrid/` and are git-ignored. Completed CEDA files are checked against the MD5 hashes published in CEDA's JSON listing. Interrupted files retain a `.part` suffix and are resumed with HTTP Range requests on the next run. The downloader retries transient errors, validates expected byte sizes, writes a local discovery manifest, and fails quickly on an expired/rejected CEDA token. Use `--verify` when rechecking existing cached CEDA files should include a full MD5 pass.
+Downloads go under `data/source/hadukgrid/` and are git-ignored. The local cache deliberately uses a shallow layout: `historical/tasmax/`, `historical/tasmin/`, `provisional-2026/tasmax/`, and `provisional-2026/tasmin/`. The NetCDF filenames already contain their variable, resolution, frequency and date range, so the deeper CEDA/Met Office archive hierarchy is not reproduced locally.
+
+Completed CEDA files are checked against the MD5 hashes published in CEDA's JSON listing. Interrupted files retain a `.part` suffix and are resumed with HTTP Range requests on the next run. The downloader retries transient errors, validates expected byte sizes, writes a local discovery manifest, and fails quickly on an expired/rejected CEDA token. Use `--verify` when rechecking existing cached CEDA files should include a full MD5 pass.
 
 The stable historical source is kept separate from provisional 2026 data because the latter can be revised before the next annual CEDA release. The derived-metric build can therefore record which observations came from the citable annual release and which were provisional.
 
