@@ -176,12 +176,14 @@ function decodeBase64(value: string): Uint8Array {
 function littleEndianUint16(bytes: Uint8Array): Uint16Array {
   if (bytes.byteLength % 2 !== 0) throw new Error("Metric blob has an odd byte length");
   const valueCount = bytes.byteLength / 2;
-  const result = new Uint16Array(valueCount);
   const nativeLittleEndian = new Uint8Array(new Uint16Array([1]).buffer)[0] === 1;
   if (nativeLittleEndian && bytes.byteOffset % 2 === 0) {
-    result.set(new Uint16Array(bytes.buffer, bytes.byteOffset, valueCount));
-    return result;
+    // fflate returns a Uint8Array containing the decompressed bytes. On normal
+    // little-endian browser platforms the encoded uint16 representation is
+    // already native, so make a view over that buffer rather than copying it.
+    return new Uint16Array(bytes.buffer, bytes.byteOffset, valueCount);
   }
+  const result = new Uint16Array(valueCount);
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   for (let index = 0; index < valueCount; index += 1) result[index] = view.getUint16(index * 2, true);
   return result;
