@@ -396,10 +396,33 @@ function appendCellPath(
   path.closePath();
 }
 
+const PANEL_COLLAPSED_STORAGE_KEY = "goldilocks.infoPanelCollapsed";
+const GRIDLINES_STORAGE_KEY = "goldilocks.showGridLines";
+
+function readStoredBoolean(key: string, fallback: boolean): boolean {
+  try {
+    const stored = window.localStorage.getItem(key);
+    if (stored === "true") return true;
+    if (stored === "false") return false;
+  } catch {
+    // localStorage can be unavailable in privacy-restricted contexts.
+  }
+  return fallback;
+}
+
+function writeStoredBoolean(key: string, value: boolean) {
+  try {
+    window.localStorage.setItem(key, String(value));
+  } catch {
+    // The control still works when storage is unavailable; only persistence is lost.
+  }
+}
+
 const RasterGridLayer = L.GridLayer.extend({
   initialize(this: any, options: any) {
     L.GridLayer.prototype.initialize.call(this, options);
     this._selectedIndex = null;
+    this._showGridLines = options.showGridLines !== false;
   },
 
   createTile(this: any, coords: any) {
@@ -430,6 +453,12 @@ const RasterGridLayer = L.GridLayer.extend({
 
   setSelectedIndex(this: any, index: number | null) {
     this._selectedIndex = index;
+    if (this._map) this.redraw();
+  },
+
+  setShowGridLines(this: any, show: boolean) {
+    if (this._showGridLines === show) return;
+    this._showGridLines = show;
     if (this._map) this.redraw();
   },
 
@@ -465,7 +494,7 @@ const RasterGridLayer = L.GridLayer.extend({
     // This deliberately does not assume a fixed value domain: a future metric may
     // have many more distinct encoded values than the current July day count.
     const fillPaths = new Map<number, Path2D>();
-    const gridPath = new Path2D();
+    const gridPath = this._showGridLines ? new Path2D() : null;
 
     for (let row = range.rowMin; row <= range.rowMax; row += 1) {
       for (let column = range.colMin; column <= range.colMax; column += 1) {
@@ -484,7 +513,7 @@ const RasterGridLayer = L.GridLayer.extend({
           fillPaths.set(value, fillPath);
         }
         appendCellPath(fillPath, southWest, southEast, northEast, northWest);
-        appendCellPath(gridPath, southWest, southEast, northEast, northWest);
+        if (gridPath) appendCellPath(gridPath, southWest, southEast, northEast, northWest);
       }
     }
 
@@ -496,9 +525,11 @@ const RasterGridLayer = L.GridLayer.extend({
       context.fill(path);
     }
     context.globalAlpha = 1;
-    context.strokeStyle = "rgba(38,50,56,0.72)";
-    context.lineWidth = 0.7;
-    context.stroke(gridPath);
+    if (gridPath) {
+      context.strokeStyle = "rgba(38,50,56,0.72)";
+      context.lineWidth = 0.7;
+      context.stroke(gridPath);
+    }
   },
 
   _drawSelectionTile(this: any, context: CanvasRenderingContext2D, coords: any, tileSize: any) {
@@ -531,6 +562,8 @@ const RasterGridLayer = L.GridLayer.extend({
   },
 });
 
+const initialGridLinesVisible = readStoredBoolean(GRIDLINES_STORAGE_KEY, true);
+
 const rasterLayer = new RasterGridLayer({
   tileSize: 256,
   pane: "overlayPane",
@@ -541,6 +574,7 @@ const rasterLayer = new RasterGridLayer({
   updateInterval: 100,
   keepBuffer: 2,
   className: "goldilocks-raster-grid",
+  showGridLines: initialGridLinesVisible,
 });
 rasterLayer.addTo(map);
 map.fitBounds(L.latLngBounds(data.grid.bounds_wgs84), { padding: [18, 18] });
@@ -555,9 +589,7 @@ map.on("click", (event: any) => {
   L.popup().setLatLng(bngToLatLng(cell.easting, cell.northing)).setContent(popupHtml(cell)).openOn(map);
 });
 
-const legend = L.control({ position: "bottomright" });
-legend.onAdd = () => {
-  const div = L.DomUtil.create("div", "legend");
+function legendValues(): number[] {
   const min = data.summary.min;
   const max = data.summary.max;
   const values: number[] = [];
@@ -565,52 +597,79 @@ legend.onAdd = () => {
   for (let i = 0; i < steps; i += 1) {
     values.push(Math.round(min + ((max - min) * i) / Math.max(1, steps - 1)));
   }
-  const uniqueValues = [...new Set(values)];
-  div.innerHTML = `<div class="legend-title">${data.metric.label}<br><small>${data.metric.period}</small></div>` +
-    uniqueValues.map((value) => `<div class="legend-row"><span class="legend-swatch" style="background:${colorForValue(value)}"></span><span>${value} ${value === 1 ? "day" : "days"}</span></div>`).join("");
-  return div;
-};
-legend.addTo(map);
+  return [...new Set(values)];
+}
 
-const INFO_PANEL_STORAGE_KEY = "goldilocks.infoPanelCollapsed";
-const info = L.control({ position: "topright" });
-info.onAdd = () => {
-  const div = L.DomUtil.create("div", "info-control");
-  let initiallyCollapsed = window.matchMedia("(max-width: 600px)").matches;
-  try {
-    const storedState = window.localStorage.getItem(INFO_PANEL_STORAGE_KEY);
-    if (storedState === "true") initiallyCollapsed = true;
-    if (storedState === "false") initiallyCollapsed = false;
-  } catch {
-    // localStorage can be unavailable in privacy-restricted contexts; keep the responsive default.
-  }
+function formatLegendValue(value: number): string {
+  if (data.metric.units === "days") return `${value} ${value === 1 ? "day" : "days"}`;
+  return `${value} ${data.metric.units}`.trim();
+}
+
+const mapPanel = L.control({ position: "topleft" });
+mapPanel.onAdd = () => {
+  const div = L.DomUtil.create("section", "map-panel");
+  const initiallyCollapsed = readStoredBoolean(
+    PANEL_COLLAPSED_STORAGE_KEY,
+    window.matchMedia("(max-width: 600px)").matches,
+  );
   if (initiallyCollapsed) div.classList.add("collapsed");
+
+  const legendRows = legendValues().map((value) => `
+    <div class="legend-row">
+      <span class="legend-swatch" style="background:${colorForValue(value)}"></span>
+      <span>${formatLegendValue(value)}</span>
+    </div>`).join("");
+
   div.innerHTML = `
-    <div class="info-header">
-      <strong>${data.metric.label}</strong>
-      <button class="info-toggle" type="button" aria-label="${initiallyCollapsed ? "Expand" : "Collapse"} information panel" aria-expanded="${!initiallyCollapsed}">${initiallyCollapsed ? "+" : "−"}</button>
+    <div class="map-panel-header">
+      <div class="map-panel-heading">
+        <h1 class="map-panel-title">Goldilocks Map</h1>
+        <div class="map-panel-subtitle">${data.metric.label} · ${data.metric.period}</div>
+      </div>
+      <button class="map-panel-toggle" type="button" aria-label="${initiallyCollapsed ? "Expand" : "Collapse"} map panel" aria-expanded="${!initiallyCollapsed}">${initiallyCollapsed ? "+" : "−"}</button>
     </div>
-    <div class="info-body">
-      ${data.metric.definition}
-      <strong>Data provenance</strong>
-      ${data.source.provider}, ${data.source.status}, ${data.source.resolution}. Variable: <code>${data.source.variable}</code>.<br>
-      Source: <a href="${data.source.url}" target="_blank" rel="noopener">${data.source.file}</a>.<br>
-      ${data.source.note}
+    <div class="map-panel-body">
+      <div class="panel-section">
+        <strong class="panel-section-title">Layer</strong>
+        <label class="panel-option">
+          <input class="gridlines-toggle" type="checkbox" ${initialGridLinesVisible ? "checked" : ""}>
+          <span>Show gridlines</span>
+        </label>
+      </div>
+      <div class="panel-section">
+        <strong class="panel-section-title">Legend</strong>
+        ${legendRows}
+      </div>
+      <div class="panel-section">
+        <strong class="panel-section-title">About</strong>
+        ${data.metric.definition}
+      </div>
+      <div class="panel-section">
+        <strong class="panel-section-title">Data provenance</strong>
+        ${data.source.provider}, ${data.source.status}, ${data.source.resolution}. Variable: <code>${data.source.variable}</code>.<br>
+        Source: <a href="${data.source.url}" target="_blank" rel="noopener">${data.source.file}</a>.<br>
+        ${data.source.note}
+      </div>
     </div>`;
-  const button = div.querySelector(".info-toggle") as HTMLButtonElement;
-  button.addEventListener("click", () => {
+
+  const panelButton = div.querySelector(".map-panel-toggle") as HTMLButtonElement;
+  panelButton.addEventListener("click", () => {
     const collapsed = div.classList.toggle("collapsed");
-    button.textContent = collapsed ? "+" : "−";
-    button.setAttribute("aria-expanded", String(!collapsed));
-    button.setAttribute("aria-label", `${collapsed ? "Expand" : "Collapse"} information panel`);
-    try {
-      window.localStorage.setItem(INFO_PANEL_STORAGE_KEY, String(collapsed));
-    } catch {
-      // The control still works when storage is unavailable; only persistence is lost.
-    }
+    panelButton.textContent = collapsed ? "+" : "−";
+    panelButton.setAttribute("aria-expanded", String(!collapsed));
+    panelButton.setAttribute("aria-label", `${collapsed ? "Expand" : "Collapse"} map panel`);
+    writeStoredBoolean(PANEL_COLLAPSED_STORAGE_KEY, collapsed);
   });
+
+  const gridlinesCheckbox = div.querySelector(".gridlines-toggle") as HTMLInputElement;
+  gridlinesCheckbox.addEventListener("change", () => {
+    const show = gridlinesCheckbox.checked;
+    rasterLayer.setShowGridLines(show);
+    writeStoredBoolean(GRIDLINES_STORAGE_KEY, show);
+  });
+
   L.DomEvent.disableClickPropagation(div);
   L.DomEvent.disableScrollPropagation(div);
   return div;
 };
-info.addTo(map);
+mapPanel.addTo(map);
