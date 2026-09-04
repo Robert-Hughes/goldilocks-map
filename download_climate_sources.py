@@ -72,6 +72,29 @@ def log(message: str) -> None:
         print(message, flush=True)
 
 
+def ceda_access_token() -> str | None:
+    """Return CEDA token from the environment, falling back to repo-local .env."""
+    token = os.environ.get("CEDA_ACCESS_TOKEN")
+    if token:
+        return token.strip()
+
+    env_path = ROOT / ".env"
+    if not env_path.is_file():
+        return None
+    for raw_line in env_path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        if key.strip() != "CEDA_ACCESS_TOKEN":
+            continue
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in {'"', "'"}:
+            value = value[1:-1]
+        return value.strip() or None
+    return None
+
+
 def request_json(url: str) -> dict:
     request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     with urllib.request.urlopen(request, timeout=90) as response:
@@ -423,7 +446,7 @@ def main() -> int:
     log(f"Pending: {pending_count} files, {human_bytes(pending_bytes)}")
     log(f"Manifest: {MANIFEST_PATH}")
 
-    token = os.environ.get("CEDA_ACCESS_TOKEN")
+    token = ceda_access_token()
     ceda_files = [item for item in files if item.source.startswith("ceda-")]
     if args.check_auth:
         if not ceda_files:
@@ -434,7 +457,8 @@ def main() -> int:
         return 0
     if ceda_files and any(not is_complete(item, verify=args.verify) for item in ceda_files) and not token:
         raise AuthenticationError(
-            "CEDA_ACCESS_TOKEN is not set. Run with --dry-run without a token, or export a token before downloading."
+            "CEDA_ACCESS_TOKEN is not set. Put it in .env as CEDA_ACCESS_TOKEN=..., "
+            "export it in the environment, or use --dry-run without a token."
         )
 
     pending = [item for item in files if not is_complete(item, verify=args.verify)]

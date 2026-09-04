@@ -48,12 +48,13 @@ Use `python build.py --refresh-data` to force a fresh NetCDF download.
 
 `download_climate_sources.py` prepares the raw daily temperature archive needed for the planned 2016–2026 multi-metric build. It discovers rather than hardcodes CEDA's current daily release subdirectory, downloads both `tasmax` and `tasmin` for every month of 2016–2025 from HadUK-Grid v1.3.2.ceda, and also discovers the currently published 2026 provisional monthly files from the Met Office site.
 
-CEDA downloads require a registered-user archive access token. The token is read only from the `CEDA_ACCESS_TOKEN` environment variable and must not be committed or put in a project file. A shell-safe way to set it without echoing it is:
+CEDA downloads require a registered-user archive access token. Put it in the git-ignored repo-local `.env` file as:
 
-```sh
-read -s CEDA_ACCESS_TOKEN
-export CEDA_ACCESS_TOKEN
+```text
+CEDA_ACCESS_TOKEN=your-token-here
 ```
+
+The downloader reads `.env` automatically when `CEDA_ACCESS_TOKEN` is not already present in the process environment. An explicitly exported environment variable takes precedence over `.env`. Never commit the real token.
 
 Useful commands:
 
