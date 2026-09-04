@@ -216,16 +216,47 @@ function chooseLodLevel(mapInstance: any): RasterLevel {
   return lodLevels[levelIndex];
 }
 
+const gridWgs84Envelope = (() => {
+  const latitudes = data.grid.bounds_wgs84.map(([lat]) => lat);
+  const longitudes = data.grid.bounds_wgs84.map(([, lon]) => lon);
+  return {
+    south: Math.min(...latitudes),
+    north: Math.max(...latitudes),
+    west: Math.min(...longitudes),
+    east: Math.max(...longitudes),
+  };
+})();
+
 function visibleRasterRange(
   mapInstance: any,
   level: RasterLevel,
 ): { rowMin: number; rowMax: number; colMin: number; colMax: number } | null {
   const bounds = mapInstance.getBounds();
+
+  // Never project remote viewport corners into BNG. At low zoom they can be
+  // thousands of kilometres from Britain, where their projected extrema are a
+  // poor description of the small UK area we actually care about. Intersect in
+  // WGS84 first, then project only that clipped rectangle around the raster.
+  const south = Math.max(bounds.getSouth(), gridWgs84Envelope.south);
+  const north = Math.min(bounds.getNorth(), gridWgs84Envelope.north);
+  const west = Math.max(bounds.getWest(), gridWgs84Envelope.west);
+  const east = Math.min(bounds.getEast(), gridWgs84Envelope.east);
+  if (south > north || west > east) return null;
+
+  // Include edge midpoints as well as corners. This is cheap (eight transforms
+  // per redraw) and avoids assuming BNG extrema always occur at the corners of
+  // a geographic rectangle as the covered area grows toward full-UK scale.
+  const midLat = (south + north) / 2;
+  const midLon = (west + east) / 2;
   const projected = [
-    bounds.getNorthWest(),
-    bounds.getNorthEast(),
-    bounds.getSouthWest(),
-    bounds.getSouthEast(),
+    L.latLng(south, west),
+    L.latLng(south, midLon),
+    L.latLng(south, east),
+    L.latLng(midLat, west),
+    L.latLng(midLat, east),
+    L.latLng(north, west),
+    L.latLng(north, midLon),
+    L.latLng(north, east),
   ].map(latLngToBng);
   const eastings = projected.map(([easting]) => easting);
   const northings = projected.map(([, northing]) => northing);
