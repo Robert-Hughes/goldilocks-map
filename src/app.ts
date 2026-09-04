@@ -2,6 +2,16 @@ import proj4 from "proj4";
 
 declare const L: any;
 
+type RasterLevelTransport = {
+  level: number;
+  width: number;
+  height: number;
+  cell_size_m: number;
+  values: number[];
+};
+
+type RasterLevel = Omit<RasterLevelTransport, "values"> & { values: Uint8Array };
+
 type GoldilocksData = {
   metric: {
     id: string;
@@ -31,7 +41,7 @@ type GoldilocksData = {
   raster: {
     encoding: string;
     nodata: number;
-    values: number[];
+    levels: RasterLevelTransport[];
     valid_days: number[];
   };
   source: {
@@ -63,17 +73,37 @@ if (!dataElement?.textContent) {
   throw new Error("Embedded Goldilocks data was not found");
 }
 const data = JSON.parse(dataElement.textContent) as GoldilocksData;
-if (data.raster.values.length !== data.grid.width * data.grid.height) {
-  throw new Error("Raster value count does not match grid dimensions");
+if (!data.raster.levels.length) {
+  throw new Error("Raster LOD pyramid is empty");
 }
-if (data.raster.valid_days.length !== data.raster.values.length) {
-  throw new Error("Raster valid-day count does not match metric value count");
+const lodLevels: RasterLevel[] = data.raster.levels.map((level, index) => {
+  if (level.level !== index) throw new Error(`Unexpected raster LOD index ${level.level}; expected ${index}`);
+  if (level.values.length !== level.width * level.height) {
+    throw new Error(`Raster LOD ${index} value count does not match its dimensions`);
+  }
+  if (index === 0) {
+    if (level.width !== data.grid.width || level.height !== data.grid.height || level.cell_size_m !== data.grid.cell_size_m) {
+      throw new Error("Raster LOD0 does not match base grid metadata");
+    }
+  } else {
+    const previous = data.raster.levels[index - 1];
+    if (level.width !== Math.ceil(previous.width / 2) || level.height !== Math.ceil(previous.height / 2)) {
+      throw new Error(`Raster LOD ${index} dimensions are not half of the previous level`);
+    }
+    if (level.cell_size_m !== previous.cell_size_m * 2) {
+      throw new Error(`Raster LOD ${index} cell size is not double the previous level`);
+    }
+  }
+  return { ...level, values: Uint8Array.from(level.values) };
+});
+const baseRasterValues = lodLevels[0].values;
+if (data.raster.valid_days.length !== data.grid.width * data.grid.height) {
+  throw new Error("Raster valid-day count does not match base grid dimensions");
 }
-const rasterValues = Uint8Array.from(data.raster.values);
 const rasterValidDays = Uint8Array.from(data.raster.valid_days);
-// The JSON arrays are only the transport representation; keep compact typed
-// arrays as the runtime form so the same code scales to much larger rasters.
-data.raster.values = [];
+// JSON arrays are only the transport representation; keep compact typed arrays
+// at runtime so this scales to much larger rasters.
+for (const level of data.raster.levels) level.values = [];
 data.raster.valid_days = [];
 
 proj4.defs(data.grid.crs, data.grid.proj4);
@@ -113,8 +143,8 @@ function bngToLatLng(easting: number, northing: number): any {
   return L.latLng(lat, lon);
 }
 
-function rasterIndex(row: number, column: number): number {
-  return row * data.grid.width + column;
+function rasterIndex(row: number, column: number, width: number): number {
+  return row * width + column;
 }
 
 function cellAtLatLng(latlng: any): RasterCell | null {
@@ -124,8 +154,8 @@ function cellAtLatLng(latlng: any): RasterCell | null {
   if (column < 0 || column >= data.grid.width || row < 0 || row >= data.grid.height) {
     return null;
   }
-  const index = rasterIndex(row, column);
-  const value = rasterValues[index];
+  const index = rasterIndex(row, column, data.grid.width);
+  const value = baseRasterValues[index];
   if (value === data.raster.nodata) {
     return null;
   }
@@ -159,7 +189,30 @@ function popupHtml(cell: RasterCell): string {
     </dl>`;
 }
 
-function visibleRasterRange(mapInstance: any): { rowMin: number; rowMax: number; colMin: number; colMax: number } | null {
+const LOD_MIN_CELL_PIXELS = 4;
+
+function chooseLodLevel(mapInstance: any): RasterLevel {
+  const center = mapInstance.getCenter();
+  const [centerEasting, centerNorthing] = latLngToBng(center);
+  const baseCellEast = bngToLatLng(centerEasting + data.grid.cell_size_m, centerNorthing);
+  const basePixels = mapInstance.latLngToContainerPoint(center).distanceTo(
+    mapInstance.latLngToContainerPoint(baseCellEast),
+  );
+
+  let levelIndex = 0;
+  while (
+    levelIndex + 1 < lodLevels.length &&
+    basePixels * Math.pow(2, levelIndex) < LOD_MIN_CELL_PIXELS
+  ) {
+    levelIndex += 1;
+  }
+  return lodLevels[levelIndex];
+}
+
+function visibleRasterRange(
+  mapInstance: any,
+  level: RasterLevel,
+): { rowMin: number; rowMax: number; colMin: number; colMax: number } | null {
   const bounds = mapInstance.getBounds();
   const projected = [
     bounds.getNorthWest(),
@@ -174,22 +227,22 @@ function visibleRasterRange(mapInstance: any): { rowMin: number; rowMax: number;
   const minNorthing = Math.min(...northings);
   const maxNorthing = Math.max(...northings);
 
-  const rawColMin = Math.floor((minEasting - data.grid.west) / data.grid.cell_size_m);
-  const rawColMax = Math.floor((maxEasting - data.grid.west) / data.grid.cell_size_m);
-  const rawRowMin = Math.floor((minNorthing - data.grid.south) / data.grid.cell_size_m);
-  const rawRowMax = Math.floor((maxNorthing - data.grid.south) / data.grid.cell_size_m);
+  const rawColMin = Math.floor((minEasting - data.grid.west) / level.cell_size_m);
+  const rawColMax = Math.floor((maxEasting - data.grid.west) / level.cell_size_m);
+  const rawRowMin = Math.floor((minNorthing - data.grid.south) / level.cell_size_m);
+  const rawRowMax = Math.floor((maxNorthing - data.grid.south) / level.cell_size_m);
 
-  if (rawColMax < 0 || rawRowMax < 0 || rawColMin >= data.grid.width || rawRowMin >= data.grid.height) {
+  if (rawColMax < 0 || rawRowMax < 0 || rawColMin >= level.width || rawRowMin >= level.height) {
     return null;
   }
 
   // One extra cell prevents projection/rounding artefacts at viewport edges,
-  // while keeping redraw work proportional to the visible raster area.
+  // while keeping redraw work proportional to the visible part of the chosen LOD.
   const marginCells = 1;
   const colMin = Math.max(0, rawColMin - marginCells);
   const rowMin = Math.max(0, rawRowMin - marginCells);
-  const colMax = Math.min(data.grid.width - 1, rawColMax + marginCells);
-  const rowMax = Math.min(data.grid.height - 1, rawRowMax + marginCells);
+  const colMax = Math.min(level.width - 1, rawColMax + marginCells);
+  const rowMax = Math.min(level.height - 1, rawRowMax + marginCells);
   return { rowMin, rowMax, colMin, colMax };
 }
 
@@ -198,6 +251,7 @@ const RasterCanvasLayer = L.Layer.extend({
     this._selectedIndex = null;
     this._renderCenter = null;
     this._renderZoom = null;
+    this._activeLevel = lodLevels[0];
   },
 
   onAdd(this: any, mapInstance: any) {
@@ -241,10 +295,9 @@ const RasterCanvasLayer = L.Layer.extend({
     const canvas = this._canvas as HTMLCanvasElement | null;
     if (!mapInstance || !canvas || this._renderCenter === null || this._renderZoom === null) return;
 
-    // Match Leaflet's own Renderer zoom transform. Pinch zoom fires `zoom`
-    // continuously, while animated discrete zooms fire `zoomanim`; transforming
-    // the existing bitmap keeps it locked to the basemap without rerasterising
-    // every gesture frame. `_reset` redraws it crisply when the zoom finishes.
+    // Keep the currently rendered LOD fixed for the whole zoom gesture. Leaflet
+    // continuously transforms this bitmap; only `_reset` after the gesture chooses
+    // a new LOD and rerasterises it at the final zoom.
     const scale = mapInstance.getZoomScale(zoom, this._renderZoom);
     const viewHalf = mapInstance.getSize().multiplyBy(0.5);
     const currentCenterPoint = mapInstance.project(this._renderCenter, zoom);
@@ -260,6 +313,10 @@ const RasterCanvasLayer = L.Layer.extend({
     const canvas = this._canvas as HTMLCanvasElement;
     if (!mapInstance || !canvas) return;
 
+    this._activeLevel = chooseLodLevel(mapInstance);
+    canvas.dataset.lod = String(this._activeLevel.level);
+    canvas.dataset.lodCellSizeM = String(this._activeLevel.cell_size_m);
+
     const size = mapInstance.getSize();
     const topLeft = mapInstance.containerPointToLayerPoint([0, 0]);
     L.DomUtil.setPosition(canvas, topLeft);
@@ -274,24 +331,26 @@ const RasterCanvasLayer = L.Layer.extend({
     if (!context) return;
     context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
     context.clearRect(0, 0, size.x, size.y);
-    this._draw(context);
+    this._draw(context, this._activeLevel);
+    this._drawSelection(context);
     this._renderCenter = mapInstance.getCenter();
     this._renderZoom = mapInstance.getZoom();
   },
 
-  _draw(this: any, context: CanvasRenderingContext2D) {
-    const range = visibleRasterRange(this._map);
+  _draw(this: any, context: CanvasRenderingContext2D, level: RasterLevel) {
+    const range = visibleRasterRange(this._map, level);
     if (!range) return;
-    const cellSize = data.grid.cell_size_m;
+    const cellSize = level.cell_size_m;
     const cornerRows: any[][] = [];
 
     // Adjacent cells share corners. Project every visible grid intersection once
-    // per redraw rather than doing four proj4 transforms for every cell.
+    // per redraw rather than doing four proj4 transforms for every cell. The final
+    // coarse cell on an odd-sized level is clipped to the original raster extent.
     for (let rowEdge = range.rowMin; rowEdge <= range.rowMax + 1; rowEdge += 1) {
-      const northing = data.grid.south + rowEdge * cellSize;
+      const northing = Math.min(data.grid.north, data.grid.south + rowEdge * cellSize);
       const cornerRow: any[] = [];
       for (let columnEdge = range.colMin; columnEdge <= range.colMax + 1; columnEdge += 1) {
-        const easting = data.grid.west + columnEdge * cellSize;
+        const easting = Math.min(data.grid.east, data.grid.west + columnEdge * cellSize);
         cornerRow.push(this._map.latLngToContainerPoint(bngToLatLng(easting, northing)));
       }
       cornerRows.push(cornerRow);
@@ -300,8 +359,8 @@ const RasterCanvasLayer = L.Layer.extend({
     for (let row = range.rowMin; row <= range.rowMax; row += 1) {
       const localRow = row - range.rowMin;
       for (let column = range.colMin; column <= range.colMax; column += 1) {
-        const index = rasterIndex(row, column);
-        const value = rasterValues[index];
+        const index = rasterIndex(row, column, level.width);
+        const value = level.values[index];
         if (value === data.raster.nodata) continue;
 
         const localColumn = column - range.colMin;
@@ -322,11 +381,40 @@ const RasterCanvasLayer = L.Layer.extend({
         context.fillStyle = colorForValue(value);
         context.fill();
         context.globalAlpha = 1;
-        context.strokeStyle = index === this._selectedIndex ? "#111" : "rgba(38,50,56,0.72)";
-        context.lineWidth = index === this._selectedIndex ? 2.2 : 0.7;
+        context.strokeStyle = "rgba(38,50,56,0.72)";
+        context.lineWidth = 0.7;
         context.stroke();
       }
     }
+  },
+
+  _drawSelection(this: any, context: CanvasRenderingContext2D) {
+    if (this._selectedIndex === null) return;
+    const row = Math.floor(this._selectedIndex / data.grid.width);
+    const column = this._selectedIndex % data.grid.width;
+    if (row < 0 || row >= data.grid.height || column < 0 || column >= data.grid.width) return;
+
+    const west = data.grid.west + column * data.grid.cell_size_m;
+    const east = Math.min(data.grid.east, west + data.grid.cell_size_m);
+    const south = data.grid.south + row * data.grid.cell_size_m;
+    const north = Math.min(data.grid.north, south + data.grid.cell_size_m);
+    const points = [
+      bngToLatLng(west, south),
+      bngToLatLng(east, south),
+      bngToLatLng(east, north),
+      bngToLatLng(west, north),
+    ].map((latlng) => this._map.latLngToContainerPoint(latlng));
+
+    context.beginPath();
+    context.moveTo(points[0].x, points[0].y);
+    for (let pointIndex = 1; pointIndex < points.length; pointIndex += 1) {
+      context.lineTo(points[pointIndex].x, points[pointIndex].y);
+    }
+    context.closePath();
+    context.globalAlpha = 1;
+    context.strokeStyle = "#111";
+    context.lineWidth = 2.2;
+    context.stroke();
   },
 });
 

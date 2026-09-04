@@ -38,24 +38,23 @@ On platforms where binary Python wheels are available, a normal virtualenv and `
 4. select the nearest 40 x 40 HadUK 1 km cells;
 5. derive `count(tasmax > 25°C)` by reading one daily spatial raster at a time rather than materialising the whole 31-day cube;
 6. encode the result as a regular row-major raster with one-byte-compatible values (`0..31`, with `255` reserved for no-data);
-7. install the minimal npm frontend dependencies if needed (`esbuild`, TypeScript and `proj4`);
-8. bundle/minify `src/app.ts` with esbuild;
-9. inject the derived raster JSON and bundled JavaScript into the HTML template;
-10. write the single-file application to `dist/goldilocks.html`.
+7. repeatedly average nodata-aware 2 x 2 regions, rounding each mean to the nearest integer, to build a full LOD pyramid down to 1 x 1;
+8. install the minimal npm frontend dependencies if needed (`esbuild`, TypeScript and `proj4`);
+9. bundle/minify `src/app.ts` with esbuild;
+10. inject the derived raster pyramid JSON and bundled JavaScript into the HTML template;
+11. write the single-file application to `dist/goldilocks.html`.
 
 Use `python build.py --refresh-data` to force a fresh NetCDF download.
 
 ## Browser architecture
 
-The climate layer is a custom Leaflet canvas layer rather than one Leaflet polygon per HadUK cell. The embedded grid contains its BNG extent, 1 km cell size, dimensions and flat metric arrays. In the browser those JSON arrays are immediately converted to `Uint8Array`s.
+The climate layer is a custom Leaflet canvas layer rather than one Leaflet polygon per HadUK cell. The embedded data contains a pyramid of row-major raster levels sharing the same BNG extent. LOD0 is the original 1 km grid; each subsequent level doubles the nominal cell size and stores rounded nodata-aware averages of the preceding 2 x 2 regions. In the browser the JSON arrays are immediately converted to `Uint8Array`s.
 
-On each redraw, the renderer projects the current Leaflet viewport into British National Grid, clips that to raster row/column bounds, adds a one-cell safety margin, and iterates only over that visible raster range. It does not scan the whole dataset when only a small part of the grid is on screen. Clicking the map performs the inverse operation: WGS84 click coordinate -> BNG -> raster row/column -> metric value.
+After a pan/zoom settles, the renderer chooses the finest LOD whose nominal cells are at least about four screen pixels across at the viewport centre. It then projects the current Leaflet viewport into British National Grid, clips that to row/column bounds for that level, adds a one-cell safety margin, and iterates only over the visible part of the selected LOD. It does not scan the whole dataset when only a small part is on screen. Odd-sized outer cells are clipped to the original raster extent.
 
-During pinch or animated zooms, the already-rendered canvas is continuously translated/scaled using the same Leaflet zoom transform as the basemap, so it stays visually registered without rerunning the raster loop every gesture frame. At zoom end the canvas is redrawn at the final resolution and visible-cell range.
+During pinch or animated zooms, the selected LOD is deliberately kept fixed. The already-rendered canvas is continuously translated/scaled using the same Leaflet zoom transform as the basemap, so it stays visually registered without rerunning the raster loop every gesture frame. When the zoom finishes, the renderer chooses the appropriate LOD for the final zoom and redraws once at the final resolution and visible-cell range.
 
-The information panel remembers its collapsed/expanded state in `localStorage`; the responsive mobile/desktop default is only used until the user makes a choice.
-
-This is deliberately the same basic data model intended for later full-UK coverage. Whole-UK overview rendering will eventually need additional level-of-detail/downsampling so that a view containing most of Britain does not attempt to draw every 1 km cell at once.
+Clicking always resolves against LOD0, so popups retain the exact 1 km metric rather than a coarse averaged value. The information panel remembers its collapsed/expanded state in `localStorage`; the responsive mobile/desktop default is only used until the user makes a choice.
 
 ## Basemap selection
 

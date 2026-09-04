@@ -106,6 +106,52 @@ def open_dataset(path: Path) -> xr.Dataset:
             ) from second_error
 
 
+def build_lod_levels(values: np.ndarray, cell_size_m: int, nodata: int) -> list[dict]:
+    """Build a nodata-aware 2x2 average pyramid from an encoded uint8 raster."""
+    current = np.asarray(values, dtype=np.uint8)
+    if current.ndim != 2:
+        raise RuntimeError(f"LOD source must be two-dimensional, got shape {current.shape}")
+
+    levels: list[dict] = []
+    level_number = 0
+    current_cell_size = int(cell_size_m)
+
+    while True:
+        height, width = current.shape
+        levels.append({
+            "level": level_number,
+            "width": int(width),
+            "height": int(height),
+            "cell_size_m": current_cell_size,
+            "values": current.ravel(order="C").astype(int).tolist(),
+        })
+        if width == 1 and height == 1:
+            break
+
+        parent_height = (height + 1) // 2
+        parent_width = (width + 1) // 2
+        parent = np.full((parent_height, parent_width), nodata, dtype=np.uint8)
+        for parent_row in range(parent_height):
+            for parent_column in range(parent_width):
+                children = current[
+                    parent_row * 2:min(parent_row * 2 + 2, height),
+                    parent_column * 2:min(parent_column * 2 + 2, width),
+                ]
+                valid_children = children[children != nodata]
+                if valid_children.size:
+                    # Each coarser level is derived from the already-rounded level
+                    # immediately below it. Half-up rounding intentionally trades a
+                    # little precision for a compact integer pyramid.
+                    mean_value = float(np.mean(valid_children, dtype=np.float64))
+                    parent[parent_row, parent_column] = np.uint8(np.floor(mean_value + 0.5))
+
+        current = parent
+        current_cell_size *= 2
+        level_number += 1
+
+    return levels
+
+
 def make_metric_data(path: Path) -> dict:
     bng_to_wgs84 = Transformer.from_crs("EPSG:27700", "EPSG:4326", always_xy=True)
     wgs84_to_bng = Transformer.from_crs("EPSG:4326", "EPSG:27700", always_xy=True)
@@ -171,6 +217,7 @@ def make_metric_data(path: Path) -> dict:
             raise RuntimeError("Selected York-area grid has no valid daily observations")
         encoded_values = metric_values.copy()
         encoded_values[~has_data] = NO_DATA_VALUE
+        lod_levels = build_lod_levels(encoded_values, int(x_step), NO_DATA_VALUE)
 
         west = float(x_vals[0] - x_step / 2)
         east = float(x_vals[-1] + x_step / 2)
@@ -196,6 +243,12 @@ def make_metric_data(path: Path) -> dict:
         print(f"Extracted raster: {height} x {width} = {width * height} positions ({valid_cell_count} valid)")
         print(f"Metric range: {metric_min} to {metric_max} days")
         print(f"Processing mode: one {height} x {width} daily raster at a time; no 31-day cube materialised")
+        lod_shapes = " -> ".join(f"{level['width']}x{level['height']}" for level in lod_levels)
+        lod_value_count = sum(level["width"] * level["height"] for level in lod_levels)
+        base_value_count = width * height
+        lod_overhead = (lod_value_count - base_value_count) / base_value_count * 100.0
+        print(f"LOD pyramid: {lod_shapes}")
+        print(f"LOD value count: {lod_value_count:,} ({lod_overhead:.1f}% over base raster)")
 
         return {
             "metric": {
@@ -228,7 +281,8 @@ def make_metric_data(path: Path) -> dict:
             "raster": {
                 "encoding": "row-major uint8-compatible integers",
                 "nodata": NO_DATA_VALUE,
-                "values": encoded_values.ravel(order="C").astype(int).tolist(),
+                "levels": lod_levels,
+                # Valid-day counts remain base-resolution metadata for exact click popups.
                 "valid_days": valid_days.ravel(order="C").astype(int).tolist(),
             },
             "source": {
