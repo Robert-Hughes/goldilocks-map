@@ -21,7 +21,7 @@ Prerequisites: Python 3.11+, Node.js/npm, and internet access for the initial da
 On GhostBSD/FreeBSD, using the packaged scientific/geospatial stack avoids lengthy local compilation:
 
 ```sh
-sudo pkg install py312-xarray py312-h5netcdf py312-pyproj
+sudo pkg install py312-numpy py312-h5py py312-pyproj
 python3 -m venv --system-site-packages .venv
 . .venv/bin/activate
 python -m pip install -e . --no-deps
@@ -33,10 +33,10 @@ On platforms where binary Python wheels are available, a normal virtualenv and `
 `python build.py` will:
 
 1. download/cache the July 2026 HadUK-Grid NetCDF file under `data/` if needed;
-2. verify that it contains `tasmax`, expected spatial coordinates, 31 daily observations, and recognised temperature units;
-3. derive `count(tasmax > 25°C)` over the complete spatial grid by reading one full daily raster at a time rather than materialising the whole 31-day cube;
+2. verify the expected `tasmax`, time and British National Grid coordinate datasets, 31 daily observations, grid spacing and temperature units;
+3. derive `count(tasmax > 25°C)` over the complete spatial grid by reading native multi-day HDF5 chunks directly into a reusable float32 buffer rather than materialising the whole 31-day cube;
 4. encode the result as a regular row-major raster with one-byte-compatible values (`0..31`, with `255` reserved for no-data);
-5. repeatedly average nodata-aware 2 x 2 regions, rounding each mean to the nearest integer, to build a full LOD pyramid down to 1 x 1;
+5. build the nodata-aware LOD pyramid with vectorised 2 x 2 reductions, using rounded integer averages at each level;
 6. install the minimal npm frontend dependencies if needed (`esbuild`, TypeScript and `proj4`);
 7. bundle/minify `src/app.ts` with esbuild;
 8. inject the derived raster pyramid JSON and bundled JavaScript into the HTML template;
