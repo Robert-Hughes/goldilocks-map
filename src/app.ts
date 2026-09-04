@@ -197,13 +197,20 @@ function chooseLodLevel(mapInstance: any): RasterLevel {
   // Use a fixed representative UK location for the screen-size calculation.
   // Web Mercator scale varies with latitude, so using the live map centre made
   // LOD change merely by panning north/south at a fixed zoom. A fixed reference
-  // removes that instability while still calculating pixel size at runtime, so
-  // fractional zooms and browser/display scaling are naturally reflected.
+  // removes that instability while still calculating pixel size at runtime.
+  //
+  // Deliberately use map.project() rather than latLngToContainerPoint(). Leaflet
+  // rounds layer/container coordinates to whole CSS pixels; once a 1 km base cell
+  // is sub-pixel, its two endpoints can round to the same pixel and falsely
+  // measure as zero, which would select the coarsest LOD in one jump. project()
+  // retains floating-point pixel coordinates at the current (including fractional)
+  // zoom, so adjacent zoom levels advance through adjacent LOD levels as intended.
   const reference = L.latLng(LOD_REFERENCE_LAT, LOD_REFERENCE_LON);
   const [referenceEasting, referenceNorthing] = latLngToBng(reference);
   const baseCellEast = bngToLatLng(referenceEasting + data.grid.cell_size_m, referenceNorthing);
-  const basePixels = mapInstance.latLngToContainerPoint(reference).distanceTo(
-    mapInstance.latLngToContainerPoint(baseCellEast),
+  const zoom = mapInstance.getZoom();
+  const basePixels = mapInstance.project(reference, zoom).distanceTo(
+    mapInstance.project(baseCellEast, zoom),
   );
 
   let levelIndex = 0;
