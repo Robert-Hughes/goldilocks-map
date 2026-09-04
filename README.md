@@ -44,6 +44,34 @@ On platforms where binary Python wheels are available, a normal virtualenv and `
 
 Use `python build.py --refresh-data` to force a fresh NetCDF download.
 
+## Historical climate source download
+
+`download_climate_sources.py` prepares the raw daily temperature archive needed for the planned 2016–2026 multi-metric build. It discovers rather than hardcodes CEDA's current daily release subdirectory, downloads both `tasmax` and `tasmin` for every month of 2016–2025 from HadUK-Grid v1.3.2.ceda, and also discovers the currently published 2026 provisional monthly files from the Met Office site.
+
+CEDA downloads require a registered-user archive access token. The token is read only from the `CEDA_ACCESS_TOKEN` environment variable and must not be committed or put in a project file. A shell-safe way to set it without echoing it is:
+
+```sh
+read -s CEDA_ACCESS_TOKEN
+export CEDA_ACCESS_TOKEN
+```
+
+Useful commands:
+
+```sh
+# Discover the exact file set and sizes; no token required.
+python download_climate_sources.py --dry-run
+
+# Verify the token against one historical file before a long run.
+python download_climate_sources.py --source ceda --check-auth
+
+# Download/resume all historical and currently available provisional files.
+python download_climate_sources.py --workers 3
+```
+
+Downloads go under `data/source/hadukgrid/` and are git-ignored. Completed CEDA files are checked against the MD5 hashes published in CEDA's JSON listing. Interrupted files retain a `.part` suffix and are resumed with HTTP Range requests on the next run. The downloader retries transient errors, validates expected byte sizes, writes a local discovery manifest, and fails quickly on an expired/rejected CEDA token. Use `--verify` when rechecking existing cached CEDA files should include a full MD5 pass.
+
+The stable historical source is kept separate from provisional 2026 data because the latter can be revised before the next annual CEDA release. The derived-metric build can therefore record which observations came from the citable annual release and which were provisional.
+
 ## Browser architecture
 
 The climate layer is a custom Leaflet `GridLayer` whose tiles are 256 x 256 canvas elements generated locally from the embedded raster pyramid. LOD0 is the original 1 km grid; each subsequent level doubles the nominal cell size and stores rounded nodata-aware averages of the preceding 2 x 2 regions. In the browser the JSON arrays are immediately converted to `Uint8Array`s.

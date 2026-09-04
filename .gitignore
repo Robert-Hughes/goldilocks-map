@@ -2,6 +2,9 @@
 node_modules/
 data/*.nc
 data/*.part
+data/source/
+data/derived/
+.env
 dist/
 __pycache__/
 *.egg-info/
