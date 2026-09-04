@@ -1,6 +1,6 @@
 # Goldilocks Map
 
-Goldilocks Map is an experimental single-file UK location-suitability explorer. This proof of concept currently renders one derived Met Office HadUK-Grid climate metric over a 320 km x 320 km area around York.
+Goldilocks Map is an experimental single-file UK location-suitability explorer. This proof of concept currently renders one derived Met Office HadUK-Grid climate metric over a 640 km x 640 km area around York.
 
 ## Current metric
 
@@ -35,7 +35,7 @@ On platforms where binary Python wheels are available, a normal virtualenv and `
 1. download/cache the July 2026 HadUK-Grid NetCDF file under `data/` if needed;
 2. verify that it contains `tasmax`, expected spatial coordinates, 31 daily observations, and recognised temperature units;
 3. transform the York centre from WGS84 to British National Grid (EPSG:27700);
-4. select the nearest 320 x 320 HadUK 1 km cells;
+4. select the nearest 640 x 640 HadUK 1 km cells;
 5. derive `count(tasmax > 25°C)` by reading one daily spatial raster at a time rather than materialising the whole 31-day cube;
 6. encode the result as a regular row-major raster with one-byte-compatible values (`0..31`, with `255` reserved for no-data);
 7. repeatedly average nodata-aware 2 x 2 regions, rounding each mean to the nearest integer, to build a full LOD pyramid down to 1 x 1;
