@@ -189,24 +189,23 @@ const LOD_MIN_CELL_PIXELS = 4;
 const LOD_REFERENCE_LAT = 54.5;
 const LOD_REFERENCE_LON = -2.0;
 
-function chooseLodLevel(mapInstance: any, zoom = mapInstance.getZoom()): RasterLevel {
-  // Use a fixed representative UK location for the screen-size calculation.
-  // Web Mercator scale varies with latitude, so using the live map centre made
-  // LOD change merely by panning north/south at a fixed zoom. A fixed reference
-  // removes that instability while still calculating pixel size at runtime.
-  //
-  // Deliberately use map.project() rather than latLngToContainerPoint(). Leaflet
-  // rounds layer/container coordinates to whole CSS pixels; once a 1 km base cell
-  // is sub-pixel, its two endpoints can round to the same pixel and falsely
-  // measure as zero, which would select the coarsest LOD in one jump. project()
-  // retains floating-point pixel coordinates at the requested zoom, so adjacent
-  // zoom levels advance through adjacent LOD levels as intended.
+// This reference distance is fixed geographically, so calculate its projection
+// once. Web Mercator doubles in scale for each Leaflet zoom level; tile LOD
+// selection therefore only needs a multiplication by 2^zoom thereafter.
+const lodReferenceBasePixelsAtZoom0 = (() => {
   const reference = L.latLng(LOD_REFERENCE_LAT, LOD_REFERENCE_LON);
   const [referenceEasting, referenceNorthing] = latLngToBng(reference);
   const baseCellEast = bngToLatLng(referenceEasting + data.grid.cell_size_m, referenceNorthing);
-  const basePixels = mapInstance.project(reference, zoom).distanceTo(
-    mapInstance.project(baseCellEast, zoom),
-  );
+  return map.project(reference, 0).distanceTo(map.project(baseCellEast, 0));
+})();
+
+function chooseLodLevel(_mapInstance: any, zoom = _mapInstance.getZoom()): RasterLevel {
+  // Use a fixed representative UK location for the screen-size calculation.
+  // Web Mercator scale varies with latitude, so using the live map centre made
+  // LOD change merely by panning north/south at a fixed zoom. Keeping the
+  // reference projection fixed also means tile creation performs no projection
+  // work just to select an LOD.
+  const basePixels = lodReferenceBasePixelsAtZoom0 * Math.pow(2, zoom);
 
   let levelIndex = 0;
   while (
@@ -280,6 +279,100 @@ function rasterRangeForBounds(
   };
 }
 
+const BASE_CORNER_STRIDE = data.grid.width + 1;
+const BASE_CORNER_COUNT = BASE_CORNER_STRIDE * (data.grid.height + 1);
+const WEB_MERCATOR_WORLD_SIZE_Z0 = 256;
+
+type RasterProjectionLookup = {
+  worldX: Float64Array;
+  worldY: Float64Array;
+  projectedCornerCount: number;
+  initMs: number;
+};
+
+function baseCornerIndexForLodEdge(level: RasterLevel, rowEdge: number, columnEdge: number): number {
+  const baseCellStep = Math.round(level.cell_size_m / data.grid.cell_size_m);
+  const baseRow = Math.min(data.grid.height, rowEdge * baseCellStep);
+  const baseColumn = Math.min(data.grid.width, columnEdge * baseCellStep);
+  return baseRow * BASE_CORNER_STRIDE + baseColumn;
+}
+
+function worldPixelAtZoom0(lon: number, lat: number): [number, number] {
+  // Leaflet's default CRS is EPSG:3857. At zoom 0 its world is 256 px square;
+  // subsequent integer zooms are exact powers-of-two scalings of these values.
+  const latitudeRadians = lat * Math.PI / 180;
+  const x = WEB_MERCATOR_WORLD_SIZE_Z0 * (lon + 180) / 360;
+  const y = WEB_MERCATOR_WORLD_SIZE_Z0 * (
+    1 - Math.asinh(Math.tan(latitudeRadians)) / Math.PI
+  ) / 2;
+  return [x, y];
+}
+
+function buildRasterProjectionLookup(): RasterProjectionLookup {
+  const started = performance.now();
+  const needed = new Uint8Array(BASE_CORNER_COUNT);
+
+  // Coarse LOD cell edges are always base-grid edges at multiples of 2^LOD,
+  // clipped at the source extent. Mark the four base corners of every valid cell
+  // across every LOD so sea-only geometry never pays a projection cost.
+  for (const level of lodLevels) {
+    for (let row = 0; row < level.height; row += 1) {
+      const rowOffset = row * level.width;
+      for (let column = 0; column < level.width; column += 1) {
+        if (level.values[rowOffset + column] === data.raster.nodata) continue;
+        needed[baseCornerIndexForLodEdge(level, row, column)] = 1;
+        needed[baseCornerIndexForLodEdge(level, row, column + 1)] = 1;
+        needed[baseCornerIndexForLodEdge(level, row + 1, column)] = 1;
+        needed[baseCornerIndexForLodEdge(level, row + 1, column + 1)] = 1;
+      }
+    }
+  }
+
+  const worldX = new Float64Array(BASE_CORNER_COUNT);
+  const worldY = new Float64Array(BASE_CORNER_COUNT);
+  worldX.fill(Number.NaN);
+  worldY.fill(Number.NaN);
+
+  let projectedCornerCount = 0;
+  for (let index = 0; index < BASE_CORNER_COUNT; index += 1) {
+    if (!needed[index]) continue;
+    const baseRow = Math.floor(index / BASE_CORNER_STRIDE);
+    const baseColumn = index - baseRow * BASE_CORNER_STRIDE;
+    const easting = data.grid.west + baseColumn * data.grid.cell_size_m;
+    const northing = data.grid.south + baseRow * data.grid.cell_size_m;
+    const [lon, lat] = proj4(data.grid.crs, "EPSG:4326", [easting, northing]) as [number, number];
+    const [x, y] = worldPixelAtZoom0(lon, lat);
+    worldX[index] = x;
+    worldY[index] = y;
+    projectedCornerCount += 1;
+  }
+
+  const initMs = performance.now() - started;
+  document.documentElement.dataset.goldilocksProjectionCorners = String(projectedCornerCount);
+  document.documentElement.dataset.goldilocksProjectionInitMs = initMs.toFixed(1);
+  console.info(
+    `Goldilocks projection lookup: ${projectedCornerCount.toLocaleString()} / ${BASE_CORNER_COUNT.toLocaleString()} corners in ${initMs.toFixed(1)} ms`,
+  );
+  return { worldX, worldY, projectedCornerCount, initMs };
+}
+
+const rasterProjectionLookup = buildRasterProjectionLookup();
+
+function cachedCornerTilePoint(
+  level: RasterLevel,
+  rowEdge: number,
+  columnEdge: number,
+  worldScale: number,
+  tileOriginX: number,
+  tileOriginY: number,
+): { x: number; y: number } {
+  const index = baseCornerIndexForLodEdge(level, rowEdge, columnEdge);
+  return {
+    x: rasterProjectionLookup.worldX[index] * worldScale - tileOriginX,
+    y: rasterProjectionLookup.worldY[index] * worldScale - tileOriginY,
+  };
+}
+
 const RasterGridLayer = L.GridLayer.extend({
   initialize(this: any, options: any) {
     L.GridLayer.prototype.initialize.call(this, options);
@@ -326,11 +419,6 @@ const RasterGridLayer = L.GridLayer.extend({
     );
   },
 
-  _toTilePoint(this: any, latlng: any, coords: any, tileSize: any) {
-    const tileOrigin = L.point(coords.x * tileSize.x, coords.y * tileSize.y);
-    return this._map.project(latlng, coords.z).subtract(tileOrigin);
-  },
-
   _drawTile(
     this: any,
     context: CanvasRenderingContext2D,
@@ -340,43 +428,32 @@ const RasterGridLayer = L.GridLayer.extend({
   ) {
     const range = rasterRangeForBounds(this._tileBounds(coords, tileSize), level, 1);
     if (!range) return;
-    const cellSize = level.cell_size_m;
-    const cornerRows: any[][] = [];
+
+    const worldScale = Math.pow(2, coords.z);
+    const tileOriginX = coords.x * tileSize.x;
+    const tileOriginY = coords.y * tileSize.y;
 
     // Tiles naturally clip drawing at their 256 px boundary. Include a one-cell
-    // range margin so cells crossing a tile edge are drawn into both neighbouring
-    // canvases; Leaflet's clipping then joins them without requiring shared state.
-    // Shared BNG intersections are still projected only once within each tile.
-    for (let rowEdge = range.rowMin; rowEdge <= range.rowMax + 1; rowEdge += 1) {
-      const northing = Math.min(data.grid.north, data.grid.south + rowEdge * cellSize);
-      const cornerRow: any[] = [];
-      for (let columnEdge = range.colMin; columnEdge <= range.colMax + 1; columnEdge += 1) {
-        const easting = Math.min(data.grid.east, data.grid.west + columnEdge * cellSize);
-        cornerRow.push(this._toTilePoint(bngToLatLng(easting, northing), coords, tileSize));
-      }
-      cornerRows.push(cornerRow);
-    }
-
+    // range margin so cells crossing an edge are drawn into both neighbours. Grid
+    // geometry itself is never reprojected here: each valid cell resolves its four
+    // corners from the startup world-coordinate lookup and only applies the cheap
+    // zoom scale + tile-origin translation.
     for (let row = range.rowMin; row <= range.rowMax; row += 1) {
-      const localRow = row - range.rowMin;
       for (let column = range.colMin; column <= range.colMax; column += 1) {
         const index = rasterIndex(row, column, level.width);
         const value = level.values[index];
         if (value === data.raster.nodata) continue;
 
-        const localColumn = column - range.colMin;
-        const points = [
-          cornerRows[localRow][localColumn],
-          cornerRows[localRow][localColumn + 1],
-          cornerRows[localRow + 1][localColumn + 1],
-          cornerRows[localRow + 1][localColumn],
-        ];
+        const southWest = cachedCornerTilePoint(level, row, column, worldScale, tileOriginX, tileOriginY);
+        const southEast = cachedCornerTilePoint(level, row, column + 1, worldScale, tileOriginX, tileOriginY);
+        const northEast = cachedCornerTilePoint(level, row + 1, column + 1, worldScale, tileOriginX, tileOriginY);
+        const northWest = cachedCornerTilePoint(level, row + 1, column, worldScale, tileOriginX, tileOriginY);
 
         context.beginPath();
-        context.moveTo(points[0].x, points[0].y);
-        for (let pointIndex = 1; pointIndex < points.length; pointIndex += 1) {
-          context.lineTo(points[pointIndex].x, points[pointIndex].y);
-        }
+        context.moveTo(southWest.x, southWest.y);
+        context.lineTo(southEast.x, southEast.y);
+        context.lineTo(northEast.x, northEast.y);
+        context.lineTo(northWest.x, northWest.y);
         context.closePath();
         context.globalAlpha = 0.62;
         context.fillStyle = colorForValue(value);
@@ -395,16 +472,16 @@ const RasterGridLayer = L.GridLayer.extend({
     const column = this._selectedIndex % data.grid.width;
     if (row < 0 || row >= data.grid.height || column < 0 || column >= data.grid.width) return;
 
-    const west = data.grid.west + column * data.grid.cell_size_m;
-    const east = Math.min(data.grid.east, west + data.grid.cell_size_m);
-    const south = data.grid.south + row * data.grid.cell_size_m;
-    const north = Math.min(data.grid.north, south + data.grid.cell_size_m);
+    const worldScale = Math.pow(2, coords.z);
+    const tileOriginX = coords.x * tileSize.x;
+    const tileOriginY = coords.y * tileSize.y;
+    const level = lodLevels[0];
     const points = [
-      bngToLatLng(west, south),
-      bngToLatLng(east, south),
-      bngToLatLng(east, north),
-      bngToLatLng(west, north),
-    ].map((latlng) => this._toTilePoint(latlng, coords, tileSize));
+      cachedCornerTilePoint(level, row, column, worldScale, tileOriginX, tileOriginY),
+      cachedCornerTilePoint(level, row, column + 1, worldScale, tileOriginX, tileOriginY),
+      cachedCornerTilePoint(level, row + 1, column + 1, worldScale, tileOriginX, tileOriginY),
+      cachedCornerTilePoint(level, row + 1, column, worldScale, tileOriginX, tileOriginY),
+    ];
 
     context.beginPath();
     context.moveTo(points[0].x, points[0].y);
