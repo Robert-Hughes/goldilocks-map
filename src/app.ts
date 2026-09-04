@@ -190,12 +190,19 @@ function popupHtml(cell: RasterCell): string {
 }
 
 const LOD_MIN_CELL_PIXELS = 4;
+const LOD_REFERENCE_LAT = 54.5;
+const LOD_REFERENCE_LON = -2.0;
 
 function chooseLodLevel(mapInstance: any): RasterLevel {
-  const center = mapInstance.getCenter();
-  const [centerEasting, centerNorthing] = latLngToBng(center);
-  const baseCellEast = bngToLatLng(centerEasting + data.grid.cell_size_m, centerNorthing);
-  const basePixels = mapInstance.latLngToContainerPoint(center).distanceTo(
+  // Use a fixed representative UK location for the screen-size calculation.
+  // Web Mercator scale varies with latitude, so using the live map centre made
+  // LOD change merely by panning north/south at a fixed zoom. A fixed reference
+  // removes that instability while still calculating pixel size at runtime, so
+  // fractional zooms and browser/display scaling are naturally reflected.
+  const reference = L.latLng(LOD_REFERENCE_LAT, LOD_REFERENCE_LON);
+  const [referenceEasting, referenceNorthing] = latLngToBng(reference);
+  const baseCellEast = bngToLatLng(referenceEasting + data.grid.cell_size_m, referenceNorthing);
+  const basePixels = mapInstance.latLngToContainerPoint(reference).distanceTo(
     mapInstance.latLngToContainerPoint(baseCellEast),
   );
 
