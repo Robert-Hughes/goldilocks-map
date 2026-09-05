@@ -1,7 +1,7 @@
 {
   "format_version": 3,
   "kind": "goldilocks-bundle",
-  "generated_at_unix": 1788623647,
+  "generated_at_unix": 1788626529,
   "preview_partial_sources": false,
   "grid": {
     "crs": "EPSG:27700",
@@ -52,6 +52,11 @@
       "id": "pollution",
       "label": "Pollution",
       "order": 2
+    },
+    {
+      "id": "terrain",
+      "label": "Terrain",
+      "order": 3
     }
   ],
   "metrics": [
@@ -2080,6 +2085,144 @@
       "raw_bytes": 3480972,
       "compressed_bytes": 120682,
       "sha256_raw": "816998b24e7147abfe2ec3a96b0fb015ea673c9d0fc0bab6b8497b57daa18ef0"
+    },
+    {
+      "id": "terrain_relief",
+      "category_id": "terrain",
+      "label": "Relief",
+      "units": "m",
+      "period": "OS Terrain 50 2026-07",
+      "definition": "Vertical relief within each canonical 1 km Goldilocks cell: the maximum minus minimum OS Terrain 50 DTM elevation across the 50 m pixel-centre heights inside that cell. No neighbouring 1 km cells contribute. OS Terrain 50 is a bare-earth terrain model; in coastal source tiles OS also models tidal-water heights.",
+      "source_id": "os-terrain-50",
+      "source_variable": "elevation",
+      "scale": 1.0,
+      "offset": 0.0,
+      "decimals": 0,
+      "nodata": 65535,
+      "encoded_min": 0,
+      "encoded_max": 896,
+      "summary": {
+        "min": 0.0,
+        "max": 896.0
+      },
+      "coverage": {
+        "source_tiles": 2858,
+        "source_tile_dates": [
+          "20260529",
+          "20260602"
+        ],
+        "source_pixel_count": 114320000,
+        "source_nodata_pixel_count": 0,
+        "pixels_per_complete_1km_cell": 400,
+        "canonical_valid_cells": 230166,
+        "canonical_land_cells_without_source_coverage": 14903,
+        "method": "For each canonical 1 km cell, relief is max elevation minus min elevation across the 20x20 OS Terrain 50 50 m pixel-centre heights inside that cell. No neighbouring 1 km cells are included."
+      },
+      "valid_cell_count": 230166,
+      "palette_reverse": false,
+      "levels": [
+        {
+          "level": 0,
+          "width": 900,
+          "height": 1450,
+          "cell_size_m": 1000,
+          "value_offset": 0,
+          "value_count": 1305000
+        },
+        {
+          "level": 1,
+          "width": 450,
+          "height": 725,
+          "cell_size_m": 2000,
+          "value_offset": 1305000,
+          "value_count": 326250
+        },
+        {
+          "level": 2,
+          "width": 225,
+          "height": 363,
+          "cell_size_m": 4000,
+          "value_offset": 1631250,
+          "value_count": 81675
+        },
+        {
+          "level": 3,
+          "width": 113,
+          "height": 182,
+          "cell_size_m": 8000,
+          "value_offset": 1712925,
+          "value_count": 20566
+        },
+        {
+          "level": 4,
+          "width": 57,
+          "height": 91,
+          "cell_size_m": 16000,
+          "value_offset": 1733491,
+          "value_count": 5187
+        },
+        {
+          "level": 5,
+          "width": 29,
+          "height": 46,
+          "cell_size_m": 32000,
+          "value_offset": 1738678,
+          "value_count": 1334
+        },
+        {
+          "level": 6,
+          "width": 15,
+          "height": 23,
+          "cell_size_m": 64000,
+          "value_offset": 1740012,
+          "value_count": 345
+        },
+        {
+          "level": 7,
+          "width": 8,
+          "height": 12,
+          "cell_size_m": 128000,
+          "value_offset": 1740357,
+          "value_count": 96
+        },
+        {
+          "level": 8,
+          "width": 4,
+          "height": 6,
+          "cell_size_m": 256000,
+          "value_offset": 1740453,
+          "value_count": 24
+        },
+        {
+          "level": 9,
+          "width": 2,
+          "height": 3,
+          "cell_size_m": 512000,
+          "value_offset": 1740477,
+          "value_count": 6
+        },
+        {
+          "level": 10,
+          "width": 1,
+          "height": 2,
+          "cell_size_m": 1024000,
+          "value_offset": 1740483,
+          "value_count": 2
+        },
+        {
+          "level": 11,
+          "width": 1,
+          "height": 1,
+          "cell_size_m": 2048000,
+          "value_offset": 1740485,
+          "value_count": 1
+        }
+      ],
+      "blob_file": "terrain_relief.u16.gz",
+      "blob_encoding": "gzip+uint16le",
+      "raw_bytes": 3480972,
+      "compressed_bytes": 415831,
+      "sha256_raw": "f88cecac5d6068deab5b4270ceb8bbfea88dd103c371d99055d03e289df5441a"
     }
   ],
   "sources": {
@@ -3748,6 +3891,36 @@
           }
         ]
       }
+    },
+    "os-terrain-50": {
+      "provider": "Ordnance Survey",
+      "dataset": "OS Terrain 50",
+      "resolution": "50 m DTM grid; annual full GB supply",
+      "homepage_url": "https://www.ordnancesurvey.co.uk/products/os-terrain-50",
+      "licence_name": "Open Government Licence v3.0",
+      "licence_url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+      "attribution": "Contains OS data \u00a9 Crown copyright and database right 2026.",
+      "derived_product_notice": "Goldilocks Map Terrain relief is derived from OS Terrain 50 by calculating max-minus-min elevation within each canonical 1 km cell; it is not an Ordnance Survey product.",
+      "note": "OS Terrain 50 is a lower-resolution digital terrain model of Great Britain with 50 m pixel-centre heights. Buildings and trees are removed from the modelled ground surface. Coastal grid tiles may contain OS-modelled tidal-water heights; Northern Ireland is outside the product coverage.",
+      "releases": [
+        {
+          "label": "OS Terrain 50 2026-07",
+          "status": "published",
+          "url": "https://www.ordnancesurvey.co.uk/products/os-terrain-50"
+        }
+      ],
+      "source_files": {
+        "grid": [
+          {
+            "release": "2026-07",
+            "file": "terr50_gagg_gb.zip",
+            "md5": "feba9008db55cdcb5c5e5b7896e3428b",
+            "bytes": 161706566,
+            "download_url": "https://api.os.uk/downloads/v1/products/Terrain50/downloads?area=GB&format=ASCII+Grid+and+GML+%28Grid%29&redirect"
+          }
+        ]
+      },
+      "documentation_url": "https://docs.os.uk/os-downloads/products/land-and-terrain-portfolio/os-terrain-50"
     }
   },
   "data_pruning": [
@@ -3843,6 +4016,11 @@
       "dataset_id": "pollution",
       "manifest": "data/derived/pollution-metrics/manifest.json",
       "generated_at_unix": 1788623647
+    },
+    {
+      "dataset_id": "terrain",
+      "manifest": "data/derived/terrain-metrics/manifest.json",
+      "generated_at_unix": 1788626529
     }
   ]
 }

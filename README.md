@@ -1,6 +1,6 @@
 # Goldilocks Map
 
-Goldilocks Map is an experimental single-file UK location-suitability explorer built from multiple gridded public datasets. Metrics are grouped into first-class categories (currently **Heat**, **Cold** and **Pollution**) and can be switched without reloading the page.
+Goldilocks Map is an experimental single-file UK location-suitability explorer built from multiple gridded public datasets. Metrics are grouped into first-class categories (currently **Heat**, **Cold**, **Pollution** and **Terrain**) and can be switched without reloading the page.
 
 ## Metrics
 
@@ -29,6 +29,14 @@ The processed bundle contains:
 - 2022–2024 mean annual ozone DGT120 exceedance days (days where the daily maximum running 8-hour mean exceeds 120 µg/m³).
 
 Pollution metrics come from Defra UK-AIR Pollution Climate Mapping (PCM) 1 km annual grids. Goldilocks requires a value in all three selected years and takes their arithmetic mean. PCM values are modelled background concentrations/metrics rather than measurements at individual grid-cell centres; Defra also updates the PCM modelling methodology over time, so the annual products should not be treated as a perfectly homogeneous observational time series.
+
+**Terrain**
+
+- `terrain_relief`: vertical relief in metres inside each canonical 1 km tile, defined as maximum minus minimum OS Terrain 50 DTM elevation.
+
+The current Terrain source is OS Terrain 50 release **2026-07**, covering Great Britain. Although OS describes the product as having 50 m post spacing, the supplied ASCII grid stores each height at the centre of a 50 m × 50 m raster pixel with no shared edge values between source tiles. Because those pixels align with the Goldilocks 1 km grid, each complete 1 km tile contains exactly 20 × 20 = 400 Terrain 50 height values. `terrain_relief` is calculated from those 400 values only; neighbouring 1 km tiles do not contribute. The source heights are supplied to 0.1 m, while Goldilocks quantises relief to the nearest metre.
+
+OS Terrain 50 is a bare-earth digital terrain model intended for broad-scale terrain analysis. In coastal source tiles OS models tidal-water heights as part of the supplied surface, so a coastal Goldilocks tile can include the vertical transition between land and those modelled tidal-water heights. Northern Ireland is outside OS Terrain 50 coverage and therefore appears as nodata for Terrain.
 
 An air-frost day is assigned when the minimum air temperature falls below freezing during the observation period; it does not mean the whole day remains below freezing. A day whose maximum temperature remains below freezing is instead an ice day.
 
@@ -69,13 +77,14 @@ After the raw source download is complete, generate each dataset fragment, assem
 ```sh
 python process_climate_metrics.py
 python process_pollution_metrics.py
+python process_terrain_metrics.py
 python assemble_metrics.py
 python build.py
 ```
 
 `goldilocks_raster.py` provides the common canonical-grid, quantisation, nodata-aware LOD and gzip-blob machinery. Each dataset processor writes a self-contained dataset manifest with categories, metrics and source provenance. `assemble_metrics.py` validates that those fragments use the same canonical 1 km BNG raster geometry, merges their categories/sources and copies the metric blobs into `data/derived/goldilocks-metrics/`.
 
-`process_climate_metrics.py` streams the monthly NetCDF/HDF5 files; summer percentile input is staged in a temporary memory-mapped file so the full multi-year daily cube is never held in RAM. `process_pollution_metrics.py` aligns the 2022–2024 Defra PCM CSV grids to the canonical Goldilocks/HadUK 1 km grid and derives the three-year arithmetic means.
+`process_climate_metrics.py` streams the monthly NetCDF/HDF5 files; summer percentile input is staged in a temporary memory-mapped file so the full multi-year daily cube is never held in RAM. `process_pollution_metrics.py` aligns the 2022–2024 Defra PCM CSV grids to the canonical Goldilocks/HadUK 1 km grid and derives the three-year arithmetic means. `process_terrain_metrics.py` reads the nested OS Terrain 50 ASCII tiles directly from the national zip, reduces each aligned 20 × 20 block of 50 m pixel-centre heights to 1 km relief (`max - min`), and leaves canonical cells outside Great Britain as nodata.
 
 `build.py` validates the assembled blobs and source references, bundles/minifies the TypeScript frontend (including `proj4` and `fflate`), base64-embeds the compressed blobs and metadata, and writes the self-contained application to `dist/goldilocks.html`.
 
@@ -91,7 +100,7 @@ python build.py --metrics-manifest data/derived/goldilocks-metrics-preview/manif
 
 The public repository is intended to be named `goldilocks-map`, giving a default project-site URL of `https://<account>.github.io/goldilocks-map/`.
 
-The raw CEDA/Met Office NetCDF archive and Defra PCM CSV inputs are never required by GitHub Actions and remain git-ignored. After regenerating local metrics, explicitly refresh the small publishable snapshot with:
+The raw CEDA/Met Office NetCDF archive, Defra PCM CSV inputs and OS Terrain 50 source archive are never required by GitHub Actions and remain git-ignored. After regenerating local metrics, explicitly refresh the small publishable snapshot with:
 
 ```sh
 python publish_metrics_snapshot.py
@@ -152,6 +161,20 @@ python download_pollution_sources.py --workers 3
 
 Downloads go under `data/source/defra-pcm/<year>/` and are git-ignored. A local `discovery.json` records the exact source URLs, byte sizes and SHA-256 hashes. `process_pollution_metrics.py` maps the OSGB cell centres directly onto the canonical Goldilocks 1 km grid; no reprojection or spatial interpolation is required. Cells absent from PCM remain nodata rather than being filled from neighbours.
 
+## Terrain source download
+
+`download_terrain_sources.py` uses the public OS Downloads API to discover the current OS Terrain 50 GB grid download, but deliberately requires it to match the pinned release **2026-07**. If OS publishes a newer annual release, the downloader fails rather than silently changing the build input; the pin should only be updated after reviewing the new release.
+
+```sh
+# Check the current OS Downloads API metadata against the pinned release.
+python download_terrain_sources.py --dry-run
+
+# Download and MD5-verify the 2026-07 national grid archive.
+python download_terrain_sources.py
+```
+
+The current source archive is `terr50_gagg_gb.zip` (about 162 MB compressed), stored under `data/source/os-terrain-50/2026-07/` and git-ignored. The archive contains 2,858 nested 10 km × 10 km grid-tile zip files. Each tile contains a 200 × 200 ASCII raster at 50 m spacing. `process_terrain_metrics.py` reads those nested archives directly without expanding the full national dataset on disk.
+
 ## Browser architecture
 
 The data layer is a custom Leaflet `GridLayer` whose tiles are 256 x 256 canvas elements generated locally from the selected metric's embedded raster pyramid. Every metric is transported as a gzip-compressed little-endian `uint16` blob; only the initially selected metric is decompressed at startup, and other metrics are decoded lazily the first time their radio button is selected. Decoded metrics remain cached as typed-array views over one contiguous buffer.
@@ -162,7 +185,7 @@ Canvas geometry is batched per tile. Metric values are mapped to a 64-step visua
 
 For each Leaflet tile zoom, the renderer chooses the finest metric LOD whose nominal cells are at least about four screen pixels across. The reference pixel distance is projected only once at a fixed representative UK location (54.5°N, 2°W), so LOD choice depends only on zoom and thereafter requires only power-of-two scaling. Each tile still performs a small fixed set of inverse WGS84 -> BNG transforms to identify its candidate row/column range. Leaflet manages tile buffering, panning, clipping, recycling, and zoom transforms. Leaflet's default 200 ms tile fade animation is disabled because metric canvases render synchronously; replacement tiles therefore appear immediately instead of fading through the basemap during redraws and zoom changes.
 
-Clicking always resolves against active-metric LOD0, so popups retain the exact quantised 1 km value rather than a coarse averaged value. The selected-cell outline is a separate lightweight Leaflet vector overlay, so changing the selection does not regenerate any metric canvas tiles. The collapsible left-side panel groups metric radio buttons by the categories declared in the processed manifest (currently `heat`, `cold` and `pollution`), followed by gridline visibility, data-layer opacity, a per-metric dual-ended display-range slider with integrated colour samples, description and provenance. Layer opacity defaults to 62% to preserve the original map appearance and is applied by Leaflet to the existing tile layer without repainting raster canvases. Narrowing the display range clips only the colour mapping; underlying raster and popup values remain unchanged. Display-range scrubbing repaints the existing cached metric canvases in place rather than invoking Leaflet `GridLayer.redraw()`, avoiding tile removal/recreation and the resulting basemap flicker. Display ranges, layer opacity, panel state, gridline visibility and selected metric are stored independently in `localStorage`, and each range can be reset to that metric's observed minimum/maximum. Metric identifiers are category-prefixed (for example `heat_days_tmax_gt_25` and `cold_air_frost_days`) so the same grouping remains explicit in code and generated data; legacy unprefixed Heat metric selections are migrated automatically. Gridlines default to hidden when no preference has yet been saved. Leaflet's zoom control is positioned at bottom-right so the main information panel can occupy the top-left corner cleanly.
+Clicking always resolves against active-metric LOD0, so popups retain the exact quantised 1 km value rather than a coarse averaged value. The selected-cell outline is a separate lightweight Leaflet vector overlay, so changing the selection does not regenerate any metric canvas tiles. The collapsible left-side panel groups metric radio buttons by the categories declared in the processed manifest (currently `heat`, `cold`, `pollution` and `terrain`), followed by gridline visibility, data-layer opacity, a per-metric dual-ended display-range slider with integrated colour samples, description and provenance. Layer opacity defaults to 62% to preserve the original map appearance and is applied by Leaflet to the existing tile layer without repainting raster canvases. Narrowing the display range clips only the colour mapping; underlying raster and popup values remain unchanged. Display-range scrubbing repaints the existing cached metric canvases in place rather than invoking Leaflet `GridLayer.redraw()`, avoiding tile removal/recreation and the resulting basemap flicker. Display ranges, layer opacity, panel state, gridline visibility and selected metric are stored independently in `localStorage`, and each range can be reset to that metric's observed minimum/maximum. Metric identifiers are category-prefixed (for example `heat_days_tmax_gt_25`, `cold_air_frost_days` and `terrain_relief`) so the same grouping remains explicit in code and generated data; legacy unprefixed Heat metric selections are migrated automatically. Gridlines default to hidden when no preference has yet been saved. Leaflet's zoom control is positioned at bottom-right so the main information panel can occupy the top-left corner cleanly.
 
 ## Basemap selection
 
@@ -177,13 +200,15 @@ Direct `file://` opening still renders the embedded Goldilocks data layer, but i
 - `process_climate_metrics.py` — streaming HadUK-Grid climate metric derivation and climate dataset fragment
 - `download_pollution_sources.py` — discovers/downloads Defra UK-AIR PCM annual 1 km CSV grids
 - `process_pollution_metrics.py` — derives 2022–2024 Pollution means on the canonical grid
+- `download_terrain_sources.py` — discovers, pins and MD5-verifies the OS Terrain 50 national ASCII-grid archive
+- `process_terrain_metrics.py` — derives 1 km Terrain relief from the 50 m DTM grid
 - `assemble_metrics.py` — validates and combines dataset fragments into the common Goldilocks metric bundle
 - `build.py` — validates/embeds the assembled metric bundle, bundles the frontend and embeds third-party software notices
 - `publish_metrics_snapshot.py` — copies the validated assembled bundle into the tracked public snapshot used by Pages
 - `.github/workflows/pages.yml` — builds the static artifact from the public snapshot and deploys it to GitHub Pages
 - `templates/goldilocks.html` — single-page HTML shell
 - `src/app.ts` — Leaflet/custom-canvas multi-metric frontend
-- `data/source/` — cached raw source data (HadUK NetCDF + Defra PCM CSV; git-ignored and never published)
+- `data/source/` — cached raw source data (HadUK NetCDF + Defra PCM CSV + OS Terrain 50 archive; git-ignored and never published)
 - `data/derived/` — local generated metric bundles (git-ignored)
 - `published-data/goldilocks-metrics/` — tracked, publishable snapshot of the derived metric bundle used by GitHub Pages
 - `dist/goldilocks.html` — generated application artifact (git-ignored)
@@ -192,10 +217,10 @@ Direct `file://` opening still renders the embedded Goldilocks data layer, but i
 
 ## Data licence and provenance
 
-The current source datasets are © Crown copyright Met Office HadUK-Grid and Defra UK-AIR Pollution Climate Mapping data, both provided under the [Open Government Licence v3.0](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/). Goldilocks metrics are derived products and are not official Met Office or Defra products.
+The current source datasets are Met Office HadUK-Grid, Defra UK-AIR Pollution Climate Mapping and Ordnance Survey OS Terrain 50, all made available under the [Open Government Licence v3.0](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/). Goldilocks metrics are derived products and are not official Met Office, Defra or Ordnance Survey products. The OS Terrain 50-derived metric carries the required acknowledgement: `Contains OS data © Crown copyright and database right 2026.`
 
 Stable 2016–2025 observations are taken from the citable CEDA HadUK-Grid v1.3.2.ceda release:
 
 Met Office; Hollis, D.; Carlisle, E.; Kendon, M.; Packman, S.; Doherty, A. (2026): *HadUK-Grid Gridded Climate Observations on a 1km grid over the UK, v1.3.2.ceda (1836-2025).* NERC EDS Centre for Environmental Data Analysis, 23 June 2026. [doi:10.5285/789b3065d74a4c948ab05d33556c86d0](https://doi.org/10.5285/789b3065d74a4c948ab05d33556c86d0).
 
-Available 2026 climate months are provisional Met Office HadUK-Grid data and may be amended before a later annual CEDA release. Pollution metrics use Defra PCM 2022–2024 annual background grids. See [`DATA-LICENCE.md`](DATA-LICENCE.md) for full licence, attribution and source-specific provenance notes.
+Available 2026 climate months are provisional Met Office HadUK-Grid data and may be amended before a later annual CEDA release. Pollution metrics use Defra PCM 2022–2024 annual background grids. Terrain relief uses the pinned OS Terrain 50 2026-07 Great Britain grid. See [`DATA-LICENCE.md`](DATA-LICENCE.md) for full licence, attribution and source-specific provenance notes.
