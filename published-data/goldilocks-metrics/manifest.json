@@ -1,7 +1,7 @@
 {
   "format_version": 3,
   "kind": "goldilocks-bundle",
-  "generated_at_unix": 1788622965,
+  "generated_at_unix": 1788623647,
   "preview_partial_sources": false,
   "grid": {
     "crs": "EPSG:27700",
@@ -3658,6 +3658,7 @@
       "homepage_url": "https://uk-air.defra.gov.uk/data/pcm-data",
       "licence_name": "Open Government Licence v3.0",
       "licence_url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+      "attribution": "Source: Department for Environment, Food and Rural Affairs (Defra) via uk-air.defra.gov.uk, licensed under the Open Government Licence v3.0.",
       "derived_product_notice": "Goldilocks Map Pollution metrics are 2022\u20132024 arithmetic means derived from annual Defra PCM grids; they are not official Defra products.",
       "note": "PCM values are modelled background concentrations/metrics rather than measurements at each grid-cell centre. Defra updates PCM modelling methods over time, so annual grids should not be treated as a perfectly homogeneous observational time series.",
       "releases": [
@@ -3841,7 +3842,7 @@
     {
       "dataset_id": "pollution",
       "manifest": "data/derived/pollution-metrics/manifest.json",
-      "generated_at_unix": 1788622961
+      "generated_at_unix": 1788623647
     }
   ]
 }

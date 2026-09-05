@@ -8,7 +8,7 @@ Both source datasets used by the current build are Crown copyright data made ava
 
 Suggested attribution:
 
-> Contains Met Office HadUK-Grid data and Defra UK-AIR Pollution Climate Mapping data © Crown copyright, licensed under the Open Government Licence v3.0. Goldilocks Map metrics are derived products and are not official Met Office or Defra products.
+> Contains Met Office HadUK-Grid data © Crown copyright, licensed under the Open Government Licence v3.0. Contains Defra UK-AIR Pollution Climate Mapping data; source: Department for Environment, Food and Rural Affairs (Defra) via uk-air.defra.gov.uk, licensed under the Open Government Licence v3.0. Goldilocks Map metrics are derived products and are not official Met Office or Defra products.
 
 ## Met Office HadUK-Grid
 

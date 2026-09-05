@@ -55,6 +55,7 @@ type DataSource = {
   homepage_url?: string;
   licence_name?: string;
   licence_url?: string;
+  attribution?: string;
   citation?: string;
   citation_url?: string;
   method_citation?: string;
@@ -1039,6 +1040,7 @@ mapPanel.onAdd = () => {
       Dataset: ${datasetLabel}.<br>
       Variable: <code>${activeMetric.source_variable}</code>.<br>
       Licence: ${licence}.<br>
+      ${sourceMeta.attribution ? `Attribution: ${sourceMeta.attribution}<br>` : ""}
       ${sourceMeta.note ?? ""}${pruning ? `<br>${pruning}` : ""}
       <details class="provenance-details">
         <summary>Dataset details and status</summary>
