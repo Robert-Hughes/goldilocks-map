@@ -74,7 +74,15 @@ type GoldilocksData = {
     provider?: string;
     resolution?: string;
     historical_release?: string;
+    historical_citation?: string;
+    historical_doi_url?: string;
+    method_citation?: string;
+    method_doi_url?: string;
     provisional_release?: string;
+    provisional_url?: string;
+    licence_name?: string;
+    licence_url?: string;
+    derived_product_notice?: string;
     note?: string;
   };
   data_pruning: Array<{
@@ -133,6 +141,8 @@ const dataElement = document.getElementById("goldilocks-data");
 if (!dataElement?.textContent) throw new Error("Embedded Goldilocks data was not found");
 const data = JSON.parse(dataElement.textContent) as GoldilocksData;
 dataElement.textContent = "";
+const thirdPartyNoticesTemplate = document.getElementById("goldilocks-third-party-notices") as HTMLTemplateElement | null;
+const thirdPartyNotices = thirdPartyNoticesTemplate?.content.textContent?.trim() ?? "";
 if (data.format_version !== 3 || !data.metrics?.length || !data.categories?.length) {
   throw new Error("This frontend requires Goldilocks categorized multi-metric data format v3");
 }
@@ -434,12 +444,15 @@ const map = L.map("map", {
   zoomControl: false,
 });
 L.control.zoom({ position: "bottomright" }).addTo(map);
-const useFileBasemap = window.location.protocol === "file:";
-if (useFileBasemap) {
-  L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png", {
-    maxZoom: 20,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-  }).addTo(map);
+const isFileUrl = window.location.protocol === "file:";
+if (isFileUrl) {
+  const fileBasemapWarning = L.control({ position: "bottomleft" });
+  fileBasemapWarning.onAdd = () => {
+    const div = L.DomUtil.create("div", "file-basemap-warning");
+    div.textContent = "Basemap disabled for file://. Serve Goldilocks over HTTP/HTTPS to load OpenStreetMap.";
+    return div;
+  };
+  fileBasemapWarning.addTo(map);
 } else {
   L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
@@ -917,6 +930,12 @@ mapPanel.onAdd = () => {
         <strong class="panel-section-title">Data provenance</strong>
         <div class="metric-source"></div>
       </div>
+      <div class="panel-section">
+        <details class="legal-notices">
+          <summary>Third-party software licences</summary>
+          <pre></pre>
+        </details>
+      </div>
     </div>`;
 
   const subtitle = div.querySelector(".map-panel-subtitle") as HTMLElement;
@@ -932,6 +951,10 @@ mapPanel.onAdd = () => {
   const rangeReset = div.querySelector(".range-reset") as HTMLButtonElement;
   const opacityInput = div.querySelector(".opacity-input") as HTMLInputElement;
   const opacityOutput = div.querySelector(".opacity-output") as HTMLOutputElement;
+  const legalNotices = div.querySelector(".legal-notices") as HTMLDetailsElement;
+  const legalNoticesPre = div.querySelector(".legal-notices pre") as HTMLPreElement;
+  legalNoticesPre.textContent = thirdPartyNotices;
+  if (!thirdPartyNotices) legalNotices.hidden = true;
 
   function refreshDisplayRangeControl() {
     const full = fullDisplayRange(activeMetric);
@@ -978,10 +1001,32 @@ mapPanel.onAdd = () => {
     refreshDisplayRangeControl();
     description.textContent = activeMetric.definition;
     const pruning = pruningDescription();
+    const licence = data.sources.licence_name && data.sources.licence_url
+      ? `<a href="${data.sources.licence_url}" target="_blank" rel="noopener">${data.sources.licence_name}</a>`
+      : (data.sources.licence_name ?? "Open Government Licence");
+    const historicalCitation = data.sources.historical_citation && data.sources.historical_doi_url
+      ? `<a href="${data.sources.historical_doi_url}" target="_blank" rel="noopener">${data.sources.historical_citation}</a>`
+      : (data.sources.historical_citation ?? data.sources.historical_release ?? "");
+    const methodCitation = data.sources.method_citation && data.sources.method_doi_url
+      ? `<a href="${data.sources.method_doi_url}" target="_blank" rel="noopener">${data.sources.method_citation}</a>`
+      : (data.sources.method_citation ?? "");
+    const provisional = data.sources.provisional_release
+      ? (data.sources.provisional_url
+          ? `<a href="${data.sources.provisional_url}" target="_blank" rel="noopener">${data.sources.provisional_release}</a>`
+          : data.sources.provisional_release)
+      : "";
     source.innerHTML = `
       ${data.sources.provider ?? "Met Office HadUK-Grid"}; ${sourceDescription()}.<br>
       Variable: <code>${activeMetric.source_variable}</code>.<br>
-      ${data.sources.note ?? ""}${pruning ? `<br>${pruning}` : ""}`;
+      Licence: ${licence}.<br>
+      ${data.sources.note ?? ""}${pruning ? `<br>${pruning}` : ""}
+      <details class="provenance-details">
+        <summary>Dataset citations and status</summary>
+        ${historicalCitation ? `<div><strong>Historical dataset:</strong> ${historicalCitation}</div>` : ""}
+        ${methodCitation ? `<div><strong>Method:</strong> ${methodCitation}</div>` : ""}
+        ${provisional ? `<div><strong>Provisional data:</strong> ${provisional}. These data may be amended or revised before the next citable annual release.</div>` : ""}
+        ${data.sources.derived_product_notice ? `<div><strong>Derived product:</strong> ${data.sources.derived_product_notice}</div>` : ""}
+      </details>`;
   }
 
   const panelButton = div.querySelector(".map-panel-toggle") as HTMLButtonElement;

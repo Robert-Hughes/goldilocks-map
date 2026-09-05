@@ -35,6 +35,24 @@ METRIC_CATEGORIES = (
     {"id": "heat", "label": "Heat", "order": 0},
     {"id": "cold", "label": "Cold", "order": 1},
 )
+
+HADUKGRID_DATASET_CITATION = (
+    "Met Office; Hollis, D.; Carlisle, E.; Kendon, M.; Packman, S.; Doherty, A. (2026): "
+    "HadUK-Grid Gridded Climate Observations on a 1km grid over the UK, v1.3.2.ceda (1836-2025). "
+    "NERC EDS Centre for Environmental Data Analysis, 23 June 2026."
+)
+HADUKGRID_DATASET_DOI_URL = "https://doi.org/10.5285/789b3065d74a4c948ab05d33556c86d0"
+HADUKGRID_METHOD_CITATION = (
+    "Hollis, D.; McCarthy, M. P.; Kendon, M.; Legg, T.; Simpson, I. (2019): "
+    "HadUK-Grid - A new UK dataset of gridded climate observations. Geoscience Data Journal, 6, 151-159."
+)
+HADUKGRID_METHOD_DOI_URL = "https://doi.org/10.1002/gdj3.78"
+HADUKGRID_LICENCE_NAME = "Open Government Licence v3.0"
+HADUKGRID_LICENCE_URL = "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/"
+HADUKGRID_PROVISIONAL_URL = "https://www.metoffice.gov.uk/hadobs/hadukgrid/"
+DERIVED_PRODUCT_NOTICE = (
+    "Goldilocks Map climate metrics are derived from HadUK-Grid and are not an official Met Office product."
+)
 FILENAME_RE = re.compile(
     r"^(?P<variable>tasmax|tasmin)_hadukgrid_uk_1km_day_"
     r"(?P<start>\d{8})-(?P<end>\d{8})\.nc$"
@@ -872,7 +890,15 @@ def build_manifest(
             "provider": "Met Office HadUK-Grid",
             "resolution": "1 km daily",
             "historical_release": historical_release,
+            "historical_citation": HADUKGRID_DATASET_CITATION,
+            "historical_doi_url": HADUKGRID_DATASET_DOI_URL,
+            "method_citation": HADUKGRID_METHOD_CITATION,
+            "method_doi_url": HADUKGRID_METHOD_DOI_URL,
             "provisional_release": provisional_release,
+            "provisional_url": HADUKGRID_PROVISIONAL_URL,
+            "licence_name": HADUKGRID_LICENCE_NAME,
+            "licence_url": HADUKGRID_LICENCE_URL,
+            "derived_product_notice": DERIVED_PRODUCT_NOTICE,
             "tasmax_months": [
                 {"year": item.year, "month": item.month, "status": item.status, "file": item.path.name}
                 for item in tasmax_months

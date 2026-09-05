@@ -30,6 +30,7 @@
     .metric-option { display: flex; align-items: flex-start; gap: 0.45rem; padding: 0.18rem 0; cursor: pointer; }
     .metric-option input { margin: 0.18rem 0 0; flex: 0 0 auto; }
     .preview-warning { margin-top: 0.65rem; padding: 0.45rem 0.5rem; border: 1px solid #d4a72c; border-radius: 4px; background: #fff8db; color: #5e4b00; }
+    .file-basemap-warning { max-width: min(360px, calc(100vw - 90px)); padding: 0.45rem 0.55rem; border: 1px solid #d4a72c; border-radius: 4px; background: rgba(255,248,219,0.96); color: #5e4b00; box-shadow: 0 1px 4px rgba(0,0,0,0.18); font-size: 0.78rem; }
     .opacity-heading { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
     .opacity-heading .panel-section-title { margin: 0; }
     .opacity-output { font-weight: 600; font-variant-numeric: tabular-nums; }
@@ -59,6 +60,10 @@
     .leaflet-popup-content dl { display: grid; grid-template-columns: auto 1fr; gap: 0.15rem 0.55rem; margin: 0; }
     .leaflet-popup-content dt { font-weight: 600; }
     .leaflet-popup-content dd { margin: 0; }
+    .provenance-details { margin-top: 0.45rem; }
+    .provenance-details summary, .legal-notices summary { cursor: pointer; font-weight: 600; }
+    .provenance-details div { margin-top: 0.35rem; }
+    .legal-notices pre { margin: 0.45rem 0 0; white-space: pre-wrap; overflow-wrap: anywhere; font: 0.68rem/1.35 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
     @media (max-width: 600px) {
       .map-panel { width: min(290px, calc(100vw - 72px)); max-height: calc(100vh - 80px); }
       .map-panel-body { max-height: calc(100vh - 140px); }
@@ -68,6 +73,7 @@
 <body>
   <main id="map" aria-label="Interactive map"></main>
 
+  <template id="goldilocks-third-party-notices"><pre>__THIRD_PARTY_NOTICES__</pre></template>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script id="goldilocks-data" type="application/json">__GOLDILOCKS_DATA__</script>
   <script>__GOLDILOCKS_APP_JS__</script>

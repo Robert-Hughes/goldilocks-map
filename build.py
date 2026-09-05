@@ -5,6 +5,7 @@ import argparse
 import base64
 import gzip
 import hashlib
+from html import escape
 import json
 import subprocess
 from pathlib import Path
@@ -13,6 +14,7 @@ ROOT = Path(__file__).resolve().parent
 DATA_DIR = ROOT / "data"
 DIST_DIR = ROOT / "dist"
 TEMPLATE_PATH = ROOT / "templates" / "goldilocks.html"
+THIRD_PARTY_NOTICES_PATH = ROOT / "THIRD-PARTY-NOTICES.txt"
 APP_TS = ROOT / "src" / "app.ts"
 APP_JS = DIST_DIR / "app.js"
 OUTPUT_HTML = DIST_DIR / "goldilocks.html"
@@ -108,9 +110,15 @@ def bundle_typescript() -> str:
 def render_html(data: dict, app_js: str) -> None:
     template = TEMPLATE_PATH.read_text(encoding="utf-8")
     data_json = json.dumps(data, separators=(",", ":"), ensure_ascii=False).replace("<", "\\u003c")
-    if template.count("__GOLDILOCKS_DATA__") != 1 or template.count("__GOLDILOCKS_APP_JS__") != 1:
+    third_party_notices = escape(THIRD_PARTY_NOTICES_PATH.read_text(encoding="utf-8"), quote=False)
+    placeholders = ("__GOLDILOCKS_DATA__", "__GOLDILOCKS_APP_JS__", "__THIRD_PARTY_NOTICES__")
+    if any(template.count(placeholder) != 1 for placeholder in placeholders):
         raise RuntimeError("Template must contain each build placeholder exactly once")
-    html = template.replace("__GOLDILOCKS_DATA__", data_json).replace("__GOLDILOCKS_APP_JS__", app_js)
+    html = (
+        template.replace("__GOLDILOCKS_DATA__", data_json)
+        .replace("__GOLDILOCKS_APP_JS__", app_js)
+        .replace("__THIRD_PARTY_NOTICES__", third_party_notices)
+    )
     OUTPUT_HTML.write_text(html, encoding="utf-8")
     APP_JS.unlink(missing_ok=True)
     print(f"Wrote {OUTPUT_HTML} ({OUTPUT_HTML.stat().st_size:,} bytes)")
