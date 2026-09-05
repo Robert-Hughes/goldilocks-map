@@ -36,6 +36,22 @@ FILENAME_RE = re.compile(
     r"(?P<start>\d{8})-(?P<end>\d{8})\.nc$"
 )
 
+# Eight 1 km HadUK-Grid cells covering St Kilda are deliberately excluded from
+# derived products. A full 2016-01..2026-08 Tmin/Tmax consistency audit found
+# severe interpolation artefacts at every one of these cells; see README.md.
+# Coordinates are exact British National Grid cell centres, not a geographic
+# bounding box, so no neighbouring Hebridean cells are accidentally removed.
+ST_KILDA_PRUNED_CELLS_BNG: tuple[tuple[int, int], ...] = (
+    (9500, 898500),
+    (8500, 899500),
+    (9500, 899500),
+    (10500, 899500),
+    (8500, 900500),
+    (9500, 900500),
+    (6500, 901500),
+    (15500, 905500),
+)
+
 
 @dataclass(frozen=True)
 class SourceMonth:
@@ -197,6 +213,38 @@ def grid_from_file(path: Path, variable: str) -> tuple[GridSpec, np.ndarray]:
         GridSpec(width, height, int(x_step), x, y, west, south, east, north, bounds_wgs84),
         land_mask,
     )
+
+
+def apply_data_pruning(grid: GridSpec, land_mask: np.ndarray) -> list[dict]:
+    """Apply documented source-data QC exclusions before deriving any metric."""
+    transformer = Transformer.from_crs(GRID_CRS, "EPSG:4326", always_xy=True)
+    pruned_cells: list[dict] = []
+    for easting, northing in ST_KILDA_PRUNED_CELLS_BNG:
+        x_matches = np.flatnonzero(grid.x == float(easting))
+        y_matches = np.flatnonzero(grid.y == float(northing))
+        if x_matches.size != 1 or y_matches.size != 1:
+            raise RuntimeError(
+                f"Configured St Kilda prune cell E{easting} N{northing} is not an exact source-grid centre"
+            )
+        column = int(x_matches[0])
+        row = int(y_matches[0])
+        if not land_mask[row, column]:
+            raise RuntimeError(
+                f"Configured St Kilda prune cell E{easting} N{northing} is not valid in the source land mask"
+            )
+        land_mask[row, column] = False
+        lon, lat = transformer.transform(easting, northing)
+        pruned_cells.append(
+            {
+                "row": row,
+                "column": column,
+                "easting": easting,
+                "northing": northing,
+                "latitude": round(float(lat), 7),
+                "longitude": round(float(lon), 7),
+            }
+        )
+    return pruned_cells
 
 
 def validate_file_grid(h5: h5py.File, item: SourceMonth, grid: GridSpec) -> h5py.Dataset:
@@ -645,6 +693,7 @@ def build_manifest(
     tasmin_months: list[SourceMonth],
     output_dir: Path,
     allow_partial: bool,
+    pruned_cells: list[dict],
 ) -> Path:
     output_dir.mkdir(parents=True, exist_ok=True)
     metric_meta = [write_metric_blob(metric, land_mask, grid, output_dir) for metric in metrics]
@@ -663,6 +712,7 @@ def build_manifest(
             "height": grid.height,
             "cell_count": grid.width * grid.height,
             "valid_cell_count": int(np.count_nonzero(land_mask)),
+            "source_valid_cell_count": int(np.count_nonzero(land_mask)) + len(pruned_cells),
             "west": int(round(grid.west)),
             "south": int(round(grid.south)),
             "east": int(round(grid.east)),
@@ -672,6 +722,28 @@ def build_manifest(
             "bounds_wgs84": grid.bounds_wgs84,
         },
         "metrics": metric_meta,
+        "data_pruning": [
+            {
+                "id": "st-kilda-cross-variable-temperature-qc",
+                "area": "St Kilda archipelago",
+                "action": "Exclude these eight 1 km cells from all derived metrics before LOD construction.",
+                "reason": (
+                    "A full 2016-01 to 2026-08 audit comparing each daily Tmin with the Tmax covering the same "
+                    "24-hour observation period found severe interpolation inconsistencies at every St Kilda cell. "
+                    "All UK cells with ordering errors greater than 10°C were these eight cells, and all tropical-night "
+                    "candidate events with ordering errors greater than 5°C occurred in them."
+                ),
+                "audit_period": "2016-01 to 2026-08",
+                "audit_summary": {
+                    "source_valid_cells": int(np.count_nonzero(land_mask)) + len(pruned_cells),
+                    "pruned_cells": len(pruned_cells),
+                    "st_kilda_tropical_candidate_events": 160,
+                    "st_kilda_tropical_candidates_with_any_ordering_error": 152,
+                    "st_kilda_tropical_candidates_with_gt_5c_ordering_error": 135,
+                },
+                "cells": pruned_cells,
+            }
+        ],
         "sources": {
             "provider": "Met Office HadUK-Grid",
             "resolution": "1 km daily",
@@ -726,8 +798,11 @@ def main() -> int:
 
     first = tasmax_months[0] if tasmax_months else tasmin_months[0]
     grid, land_mask = grid_from_file(first.path, first.variable)
+    source_valid_cell_count = int(np.count_nonzero(land_mask))
+    pruned_cells = apply_data_pruning(grid, land_mask)
     print(
-        f"Grid {grid.width}x{grid.height}, {np.count_nonzero(land_mask):,} valid cells; "
+        f"Grid {grid.width}x{grid.height}, {np.count_nonzero(land_mask):,} retained valid cells "
+        f"({source_valid_cell_count:,} source-valid; {len(pruned_cells)} St Kilda cells pruned); "
         f"tasmax months={len(tasmax_months)}, tasmin months={len(tasmin_months)}"
     )
 
@@ -750,7 +825,16 @@ def main() -> int:
             "tropical_nights_tmin_gt_20": 6,
         }
         metrics.sort(key=lambda metric: order.get(metric.id, 999))
-        build_manifest(metrics, land_mask, grid, tasmax_months, tasmin_months, output_dir, args.allow_partial)
+        build_manifest(
+            metrics,
+            land_mask,
+            grid,
+            tasmax_months,
+            tasmin_months,
+            output_dir,
+            args.allow_partial,
+            pruned_cells,
+        )
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)
     return 0

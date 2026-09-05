@@ -18,6 +18,16 @@ Stable historical observations come from CEDA HadUK-Grid v1.3.2.ceda for 2016–
 
 HadUK-Grid is a gridded/interpolated climate-observation dataset. A 1 km grid-cell value should not be interpreted as a thermometer measurement physically made at that exact location.
 
+## Data quality pruning
+
+The offline metric processor deliberately masks eight 1 km HadUK-Grid cells covering the St Kilda archipelago before deriving any metric or building any LOD level. The exclusion is expressed as exact British National Grid cell centres, not as a geographic bounding box, so neighbouring Hebridean cells are not affected.
+
+A full Jan 2016–Aug 2026 cross-variable audit compared each daily `tasmin` value with the `tasmax` value covering the same 24-hour observation period. St Kilda was the only severe tropical-night failure cluster: all UK cells with Tmin/Tmax ordering errors greater than 10°C were these eight cells, and every tropical-night candidate with an ordering error greater than 5°C occurred there. Across the eight St Kilda cells, 152 of 160 `tasmin > 20°C` candidate events had a Tmin-above-Tmax inconsistency, demonstrating that the apparent tropical-night maximum was an interpolation artefact rather than a credible climate signal.
+
+The excluded BNG cell centres are `(9500,898500)`, `(8500,899500)`, `(9500,899500)`, `(10500,899500)`, `(8500,900500)`, `(9500,900500)`, `(6500,901500)`, and `(15500,905500)`. This removes 8 of 245,077 source-valid cells (about 0.0033%). The smaller inconsistencies observed around the Isles of Scilly are retained: they do not produce comparable >5°C tropical-night ordering errors and do not materially distort the metric.
+
+The derived manifest records the pruning rule, audit rationale and exact cells so generated products remain traceable.
+
 ## Build
 
 Prerequisites: Python 3.11+, Node.js/npm, and internet access for source/dependency downloads.

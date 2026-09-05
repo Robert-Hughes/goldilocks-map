@@ -49,6 +49,7 @@ type GoldilocksData = {
     height: number;
     cell_count: number;
     valid_cell_count: number;
+    source_valid_cell_count?: number;
     west: number;
     south: number;
     east: number;
@@ -67,6 +68,14 @@ type GoldilocksData = {
     provisional_release?: string;
     note?: string;
   };
+  data_pruning: Array<{
+    id: string;
+    area: string;
+    action: string;
+    reason: string;
+    audit_period: string;
+    cells: Array<{ row: number; column: number; easting: number; northing: number }>;
+  }>;
 };
 
 type MetricRuntime = {
@@ -665,6 +674,12 @@ function sourceDescription(): string {
   return bits.join("; ");
 }
 
+function pruningDescription(): string {
+  return data.data_pruning.map((item) =>
+    `QC pruning: ${item.cells.length} 1 km cells in ${item.area} excluded offline after severe Tmin/Tmax interpolation inconsistencies.`
+  ).join("<br>");
+}
+
 const mapPanel = L.control({ position: "topleft" });
 mapPanel.onAdd = () => {
   const div = L.DomUtil.create("section", "map-panel");
@@ -727,10 +742,11 @@ mapPanel.onAdd = () => {
         <span>${formatMetricValue(activeMetric, value)}</span>
       </div>`).join("");
     description.textContent = activeMetric.definition;
+    const pruning = pruningDescription();
     source.innerHTML = `
       ${data.sources.provider ?? "Met Office HadUK-Grid"}; ${sourceDescription()}.<br>
       Variable: <code>${activeMetric.source_variable}</code>.<br>
-      ${data.sources.note ?? ""}`;
+      ${data.sources.note ?? ""}${pruning ? `<br>${pruning}` : ""}`;
   }
 
   const panelButton = div.querySelector(".map-panel-toggle") as HTMLButtonElement;

@@ -60,6 +60,7 @@ def load_metric_bundle(manifest_path: Path) -> dict:
         "metrics": embedded_metrics,
         "default_metric_id": embedded_metrics[0]["id"],
         "sources": manifest.get("sources", {}),
+        "data_pruning": manifest.get("data_pruning", []),
         "preview_partial_sources": bool(manifest.get("preview_partial_sources", False)),
     }
 
