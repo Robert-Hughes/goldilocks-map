@@ -15,6 +15,7 @@ DEFAULT_DATASET_MANIFESTS = (
     ROOT / "data" / "derived" / "climate-metrics" / "manifest.json",
     ROOT / "data" / "derived" / "pollution-metrics" / "manifest.json",
     ROOT / "data" / "derived" / "terrain-metrics" / "manifest.json",
+    ROOT / "data" / "derived" / "woodland-metrics" / "manifest.json",
 )
 DEFAULT_OUTPUT_DIR = ROOT / "data" / "derived" / "goldilocks-metrics"
 
@@ -41,7 +42,7 @@ def main() -> int:
         dest="dataset_manifests",
         action="append",
         type=Path,
-        help="dataset manifest to include; may be repeated (defaults to Climate + Pollution + Terrain)",
+        help="dataset manifest to include; may be repeated (defaults to Climate + Pollution + Terrain + Woodland)",
     )
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     args = parser.parse_args()

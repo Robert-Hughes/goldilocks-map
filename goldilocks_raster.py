@@ -20,6 +20,17 @@ BNG_PROJ4 = (
 NODATA_U16 = np.uint16(65535)
 DATASET_MANIFEST_VERSION = 3
 BUNDLE_MANIFEST_VERSION = 3
+DEFAULT_METRIC_PALETTE = (
+    "#1548ac",
+    "#1796b7",
+    "#18c096",
+    "#19c84c",
+    "#38cf1a",
+    "#8ed31a",
+    "#d7c71b",
+    "#d9721b",
+    "#da1b1b",
+)
 
 
 @dataclass(frozen=True)
@@ -51,6 +62,8 @@ class MetricResult:
     source_id: str
     source_variable: str
     coverage: dict[str, Any]
+    palette: tuple[str, ...] | None = None
+    display_range: tuple[float, float] | None = None
     palette_reverse: bool = False
 
 
@@ -231,7 +244,20 @@ def write_metric_blob(
         f"({len(compressed) / len(raw) * 100:.1f}%), {valid_cell_count:,} valid cells, "
         f"range {decoded_min:g}..{decoded_max:g} {metric.units}"
     )
-    return {
+    palette = list(metric.palette or DEFAULT_METRIC_PALETTE)
+    if metric.palette_reverse:
+        palette.reverse()
+    if len(palette) < 2:
+        raise RuntimeError(f"Metric {metric.id} palette must contain at least two colours")
+    for colour in palette:
+        try:
+            valid_colour = isinstance(colour, str) and len(colour) == 7 and colour.startswith("#") and int(colour[1:], 16) >= 0
+        except ValueError:
+            valid_colour = False
+        if not valid_colour:
+            raise RuntimeError(f"Metric {metric.id} has unsupported palette colour {colour!r}; use #RRGGBB")
+
+    metadata = {
         "id": metric.id,
         "category_id": metric.category_id,
         "label": metric.label,
@@ -249,7 +275,7 @@ def write_metric_blob(
         "summary": {"min": decoded_min, "max": decoded_max},
         "coverage": metric.coverage,
         "valid_cell_count": valid_cell_count,
-        "palette_reverse": metric.palette_reverse,
+        "palette": palette,
         "levels": level_meta,
         "blob_file": blob_name,
         "blob_encoding": "gzip+uint16le",
@@ -257,6 +283,16 @@ def write_metric_blob(
         "compressed_bytes": len(compressed),
         "sha256_raw": digest,
     }
+    if metric.display_range is not None:
+        display_min, display_max = metric.display_range
+        if not (np.isfinite(display_min) and np.isfinite(display_max) and display_min < display_max):
+            raise RuntimeError(f"Metric {metric.id} has invalid display range {metric.display_range!r}")
+        min_encoded = int(round((display_min - metric.offset) / metric.scale))
+        max_encoded = int(round((display_max - metric.offset) / metric.scale))
+        if min_encoded < 0 or max_encoded >= int(NODATA_U16) or min_encoded >= max_encoded:
+            raise RuntimeError(f"Metric {metric.id} display range does not fit its uint16 encoding")
+        metadata["display_range"] = {"min": float(display_min), "max": float(display_max)}
+    return metadata
 
 
 def write_dataset_manifest(

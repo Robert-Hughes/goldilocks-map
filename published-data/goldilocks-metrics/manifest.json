@@ -1,7 +1,7 @@
 {
   "format_version": 3,
   "kind": "goldilocks-bundle",
-  "generated_at_unix": 1788626529,
+  "generated_at_unix": 1788630921,
   "preview_partial_sources": false,
   "grid": {
     "crs": "EPSG:27700",
@@ -57,6 +57,11 @@
       "id": "terrain",
       "label": "Terrain",
       "order": 3
+    },
+    {
+      "id": "woodland",
+      "label": "Woodland",
+      "order": 4
     }
   ],
   "metrics": [
@@ -2223,6 +2228,582 @@
       "raw_bytes": 3480972,
       "compressed_bytes": 415831,
       "sha256_raw": "f88cecac5d6068deab5b4270ceb8bbfea88dd103c371d99055d03e289df5441a"
+    },
+    {
+      "id": "woodland_cover",
+      "category_id": "woodland",
+      "label": "Current woodland cover",
+      "units": "%",
+      "period": "NFI GB 2024",
+      "definition": "Percentage of the full canonical 1 km tile inside National Forest Inventory polygons representing current woodland land. Felled, ground-preparation, failed and windblown classes are excluded. This is woodland polygon area, not fractional tree-canopy density within each polygon.",
+      "source_id": "forestry-commission-nfi-gb-2024",
+      "source_variable": "NFI CATEGORY=Woodland; filtered IFT_IOA",
+      "scale": 0.1,
+      "offset": 0.0,
+      "decimals": 1,
+      "nodata": 65535,
+      "encoded_min": 0,
+      "encoded_max": 1000,
+      "summary": {
+        "min": 0.0,
+        "max": 100.0
+      },
+      "coverage": {
+        "source_features": 641642,
+        "included_features": 544419,
+        "included_ift_ioa": [
+          "Assumed woodland",
+          "Broadleaved",
+          "Conifer",
+          "Coppice",
+          "Coppice with standards",
+          "Low density",
+          "Mixed mainly broadleaved",
+          "Mixed mainly conifer",
+          "Shrub",
+          "Young trees"
+        ],
+        "excluded_ift_ioa": [
+          "Failed",
+          "Felled",
+          "Ground prep",
+          "Windblow"
+        ],
+        "woodland_class_counts": {
+          "Assumed woodland": 41996,
+          "Broadleaved": 298953,
+          "Conifer": 95866,
+          "Coppice": 460,
+          "Coppice with standards": 61,
+          "Failed": 1893,
+          "Felled": 48420,
+          "Ground prep": 8372,
+          "Low density": 4220,
+          "Mixed mainly broadleaved": 28141,
+          "Mixed mainly conifer": 27533,
+          "Shrub": 4579,
+          "Windblow": 8125,
+          "Young trees": 42610
+        },
+        "source_included_area_ha": 2539151.338037509,
+        "canonical_intersection_area_ha": 2524203.6935239094,
+        "canonical_valid_cells": 230166,
+        "method": "Exact polygon intersection area divided by the full 1,000,000 m\u00b2 canonical cell area. Only NFI polygons interpreted as current wooded cover are included."
+      },
+      "valid_cell_count": 230166,
+      "palette": [
+        "#ffffff",
+        "#006400"
+      ],
+      "levels": [
+        {
+          "level": 0,
+          "width": 900,
+          "height": 1450,
+          "cell_size_m": 1000,
+          "value_offset": 0,
+          "value_count": 1305000
+        },
+        {
+          "level": 1,
+          "width": 450,
+          "height": 725,
+          "cell_size_m": 2000,
+          "value_offset": 1305000,
+          "value_count": 326250
+        },
+        {
+          "level": 2,
+          "width": 225,
+          "height": 363,
+          "cell_size_m": 4000,
+          "value_offset": 1631250,
+          "value_count": 81675
+        },
+        {
+          "level": 3,
+          "width": 113,
+          "height": 182,
+          "cell_size_m": 8000,
+          "value_offset": 1712925,
+          "value_count": 20566
+        },
+        {
+          "level": 4,
+          "width": 57,
+          "height": 91,
+          "cell_size_m": 16000,
+          "value_offset": 1733491,
+          "value_count": 5187
+        },
+        {
+          "level": 5,
+          "width": 29,
+          "height": 46,
+          "cell_size_m": 32000,
+          "value_offset": 1738678,
+          "value_count": 1334
+        },
+        {
+          "level": 6,
+          "width": 15,
+          "height": 23,
+          "cell_size_m": 64000,
+          "value_offset": 1740012,
+          "value_count": 345
+        },
+        {
+          "level": 7,
+          "width": 8,
+          "height": 12,
+          "cell_size_m": 128000,
+          "value_offset": 1740357,
+          "value_count": 96
+        },
+        {
+          "level": 8,
+          "width": 4,
+          "height": 6,
+          "cell_size_m": 256000,
+          "value_offset": 1740453,
+          "value_count": 24
+        },
+        {
+          "level": 9,
+          "width": 2,
+          "height": 3,
+          "cell_size_m": 512000,
+          "value_offset": 1740477,
+          "value_count": 6
+        },
+        {
+          "level": 10,
+          "width": 1,
+          "height": 2,
+          "cell_size_m": 1024000,
+          "value_offset": 1740483,
+          "value_count": 2
+        },
+        {
+          "level": 11,
+          "width": 1,
+          "height": 1,
+          "cell_size_m": 2048000,
+          "value_offset": 1740485,
+          "value_count": 1
+        }
+      ],
+      "blob_file": "woodland_cover.u16.gz",
+      "blob_encoding": "gzip+uint16le",
+      "raw_bytes": 3480972,
+      "compressed_bytes": 403879,
+      "sha256_raw": "a3a3ced12f1a6914dbb753b17ab86a21885c264fe0c54f8e554fcb31983d473a",
+      "display_range": {
+        "min": 0.0,
+        "max": 100.0
+      }
+    },
+    {
+      "id": "woodland_ancient_cover",
+      "category_id": "woodland",
+      "label": "Ancient woodland cover",
+      "units": "%",
+      "period": "GB national ancient woodland inventories",
+      "definition": "Percentage of the full canonical 1 km tile covered by recognised ancient woodland inventory sites. England uses revised inventory coverage in preference to legacy inventory; Wales includes ASNW, RAWS, PAWS and AWSU; Scotland includes Ancient Woodland categories 1a and 2a only. This is inventory-site extent rather than current canopy cover, so it is not necessarily a subset of the current woodland metric.",
+      "source_id": "gb-ancient-woodland-inventories",
+      "source_variable": "National ancient woodland inventory polygons",
+      "scale": 0.1,
+      "offset": 0.0,
+      "decimals": 1,
+      "nodata": 65535,
+      "encoded_min": 0,
+      "encoded_max": 1000,
+      "summary": {
+        "min": 0.0,
+        "max": 100.0
+      },
+      "coverage": {
+        "revised_lad_count": 213,
+        "revised_lad_codes": [
+          "E06000001",
+          "E06000002",
+          "E06000003",
+          "E06000004",
+          "E06000005",
+          "E06000006",
+          "E06000007",
+          "E06000008",
+          "E06000012",
+          "E06000013",
+          "E06000015",
+          "E06000016",
+          "E06000017",
+          "E06000019",
+          "E06000022",
+          "E06000023",
+          "E06000024",
+          "E06000025",
+          "E06000026",
+          "E06000027",
+          "E06000030",
+          "E06000031",
+          "E06000032",
+          "E06000033",
+          "E06000034",
+          "E06000037",
+          "E06000042",
+          "E06000045",
+          "E06000047",
+          "E06000049",
+          "E06000050",
+          "E06000051",
+          "E06000052",
+          "E06000054",
+          "E06000055",
+          "E06000056",
+          "E06000057",
+          "E06000058",
+          "E06000059",
+          "E06000060",
+          "E06000061",
+          "E06000062",
+          "E06000064",
+          "E06000065",
+          "E06000066",
+          "E07000009",
+          "E07000011",
+          "E07000012",
+          "E07000032",
+          "E07000033",
+          "E07000034",
+          "E07000035",
+          "E07000036",
+          "E07000037",
+          "E07000038",
+          "E07000039",
+          "E07000040",
+          "E07000041",
+          "E07000042",
+          "E07000043",
+          "E07000044",
+          "E07000045",
+          "E07000046",
+          "E07000047",
+          "E07000066",
+          "E07000067",
+          "E07000068",
+          "E07000069",
+          "E07000070",
+          "E07000071",
+          "E07000072",
+          "E07000073",
+          "E07000074",
+          "E07000075",
+          "E07000076",
+          "E07000077",
+          "E07000078",
+          "E07000079",
+          "E07000080",
+          "E07000081",
+          "E07000082",
+          "E07000083",
+          "E07000084",
+          "E07000086",
+          "E07000087",
+          "E07000088",
+          "E07000089",
+          "E07000090",
+          "E07000091",
+          "E07000092",
+          "E07000093",
+          "E07000094",
+          "E07000095",
+          "E07000096",
+          "E07000098",
+          "E07000099",
+          "E07000102",
+          "E07000103",
+          "E07000107",
+          "E07000111",
+          "E07000117",
+          "E07000118",
+          "E07000119",
+          "E07000120",
+          "E07000121",
+          "E07000122",
+          "E07000123",
+          "E07000124",
+          "E07000125",
+          "E07000126",
+          "E07000127",
+          "E07000128",
+          "E07000129",
+          "E07000130",
+          "E07000131",
+          "E07000132",
+          "E07000133",
+          "E07000134",
+          "E07000137",
+          "E07000138",
+          "E07000139",
+          "E07000141",
+          "E07000142",
+          "E07000170",
+          "E07000171",
+          "E07000181",
+          "E07000194",
+          "E07000195",
+          "E07000196",
+          "E07000198",
+          "E07000200",
+          "E07000202",
+          "E07000203",
+          "E07000207",
+          "E07000215",
+          "E07000218",
+          "E07000219",
+          "E07000220",
+          "E07000221",
+          "E07000222",
+          "E07000234",
+          "E07000235",
+          "E07000236",
+          "E07000237",
+          "E07000238",
+          "E07000239",
+          "E07000240",
+          "E07000241",
+          "E07000242",
+          "E07000243",
+          "E07000244",
+          "E07000245",
+          "E08000001",
+          "E08000002",
+          "E08000003",
+          "E08000004",
+          "E08000005",
+          "E08000006",
+          "E08000007",
+          "E08000008",
+          "E08000009",
+          "E08000010",
+          "E08000011",
+          "E08000012",
+          "E08000013",
+          "E08000014",
+          "E08000015",
+          "E08000017",
+          "E08000018",
+          "E08000021",
+          "E08000022",
+          "E08000024",
+          "E08000025",
+          "E08000026",
+          "E08000027",
+          "E08000028",
+          "E08000029",
+          "E08000030",
+          "E08000031",
+          "E08000032",
+          "E08000033",
+          "E08000034",
+          "E08000035",
+          "E08000036",
+          "E08000037",
+          "E08000038",
+          "E08000039",
+          "E09000003",
+          "E09000004",
+          "E09000006",
+          "E09000007",
+          "E09000008",
+          "E09000009",
+          "E09000010",
+          "E09000011",
+          "E09000012",
+          "E09000014",
+          "E09000015",
+          "E09000016",
+          "E09000017",
+          "E09000018",
+          "E09000020",
+          "E09000021",
+          "E09000022",
+          "E09000023",
+          "E09000024",
+          "E09000026",
+          "E09000027",
+          "E09000028",
+          "E09000029",
+          "E09000031",
+          "E09000032",
+          "E09000033"
+        ],
+        "revised_status_counts": {
+          "ARW": 12060,
+          "ASNW": 28072,
+          "AWPP": 2172,
+          "IAWPP": 3102
+        },
+        "feature_counts": {
+          "england_revised_included": 45406,
+          "england_legacy_included": 21935,
+          "england_legacy_excluded_in_revised_lads": 31703,
+          "england_legacy_partially_clipped_at_revised_lad_boundaries": 453,
+          "wales_included": 48837,
+          "wales_deleted_excluded": 2,
+          "scotland_1a_2a_included": 14568
+        },
+        "raw_canonical_intersection_area_ha_before_union": {
+          "england_revised_ha": 212204.67497511732,
+          "england_legacy_ha": 108274.63759615817,
+          "wales_ha": 94325.5534820464,
+          "scotland_1a_2a_ha": 143612.35464969752
+        },
+        "union_statistics": {
+          "raw_intersection_area_ha_before_union": 558417.2207030221,
+          "union_area_ha": 557967.1876305508,
+          "overlap_removed_ha": 450.0330724712372,
+          "cells_with_multiple_fragments": 38417,
+          "cells_with_overlap_removed": 403,
+          "max_overlap_removed_in_one_cell_ha": 87.02337472270032
+        },
+        "legacy_status_counts": {
+          "ASNW": 39233,
+          "AWP": 64,
+          "PAWS": 14341
+        },
+        "wales_category_counts": {
+          "Ancient Semi Natural Woodland": 26675,
+          "Ancient Semi Natural Woodland Deleted": 1,
+          "Ancient Woodland Site of Unknown Category": 1767,
+          "Plantation on Ancient Woodland Site": 8943,
+          "Plantation on Ancient Woodland Site Deleted": 1,
+          "Restored Ancient Woodland Site": 11452
+        },
+        "scotland_category_counts": {
+          "1a: Ancient (of semi-natural origin)": 6305,
+          "1b: Long-Established (of plantation origin)": 708,
+          "2a: Ancient (of semi-natural origin)": 8263,
+          "2b: Long-Established (of plantation origin)": 10687,
+          "3: Other (on Roy map)": 2549
+        },
+        "canonical_valid_cells": 230166,
+        "method": "Accepted inventory polygons are clipped exactly to canonical 1 km cells, unioned within each cell to remove source overlaps, then divided by the full 1,000,000 m\u00b2 cell area. England uses the revised inventory in every 2025 LAD containing revised AWI features and legacy AWI elsewhere; Wales includes all four current 2021 AWI categories; Scotland includes antiquity codes 1a and 2a only.",
+        "england_revision_note": "Natural England publishes completed revised counties without a county field. Goldilocks infers revised coverage at 2025 Local Authority District level from the supplied revised AWI feature coordinates, then removes legacy geometry inside those LAD polygons. Legacy polygons crossing a revised/unrevised LAD boundary are clipped at the boundary rather than discarded wholesale. The ONS BGC boundary is generalised; revised feature coordinates within 100 m of an LAD boundary are assigned to the nearest English LAD."
+      },
+      "valid_cell_count": 230166,
+      "palette": [
+        "#ffffff",
+        "#006400"
+      ],
+      "levels": [
+        {
+          "level": 0,
+          "width": 900,
+          "height": 1450,
+          "cell_size_m": 1000,
+          "value_offset": 0,
+          "value_count": 1305000
+        },
+        {
+          "level": 1,
+          "width": 450,
+          "height": 725,
+          "cell_size_m": 2000,
+          "value_offset": 1305000,
+          "value_count": 326250
+        },
+        {
+          "level": 2,
+          "width": 225,
+          "height": 363,
+          "cell_size_m": 4000,
+          "value_offset": 1631250,
+          "value_count": 81675
+        },
+        {
+          "level": 3,
+          "width": 113,
+          "height": 182,
+          "cell_size_m": 8000,
+          "value_offset": 1712925,
+          "value_count": 20566
+        },
+        {
+          "level": 4,
+          "width": 57,
+          "height": 91,
+          "cell_size_m": 16000,
+          "value_offset": 1733491,
+          "value_count": 5187
+        },
+        {
+          "level": 5,
+          "width": 29,
+          "height": 46,
+          "cell_size_m": 32000,
+          "value_offset": 1738678,
+          "value_count": 1334
+        },
+        {
+          "level": 6,
+          "width": 15,
+          "height": 23,
+          "cell_size_m": 64000,
+          "value_offset": 1740012,
+          "value_count": 345
+        },
+        {
+          "level": 7,
+          "width": 8,
+          "height": 12,
+          "cell_size_m": 128000,
+          "value_offset": 1740357,
+          "value_count": 96
+        },
+        {
+          "level": 8,
+          "width": 4,
+          "height": 6,
+          "cell_size_m": 256000,
+          "value_offset": 1740453,
+          "value_count": 24
+        },
+        {
+          "level": 9,
+          "width": 2,
+          "height": 3,
+          "cell_size_m": 512000,
+          "value_offset": 1740477,
+          "value_count": 6
+        },
+        {
+          "level": 10,
+          "width": 1,
+          "height": 2,
+          "cell_size_m": 1024000,
+          "value_offset": 1740483,
+          "value_count": 2
+        },
+        {
+          "level": 11,
+          "width": 1,
+          "height": 1,
+          "cell_size_m": 2048000,
+          "value_offset": 1740485,
+          "value_count": 1
+        }
+      ],
+      "blob_file": "woodland_ancient_cover.u16.gz",
+      "blob_encoding": "gzip+uint16le",
+      "raw_bytes": 3480972,
+      "compressed_bytes": 184902,
+      "sha256_raw": "c0140fe582d29cf07d85bf8b2ca56c0558020d449c83bd8914ab2a854d1ebee6",
+      "display_range": {
+        "min": 0.0,
+        "max": 100.0
+      }
     }
   ],
   "sources": {
@@ -3921,6 +4502,107 @@
         ]
       },
       "documentation_url": "https://docs.os.uk/os-downloads/products/land-and-terrain-portfolio/os-terrain-50"
+    },
+    "forestry-commission-nfi-gb-2024": {
+      "provider": "Forestry Commission",
+      "dataset": "National Forest Inventory GB 2024 woodland map",
+      "resolution": "Vector woodland polygons aggregated by exact area to 1 km",
+      "homepage_url": "https://www.data.gov.uk/dataset/64379a2a-d877-415e-9e8d-8553bf09faea/national-forest-inventory-gb-2024",
+      "licence_name": "Open Government Licence v3.0",
+      "licence_url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+      "attribution": "\u00a9 Forestry Commission copyright. Contains Ordnance Survey data \u00a9 Crown copyright and database right 2025.",
+      "derived_product_notice": "Goldilocks current woodland cover is a filtered area summary derived from NFI GB 2024; it is not a Forestry Commission product.",
+      "note": "Goldilocks includes NFI interpreted forest types that represent current tree/shrub cover and excludes Felled, Ground prep, Failed and Windblow. The NFI woodland map generally maps woodland of at least 0.5 ha; Assumed woodland and Low density areas may be mapped from 0.1 ha. Northern Ireland is outside NFI GB coverage.",
+      "releases": [
+        {
+          "label": "National Forest Inventory GB 2024",
+          "status": "published; source item checked 2026-09-05",
+          "url": "https://www.data.gov.uk/dataset/64379a2a-d877-415e-9e8d-8553bf09faea/national-forest-inventory-gb-2024"
+        }
+      ],
+      "source_files": {
+        "nfi": [
+          {
+            "file": "nfi_gb_2024.shp.zip",
+            "url": "https://data-forestry.opendata.arcgis.com/api/download/v1/items/5a3efa283e81431b911b5c9872527ca5/shapefile?layers=0",
+            "bytes": 707678658,
+            "sha256": "4983e5e04b4a1865cdbe1245f51b32ae9f698d6d723254854614ac6e8ecdd084"
+          }
+        ]
+      }
+    },
+    "gb-ancient-woodland-inventories": {
+      "provider": "Natural England / Natural Resources Wales / NatureScot",
+      "dataset": "Goldilocks GB composite of national Ancient Woodland Inventories",
+      "resolution": "Vector ancient-woodland polygons aggregated by exact area to 1 km",
+      "licence_name": "Source-specific open licences",
+      "attribution": "England: \u00a9 Natural England 2024. Contains OS data \u00a9 Crown copyright and database rights 2024. OS AC0000851168. Wales: Contains Natural Resources Wales information \u00a9 Natural Resources Wales and Database Right. All rights Reserved. Contains Ordnance Survey Data. Ordnance Survey Licence number AC0000849444. Crown Copyright and Database Right. Scotland: Copyright NatureScot Contains Ordnance Survey data \u00a9 Crown copyright and database right 2026. England revision coverage helper: Source: Office for National Statistics licensed under the Open Government Licence v.3.0. Contains OS data \u00a9 Crown copyright and database right 2025.",
+      "derived_product_notice": "The GB ancient woodland cover raster is a Goldilocks harmonisation of three national inventories and is not an official product of any source agency.",
+      "note": "National inventories use different historical evidence and classifications. England revised AWI replaces legacy AWI where revised coverage is available; Wales includes all four recognised AWI categories; Scotland includes only antiquity classes 1a and 2a. Northern Ireland is nodata.",
+      "releases": [
+        {
+          "label": "Natural England Ancient Woodland - Revised - Completed Counties",
+          "status": "published",
+          "url": "https://www.data.gov.uk/dataset/12b72196-1f20-44a9-8fe0-0e78db46a67c/ancient-woodland-revised-england-completed-counties"
+        },
+        {
+          "label": "Natural England Ancient Woodland (England) legacy inventory",
+          "status": "published",
+          "url": "https://www.data.gov.uk/dataset/9461f463-c363-4309-ae77-fdcd7e9df7d3/ancient-woodland-england"
+        },
+        {
+          "label": "Natural Resources Wales Ancient Woodland Inventory 2021",
+          "status": "published 2026",
+          "url": "https://datamap.gov.wales/layers/inspire-nrw:NRW_ANCIENT_WOODLAND_INVENTORY_2021"
+        },
+        {
+          "label": "NatureScot Ancient Woodland Inventory (Scotland)",
+          "status": "published",
+          "url": "https://www.data.gov.uk/dataset/c2f57ed9-5601-4864-af5f-a6e73e977f54/ancient-woodland-inventory-scotland1"
+        }
+      ],
+      "source_files": {
+        "england_revised": [
+          {
+            "file": "ancient_england_revised.gpkg.zip",
+            "url": "https://environment.data.gov.uk/api/file/download?fileDataSetId=ae5441f3-ca68-4799-82ed-e1d8847b5c84&fileName=Ancient_Woodland_Revised_England_Completed_Counties.gpkg.zip",
+            "bytes": 100326277,
+            "sha256": "9380b3a4215e22f137a5093e499e361d3d4c65394dacd0391ad704e3aa66736d"
+          }
+        ],
+        "england_legacy": [
+          {
+            "file": "ancient_england_legacy.gpkg.zip",
+            "url": "https://environment.data.gov.uk/api/file/download?fileDataSetId=008cdfcf-893b-48f6-937a-3891a2a698c9&fileName=Ancient_Woodland_England.gpkg.zip",
+            "bytes": 117391537,
+            "sha256": "530791ecda3dd57a8c472a2d85024b4f0c8d13a677e3c2f0797bb233ed53b4c9"
+          }
+        ],
+        "wales": [
+          {
+            "file": "ancient_wales.gpkg",
+            "url": "https://datamap.gov.wales/geoserver/ows?outputFormat=gpkg&request=GetFeature&service=WFS&srs=EPSG%3A27700&typename=inspire-nrw%3ANRW_ANCIENT_WOODLAND_INVENTORY_2021&version=1.0.0",
+            "bytes": 118648832,
+            "sha256": "5ac1178a6b57d571674cc77c92417ac68053fd16863164d8c46be25eecccb883"
+          }
+        ],
+        "scotland": [
+          {
+            "file": "ancient_scotland.gpkg.zip",
+            "url": "https://gis-downloads.nature.scot/AWI_SCOTLAND_GPKG_27700.zip",
+            "bytes": 15175269,
+            "sha256": "9865c929a5f14e4d108da8e435e1c04a307ec41c1ff6df9051fde7a081d207ed"
+          }
+        ],
+        "england_revision_boundary_helper": [
+          {
+            "file": "ons_lad_dec_2025_bgc.shp.zip",
+            "url": "https://open-geography-portalx-ons.hub.arcgis.com/api/download/v1/items/54b2a8f849f743aea669488cab415c8f/shapefile?layers=0",
+            "bytes": 4872982,
+            "sha256": "6df4eafce016aea7db1d7e04de990e78679acdf56e6532586c865b7b633896a6"
+          }
+        ]
+      }
     }
   },
   "data_pruning": [
@@ -4021,6 +4703,11 @@
       "dataset_id": "terrain",
       "manifest": "data/derived/terrain-metrics/manifest.json",
       "generated_at_unix": 1788626529
+    },
+    {
+      "dataset_id": "woodland",
+      "manifest": "data/derived/woodland-metrics/manifest.json",
+      "generated_at_unix": 1788630604
     }
   ]
 }

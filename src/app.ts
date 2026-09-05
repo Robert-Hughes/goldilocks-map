@@ -39,7 +39,9 @@ type MetricTransport = {
   encoded_max: number;
   summary: { min: number; max: number };
   coverage: Record<string, unknown>;
-  palette_reverse?: boolean;
+  palette?: string[];
+  display_range?: { min: number; max: number };
+  palette_reverse?: boolean; // legacy bundles; new manifests carry explicit palette colours
   levels: RasterLevelMeta[];
   blob_encoding: "gzip+uint16le";
   raw_bytes: number;
@@ -223,6 +225,16 @@ function writeStoredLayerOpacity(value: number) {
 }
 
 function fullDisplayRange(metric: MetricTransport): DisplayRange {
+  if (metric.display_range) {
+    const minEncoded = Math.round((metric.display_range.min - metric.offset) / metric.scale);
+    const maxEncoded = Math.round((metric.display_range.max - metric.offset) / metric.scale);
+    if (
+      Number.isFinite(minEncoded) && Number.isFinite(maxEncoded) &&
+      minEncoded >= 0 && maxEncoded < metric.nodata && minEncoded < maxEncoded
+    ) {
+      return { minEncoded, maxEncoded };
+    }
+  }
   return { minEncoded: metric.encoded_min, maxEncoded: metric.encoded_max };
 }
 
@@ -383,15 +395,52 @@ function paletteBinForValue(value: number): number {
   const max = activeDisplayRange.maxEncoded;
   if (max === min) return Math.floor((PALETTE_BIN_COUNT - 1) / 2);
   const ratio = Math.max(0, Math.min(1, (value - min) / (max - min)));
-  const visualRatio = activeMetric.palette_reverse ? 1 - ratio : ratio;
-  return Math.min(PALETTE_BIN_COUNT - 1, Math.floor(visualRatio * PALETTE_BIN_COUNT));
+  return Math.min(PALETTE_BIN_COUNT - 1, Math.floor(ratio * PALETTE_BIN_COUNT));
+}
+
+function parseHexColour(colour: string): [number, number, number] | null {
+  const match = /^#([0-9a-f]{6})$/i.exec(colour);
+  if (!match) return null;
+  const value = Number.parseInt(match[1], 16);
+  return [(value >> 16) & 255, (value >> 8) & 255, value & 255];
+}
+
+const metricPaletteCache = new Map<string, string[]>();
+
+function paletteColours(metric: MetricTransport): string[] {
+  const cached = metricPaletteCache.get(metric.id);
+  if (cached) return cached;
+
+  const stops = metric.palette?.map(parseHexColour) ?? [];
+  let colours: string[];
+  if (stops.length >= 2 && stops.every((stop): stop is [number, number, number] => stop !== null)) {
+    colours = Array.from({ length: PALETTE_BIN_COUNT }, (_, bin) => {
+      const ratio = PALETTE_BIN_COUNT <= 1 ? 0.5 : bin / (PALETTE_BIN_COUNT - 1);
+      const position = ratio * (stops.length - 1);
+      const lowerIndex = Math.floor(position);
+      const upperIndex = Math.min(stops.length - 1, lowerIndex + 1);
+      const mix = position - lowerIndex;
+      const lower = stops[lowerIndex];
+      const upper = stops[upperIndex];
+      const channels = lower.map((channel, index) => Math.round(channel + (upper[index] - channel) * mix));
+      return `rgb(${channels[0]} ${channels[1]} ${channels[2]})`;
+    });
+  } else {
+    // Compatibility with pre-palette bundles.
+    colours = Array.from({ length: PALETTE_BIN_COUNT }, (_, bin) => {
+      const rawRatio = PALETTE_BIN_COUNT <= 1 ? 0.5 : bin / (PALETTE_BIN_COUNT - 1);
+      const ratio = metric.palette_reverse ? 1 - rawRatio : rawRatio;
+      const hue = 220 - ratio * 220;
+      const lightness = 48 - 10 * Math.pow(1 - ratio, 2);
+      return `hsl(${hue.toFixed(0)} 78% ${lightness.toFixed(1)}%)`;
+    });
+  }
+  metricPaletteCache.set(metric.id, colours);
+  return colours;
 }
 
 function colorForPaletteBin(bin: number): string {
-  const ratio = PALETTE_BIN_COUNT <= 1 ? 0.5 : bin / (PALETTE_BIN_COUNT - 1);
-  const hue = 220 - ratio * 220;
-  const lightness = 48 - 10 * Math.pow(1 - ratio, 2);
-  return `hsl(${hue.toFixed(0)} 78% ${lightness.toFixed(1)}%)`;
+  return paletteColours(activeMetric)[Math.max(0, Math.min(PALETTE_BIN_COUNT - 1, bin))];
 }
 
 function colorForValue(value: number): string {
@@ -843,9 +892,10 @@ function formatMetricNumber(metric: MetricTransport, encoded: number): string {
 }
 
 function displayRangePercent(metric: MetricTransport, encoded: number): number {
-  const span = metric.encoded_max - metric.encoded_min;
+  const full = fullDisplayRange(metric);
+  const span = full.maxEncoded - full.minEncoded;
   if (span <= 0) return 50;
-  return ((encoded - metric.encoded_min) / span) * 100;
+  return ((encoded - full.minEncoded) / span) * 100;
 }
 
 function sourceDescription(source: DataSource): string {

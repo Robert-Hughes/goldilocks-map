@@ -12,6 +12,8 @@ dependencies = [
   "numpy>=2.0",
   "h5py>=3.12",
   "pyproj>=3.7",
+  "fiona>=1.10",
+  "shapely>=2.1",
 ]
 
 [tool.setuptools]
