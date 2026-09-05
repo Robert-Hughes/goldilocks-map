@@ -138,20 +138,28 @@ export class LocationsController {
   private listElement: HTMLElement | null = null;
   private emptyElement: HTMLElement | null = null;
   private statusElement: HTMLElement | null = null;
-  private jsonTextarea: HTMLTextAreaElement | null = null;
+  private importTextarea: HTMLTextAreaElement | null = null;
   private draft: LocationDraft | null = null;
   private storageMessage = "";
   private actionMessage = "";
 
-  constructor(private readonly map: any) {
+  constructor(private readonly map: any, initiallyVisible = true) {
     const loaded = this.loadLocations();
     this.locations = loaded.locations;
     if (loaded.message) this.storageMessage = loaded.message;
-    this.markerLayer = L.layerGroup().addTo(map);
+    this.markerLayer = L.layerGroup();
+    if (initiallyVisible) this.markerLayer.addTo(map);
     this.addPanel();
     this.renderMarkers();
     this.installContextMenus();
     if (loaded.generatedIds && this.locations.length) this.persistLocations();
+  }
+
+  setVisible(visible: boolean) {
+    const isVisible = this.map.hasLayer(this.markerLayer);
+    if (visible === isVisible) return;
+    if (visible) this.markerLayer.addTo(this.map);
+    else this.markerLayer.removeFrom(this.map);
   }
 
   private loadLocations(): { locations: SavedLocation[]; generatedIds: boolean; message: string } {
@@ -246,31 +254,41 @@ export class LocationsController {
       list.className = "location-list";
       this.listElement = list;
 
-      const transfer = document.createElement("details");
-      transfer.className = "location-transfer";
-      const transferSummary = document.createElement("summary");
-      transferSummary.textContent = "Import / export";
-      const transferHelp = document.createElement("div");
-      transferHelp.className = "location-transfer-help";
-      transferHelp.textContent = "Export creates shareable JSON. Import replaces the complete current list after confirmation.";
+      const exportSection = document.createElement("details");
+      exportSection.className = "location-transfer";
+      const exportSummary = document.createElement("summary");
+      exportSummary.textContent = "Export";
+      const exportHelp = document.createElement("div");
+      exportHelp.className = "location-transfer-help";
+      exportHelp.textContent = "Copy the complete location list as shareable JSON.";
+      const exportActions = document.createElement("div");
+      exportActions.className = "location-transfer-actions";
+      const copyButton = button("Copy to clipboard");
+      copyButton.addEventListener("click", () => void this.copyExportJson());
+      exportActions.append(copyButton);
+      exportSection.append(exportSummary, exportHelp, exportActions);
+
+      const importSection = document.createElement("details");
+      importSection.className = "location-transfer";
+      const importSummary = document.createElement("summary");
+      importSummary.textContent = "Import";
+      const importHelp = document.createElement("div");
+      importHelp.className = "location-transfer-help";
+      importHelp.textContent = "Paste locations JSON below. Import replaces the complete current list after confirmation.";
       const textarea = document.createElement("textarea");
       textarea.className = "location-json";
       textarea.rows = 7;
       textarea.spellcheck = false;
-      textarea.setAttribute("aria-label", "Locations JSON");
-      this.jsonTextarea = textarea;
-      const transferActions = document.createElement("div");
-      transferActions.className = "location-transfer-actions";
-      const exportButton = button("Export JSON");
-      exportButton.addEventListener("click", () => this.showExportJson());
-      const copyButton = button("Copy");
-      copyButton.addEventListener("click", () => void this.copyExportJson());
+      textarea.setAttribute("aria-label", "Locations JSON to import");
+      this.importTextarea = textarea;
+      const importActions = document.createElement("div");
+      importActions.className = "location-transfer-actions";
       const importButton = button("Import (replace)", "location-button location-button-danger");
       importButton.addEventListener("click", () => this.importJson());
-      transferActions.append(exportButton, copyButton, importButton);
-      transfer.append(transferSummary, transferHelp, textarea, transferActions);
+      importActions.append(importButton);
+      importSection.append(importSummary, importHelp, textarea, importActions);
 
-      body.append(actions, status, empty, list, transfer);
+      body.append(actions, status, empty, list, exportSection, importSection);
       root.append(header, body);
 
       L.DomEvent.disableClickPropagation(root);
@@ -589,19 +607,8 @@ export class LocationsController {
     this.renderList();
   }
 
-  private showExportJson() {
-    if (!this.jsonTextarea) return;
-    this.jsonTextarea.value = JSON.stringify(locationExport(this.locations), null, 2);
-    this.jsonTextarea.focus();
-    this.jsonTextarea.select();
-    this.actionMessage = `Exported ${this.locations.length} location${this.locations.length === 1 ? "" : "s"} to the JSON box.`;
-    this.refreshStatus();
-  }
-
   private async copyExportJson() {
-    if (!this.jsonTextarea) return;
     const text = JSON.stringify(locationExport(this.locations), null, 2);
-    this.jsonTextarea.value = text;
     let copied = false;
     try {
       if (navigator.clipboard?.writeText) {
@@ -609,28 +616,34 @@ export class LocationsController {
         copied = true;
       }
     } catch {
-      // Fall through to the selection-based copy attempt below.
+      // Fall through to a temporary selection-based copy attempt below.
     }
     if (!copied) {
-      this.jsonTextarea.focus();
-      this.jsonTextarea.select();
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.setAttribute("readonly", "");
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.append(textarea);
+      textarea.select();
       try {
         copied = document.execCommand("copy");
       } catch {
         copied = false;
       }
+      textarea.remove();
     }
     this.actionMessage = copied
       ? "Locations JSON copied to the clipboard."
-      : "Locations JSON is selected; copy it with your browser's Copy command.";
-    this.refreshStatus();
+      : "The browser could not copy the locations JSON to the clipboard.";
+    this.refreshStatus(!copied);
   }
 
   private importJson() {
-    if (!this.jsonTextarea) return;
+    if (!this.importTextarea) return;
     let parsed: ParsedLocations;
     try {
-      parsed = parseLocationsJson(this.jsonTextarea.value);
+      parsed = parseLocationsJson(this.importTextarea.value);
     } catch (error) {
       this.actionMessage = error instanceof Error ? `Import failed: ${error.message}` : "Import failed.";
       this.refreshStatus(true);

@@ -1,3 +1,4 @@
+import type { LocationsController } from "./locations";
 import { MetricState } from "./metrics";
 import { RasterView } from "./raster";
 import { readStoredBoolean, readStoredString, writeStoredBoolean, writeStoredString } from "./storage";
@@ -7,11 +8,13 @@ declare const L: any;
 
 const PANEL_COLLAPSED_STORAGE_KEY = "goldilocks.infoPanelCollapsed";
 const GRIDLINES_STORAGE_KEY = "goldilocks.showGridLines";
+const LOCATIONS_VISIBLE_STORAGE_KEY = "goldilocks.showLocationPins";
 const LAYER_OPACITY_STORAGE_KEY = "goldilocks.layerOpacity";
 const DEFAULT_LAYER_OPACITY = 0.62;
 
 export type MapPanelPreferences = {
   gridLinesVisible: boolean;
+  locationsVisible: boolean;
   layerOpacity: number;
 };
 
@@ -20,6 +23,7 @@ export function readMapPanelPreferences(): MapPanelPreferences {
   const value = storedOpacity === null ? DEFAULT_LAYER_OPACITY : Number(storedOpacity);
   return {
     gridLinesVisible: readStoredBoolean(GRIDLINES_STORAGE_KEY, false),
+    locationsVisible: readStoredBoolean(LOCATIONS_VISIBLE_STORAGE_KEY, true),
     layerOpacity: Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : DEFAULT_LAYER_OPACITY,
   };
 }
@@ -37,6 +41,7 @@ export function addInfoPanel(
   data: GoldilocksData,
   metrics: MetricState,
   raster: RasterView,
+  locations: LocationsController,
   thirdPartyNotices: string,
   preferences: MapPanelPreferences,
 ) {
@@ -92,6 +97,10 @@ export function addInfoPanel(
           <label class="panel-option">
             <input class="gridlines-toggle" type="checkbox" ${preferences.gridLinesVisible ? "checked" : ""}>
             <span>Show gridlines</span>
+          </label>
+          <label class="panel-option">
+            <input class="locations-toggle" type="checkbox" ${preferences.locationsVisible ? "checked" : ""}>
+            <span>Show location pins</span>
           </label>
         </div>
         <div class="panel-section opacity-control">
@@ -256,6 +265,13 @@ export function addInfoPanel(
       const show = gridlinesCheckbox.checked;
       raster.setShowGridLines(show);
       writeStoredBoolean(GRIDLINES_STORAGE_KEY, show);
+    });
+
+    const locationsCheckbox = div.querySelector(".locations-toggle") as HTMLInputElement;
+    locationsCheckbox.addEventListener("change", () => {
+      const show = locationsCheckbox.checked;
+      locations.setVisible(show);
+      writeStoredBoolean(LOCATIONS_VISIBLE_STORAGE_KEY, show);
     });
 
     opacityInput.addEventListener("input", () => {

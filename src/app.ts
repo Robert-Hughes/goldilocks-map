@@ -75,6 +75,7 @@ const raster = new RasterView(map, data, metrics, {
   showGridLines: preferences.gridLinesVisible,
   opacity: preferences.layerOpacity,
 });
+const locations = new LocationsController(map, preferences.locationsVisible);
 map.fitBounds(L.latLngBounds(data.grid.bounds_wgs84), { padding: [18, 18] });
 
 map.on("click", (event: any) => {
@@ -87,5 +88,4 @@ map.on("click", (event: any) => {
     .openOn(map);
 });
 
-addInfoPanel(map, data, metrics, raster, thirdPartyNotices, preferences);
-new LocationsController(map);
+addInfoPanel(map, data, metrics, raster, locations, thirdPartyNotices, preferences);
