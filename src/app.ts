@@ -1,4 +1,5 @@
 import { addInfoPanel, readMapPanelPreferences } from "./info-panel";
+import { LocationsController } from "./locations";
 import { MetricState } from "./metrics";
 import { RasterView } from "./raster";
 import type { GoldilocksData } from "./types";
@@ -47,6 +48,9 @@ const map = L.map("map", {
   // over 200 ms. Our metric canvases render synchronously, so that fade only
   // makes redraws/zoom tile replacement look like a distracting white flash.
   fadeAnimation: false,
+  // Leaflet's tap-hold handler turns a mobile long-press into the same
+  // contextmenu event used for desktop right-click location actions.
+  tapHold: true,
   zoomControl: false,
 });
 L.control.zoom({ position: "bottomright" }).addTo(map);
@@ -84,3 +88,4 @@ map.on("click", (event: any) => {
 });
 
 addInfoPanel(map, data, metrics, raster, thirdPartyNotices, preferences);
+new LocationsController(map);

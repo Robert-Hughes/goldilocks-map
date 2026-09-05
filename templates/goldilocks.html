@@ -64,9 +64,56 @@
     .provenance-details summary, .legal-notices summary { cursor: pointer; font-weight: 600; }
     .provenance-details div { margin-top: 0.35rem; }
     .legal-notices pre { margin: 0.45rem 0 0; white-space: pre-wrap; overflow-wrap: anywhere; font: 0.68rem/1.35 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .location-panel { width: min(360px, calc(50vw - 30px)); max-height: calc(100vh - 84px); overflow: hidden; background: rgba(255,255,255,0.97); box-shadow: 0 1px 5px rgba(0,0,0,0.25); border-radius: 5px; font-size: 0.82rem; line-height: 1.35; }
+    .location-panel-header { display: flex; align-items: center; gap: 0.55rem; padding: 0.55rem 0.6rem; }
+    .location-panel-heading { display: flex; align-items: baseline; gap: 0.35rem; flex: 1; min-width: 0; }
+    .location-panel-title { font-size: 1rem; }
+    .location-panel-count { color: #596771; font-variant-numeric: tabular-nums; }
+    .location-panel-toggle { flex: 0 0 auto; width: 2rem; height: 2rem; padding: 0; border: 1px solid #aeb8c0; border-radius: 4px; background: #fff; color: #17212b; font-size: 1.15rem; line-height: 1; cursor: pointer; }
+    .location-panel-body { max-height: calc(100vh - 145px); overflow: auto; padding: 0.65rem; border-top: 1px solid #d8dee3; }
+    .location-panel.collapsed { width: auto; max-width: min(220px, calc(100vw - 80px)); }
+    .location-panel.collapsed .location-panel-body { display: none; }
+    .location-panel-actions, .location-transfer-actions, .location-edit-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .location-button, .location-context-action { padding: 0.28rem 0.52rem; border: 1px solid #aeb8c0; border-radius: 4px; background: #fff; color: #17212b; font: inherit; cursor: pointer; }
+    .location-button:hover, .location-context-action:hover { background: #f1f4f6; }
+    .location-button:disabled { opacity: 0.42; cursor: default; }
+    .location-button-primary { border-color: #657783; font-weight: 600; }
+    .location-button-danger { border-color: #b36a6a; }
+    .location-button-compact { padding: 0.18rem 0.38rem; }
+    .location-order-button { min-width: 1.8rem; font-weight: 700; }
+    .location-status { margin-top: 0.55rem; padding: 0.4rem 0.48rem; border-radius: 4px; background: #eef4f7; color: #354852; }
+    .location-status-error { border: 1px solid #c77a71; background: #fff1ef; color: #6a2922; }
+    .location-empty { margin-top: 0.65rem; color: #596771; }
+    .location-list { display: grid; gap: 0.5rem; margin-top: 0.65rem; }
+    .location-item { padding: 0.48rem; border: 1px solid #d8dee3; border-radius: 5px; background: #fff; }
+    .location-item-new { border-style: dashed; }
+    .location-item-summary { display: flex; align-items: flex-start; gap: 0.45rem; }
+    .location-item-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+    .location-item-controls { display: flex; flex: 0 0 auto; flex-wrap: wrap; justify-content: flex-end; gap: 0.25rem; }
+    .location-edit-form { display: grid; gap: 0.5rem; margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid #e1e5e8; }
+    .location-edit-form label { display: grid; gap: 0.18rem; font-weight: 600; }
+    .location-edit-form input, .location-edit-form textarea, .location-json { box-sizing: border-box; width: 100%; border: 1px solid #aeb8c0; border-radius: 4px; background: #fff; color: #17212b; font: inherit; }
+    .location-edit-form input, .location-edit-form textarea { padding: 0.34rem 0.4rem; font-weight: 400; }
+    .location-edit-form textarea, .location-json { resize: vertical; }
+    .location-coordinate-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.45rem; }
+    .location-form-error { padding: 0.35rem 0.42rem; border-radius: 4px; background: #fff1ef; color: #6a2922; }
+    .location-transfer { margin-top: 0.7rem; padding-top: 0.6rem; border-top: 1px solid #e1e5e8; }
+    .location-transfer summary { cursor: pointer; font-weight: 600; }
+    .location-transfer-help { margin: 0.4rem 0; color: #596771; }
+    .location-json { min-height: 7rem; padding: 0.4rem; font: 0.72rem/1.35 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .location-transfer-actions { margin-top: 0.4rem; }
+    .goldilocks-location-marker-icon { overflow: visible !important; border: 0 !important; background: transparent !important; }
+    .location-marker-label { position: absolute; left: 0; top: -8px; display: block; width: max-content; max-width: min(240px, 70vw); transform: translate(-50%, -100%); padding: 0.28rem 0.45rem; border: 1px solid #56656f; border-radius: 4px; background: rgba(255,255,255,0.96); box-shadow: 0 1px 4px rgba(0,0,0,0.28); color: #17212b; font: 600 0.78rem/1.2 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; text-align: center; white-space: normal; overflow-wrap: anywhere; }
+    .location-marker-label::after { content: ""; position: absolute; left: 50%; top: 100%; margin-left: -5px; border: 5px solid transparent; border-top-color: #56656f; }
+    .location-context-popup .leaflet-popup-content { margin: 6px; }
+    .location-context-menu { display: flex; }
+    .location-context-action { white-space: nowrap; }
     @media (max-width: 600px) {
       .map-panel { width: min(290px, calc(100vw - 72px)); max-height: calc(100vh - 80px); }
       .map-panel-body { max-height: calc(100vh - 140px); }
+      .location-panel { width: min(300px, calc(100vw - 72px)); max-height: calc(100vh - 80px); }
+      .location-panel-body { max-height: calc(100vh - 140px); }
+      .location-coordinate-row { grid-template-columns: 1fr; }
     }
   </style>
 </head>

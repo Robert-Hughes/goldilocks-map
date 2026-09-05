@@ -209,6 +209,8 @@ For each Leaflet tile zoom, the renderer chooses the finest metric LOD whose nom
 
 Clicking always resolves against active-metric LOD0, so popups retain the exact quantised 1 km value rather than a coarse averaged value. The selected-cell outline is a separate lightweight Leaflet vector overlay, so changing the selection does not regenerate any metric canvas tiles. The collapsible left-side panel groups metric radio buttons by the categories declared in the processed manifest (currently `heat`, `cold`, `pollution`, `terrain` and `woodland`), followed by gridline visibility, data-layer opacity, a per-metric dual-ended display-range slider with integrated colour samples, description and provenance. Layer opacity defaults to 62% to preserve the original map appearance and is applied by Leaflet to the existing tile layer without repainting raster canvases. Narrowing the display range clips only the colour mapping; underlying raster and popup values remain unchanged. Display-range scrubbing repaints the existing cached metric canvases in place rather than invoking Leaflet `GridLayer.redraw()`, avoiding tile removal/recreation and the resulting basemap flicker. Display ranges, layer opacity, panel state, gridline visibility and selected metric are stored independently in `localStorage`, and each range can be reset to that metric's configured full display range (normally its observed minimum/maximum; woodland is fixed at 0–100%). Metric identifiers are category-prefixed (for example `heat_days_tmax_gt_25`, `cold_air_frost_days`, `terrain_relief` and `woodland_cover`) so the same grouping remains explicit in code and generated data; legacy unprefixed Heat metric selections are migrated automatically. Gridlines default to hidden when no preference has yet been saved. Leaflet's zoom control is positioned at bottom-right so the main information panel can occupy the top-left corner cleanly.
 
+Saved locations are a separate browser-only layer. Each location has a stable ID, name, WGS84 latitude/longitude and free-text notes, and the ordered list is stored under a versioned `localStorage` key. A collapsible top-right panel supports editing, up/down reordering, deletion, panning to a location, and replace-only JSON import/export with confirmation. Location names are rendered directly on the map as Leaflet label markers. Right-clicking the map (or long-pressing on touch devices through Leaflet's tap-hold handler) offers `Add location here`; right-clicking/long-pressing a saved marker offers `View / edit location`, which opens the corresponding panel editor. Location data is intentionally independent of metric decoding; there is currently no metric-at-location summary or comparison view.
+
 ## Basemap selection
 
 The generated page needs internet access for Leaflet and map tiles when it is served over `http:` or `https:`. It uses the standard OpenStreetMap tile server and displays the required OpenStreetMap attribution.
@@ -231,7 +233,13 @@ Direct `file://` opening still renders the embedded Goldilocks data layer, but i
 - `publish_metrics_snapshot.py` — copies the validated assembled bundle into the tracked public snapshot used by Pages
 - `.github/workflows/pages.yml` — builds the static artifact from the public snapshot and deploys it to GitHub Pages
 - `templates/goldilocks.html` — single-page HTML shell
-- `src/app.ts` — Leaflet/custom-canvas multi-metric frontend
+- `src/app.ts` — browser startup/orchestration and base-map wiring
+- `src/metrics.ts` — lazy metric decoding, display ranges and palette handling
+- `src/raster.ts` — projected custom Leaflet raster layer, cell hit-testing and selection outline
+- `src/info-panel.ts` — top-left metric/data controls and provenance panel
+- `src/locations.ts` — saved-location persistence, labels, context actions, editing and JSON import/export
+- `src/storage.ts` — small resilient helpers for persisted UI preferences
+- `src/types.ts` — shared frontend data-model types
 - `data/source/` — cached raw source data (HadUK NetCDF + Defra PCM CSV + OS Terrain 50 archive + woodland vectors; git-ignored and never published)
 - `data/derived/` — local generated metric bundles (git-ignored)
 - `published-data/goldilocks-metrics/` — tracked, publishable snapshot of the derived metric bundle used by GitHub Pages
