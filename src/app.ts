@@ -605,6 +605,35 @@ function appendCellPath(
   path.closePath();
 }
 
+function appendExpandedCellPath(
+  path: Path2D,
+  southWest: TilePoint,
+  southEast: TilePoint,
+  northEast: TilePoint,
+  northWest: TilePoint,
+  expand: number,
+) {
+  const cx = (southWest.x + southEast.x + northEast.x + northWest.x) * 0.25;
+  const cy = (southWest.y + southEast.y + northEast.y + northWest.y) * 0.25;
+  path.moveTo(
+    southWest.x + (southWest.x < cx ? -expand : expand),
+    southWest.y + (southWest.y < cy ? -expand : expand),
+  );
+  path.lineTo(
+    southEast.x + (southEast.x < cx ? -expand : expand),
+    southEast.y + (southEast.y < cy ? -expand : expand),
+  );
+  path.lineTo(
+    northEast.x + (northEast.x < cx ? -expand : expand),
+    northEast.y + (northEast.y < cy ? -expand : expand),
+  );
+  path.lineTo(
+    northWest.x + (northWest.x < cx ? -expand : expand),
+    northWest.y + (northWest.y < cy ? -expand : expand),
+  );
+  path.closePath();
+}
+
 const RasterGridLayer = L.GridLayer.extend({
   initialize(this: any, options: any) {
     L.GridLayer.prototype.initialize.call(this, options);
@@ -626,7 +655,8 @@ const RasterGridLayer = L.GridLayer.extend({
     const level = chooseLodLevel(coords.z);
     canvas.dataset.lod = String(level.level);
     canvas.dataset.lodCellSizeM = String(level.cell_size_m);
-    this._drawTile(context, coords, tileSize, level);
+    canvas.dataset.pixelRatio = String(pixelRatio);
+    this._drawTile(context, coords, tileSize, level, pixelRatio);
     return canvas;
   },
 
@@ -643,11 +673,12 @@ const RasterGridLayer = L.GridLayer.extend({
       if (!(tile.el instanceof HTMLCanvasElement)) continue;
       const context = tile.el.getContext("2d");
       if (!context) continue;
+      const pixelRatio = Number(tile.el.dataset.pixelRatio) || 1;
       context.clearRect(0, 0, tileSize.x, tileSize.y);
       const level = chooseLodLevel(tile.coords.z);
       tile.el.dataset.lod = String(level.level);
       tile.el.dataset.lodCellSizeM = String(level.cell_size_m);
-      this._drawTile(context, tile.coords, tileSize, level);
+      this._drawTile(context, tile.coords, tileSize, level, pixelRatio);
     }
   },
 
@@ -666,12 +697,15 @@ const RasterGridLayer = L.GridLayer.extend({
     coords: any,
     tileSize: any,
     level: RasterLevel,
+    pixelRatio: number,
   ) {
     const range = rasterRangeForBounds(this._tileBounds(coords, tileSize), level, 1);
     if (!range) return;
     const worldScale = Math.pow(2, coords.z);
     const tileOriginX = coords.x * tileSize.x;
     const tileOriginY = coords.y * tileSize.y;
+    // Slightly overlap adjacent fills to hide Canvas 2D anti-aliasing seams.
+    const fillExpansionCssPx = 0.5 / pixelRatio;
     const fillPaths = new Map<number, Path2D>();
     const gridPath = this._showGridLines ? new Path2D() : null;
 
@@ -690,7 +724,14 @@ const RasterGridLayer = L.GridLayer.extend({
           fillPath = new Path2D();
           fillPaths.set(bin, fillPath);
         }
-        appendCellPath(fillPath, southWest, southEast, northEast, northWest);
+        appendExpandedCellPath(
+          fillPath,
+          southWest,
+          southEast,
+          northEast,
+          northWest,
+          fillExpansionCssPx,
+        );
         if (gridPath) appendCellPath(gridPath, southWest, southEast, northEast, northWest);
       }
     }
