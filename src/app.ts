@@ -16,8 +16,15 @@ type RasterLevel = Omit<RasterLevelMeta, "value_offset" | "value_count"> & {
   values: Uint16Array;
 };
 
+type MetricCategory = {
+  id: string;
+  label: string;
+  order: number;
+};
+
 type MetricTransport = {
   id: string;
+  category_id: string;
   label: string;
   units: string;
   period: string;
@@ -31,6 +38,7 @@ type MetricTransport = {
   encoded_max: number;
   summary: { min: number; max: number };
   coverage: Record<string, unknown>;
+  palette_reverse?: boolean;
   levels: RasterLevelMeta[];
   blob_encoding: "gzip+uint16le";
   raw_bytes: number;
@@ -40,7 +48,7 @@ type MetricTransport = {
 };
 
 type GoldilocksData = {
-  format_version: 2;
+  format_version: 3;
   grid: {
     crs: string;
     proj4: string;
@@ -58,6 +66,7 @@ type GoldilocksData = {
     column_order: "west_to_east";
     bounds_wgs84: [number, number][];
   };
+  categories: MetricCategory[];
   metrics: MetricTransport[];
   default_metric_id: string;
   preview_partial_sources: boolean;
@@ -116,8 +125,13 @@ const dataElement = document.getElementById("goldilocks-data");
 if (!dataElement?.textContent) throw new Error("Embedded Goldilocks data was not found");
 const data = JSON.parse(dataElement.textContent) as GoldilocksData;
 dataElement.textContent = "";
-if (data.format_version !== 2 || !data.metrics?.length) {
-  throw new Error("This frontend requires Goldilocks multi-metric data format v2");
+if (data.format_version !== 3 || !data.metrics?.length || !data.categories?.length) {
+  throw new Error("This frontend requires Goldilocks categorized multi-metric data format v3");
+}
+const categoryById = new Map(data.categories.map((category) => [category.id, category]));
+if (categoryById.size !== data.categories.length) throw new Error("Metric category IDs must be unique");
+for (const metric of data.metrics) {
+  if (!categoryById.has(metric.category_id)) throw new Error(`Metric ${metric.id} references unknown category ${metric.category_id}`);
 }
 const geometryReference = data.metrics[0];
 for (const metric of data.metrics) {
@@ -252,9 +266,22 @@ function decodeMetric(metric: MetricTransport): MetricRuntime {
   return runtime;
 }
 
+const LEGACY_METRIC_ID_MAP: Record<string, string> = {
+  days_tmax_gt_25: "heat_days_tmax_gt_25",
+  days_tmax_gt_28: "heat_days_tmax_gt_28",
+  days_tmax_gt_30: "heat_days_tmax_gt_30",
+  summer_tmax_p95: "heat_summer_tmax_p95",
+  summer_tmax_p99: "heat_summer_tmax_p99",
+  longest_run_tmax_gt_25: "heat_longest_run_tmax_gt_25",
+  tropical_nights_tmin_gt_20: "heat_tropical_nights_tmin_gt_20",
+};
 const storedMetricId = readStoredString(SELECTED_METRIC_STORAGE_KEY);
+const migratedStoredMetricId = storedMetricId ? (LEGACY_METRIC_ID_MAP[storedMetricId] ?? storedMetricId) : null;
+if (storedMetricId && migratedStoredMetricId !== storedMetricId) {
+  writeStoredString(SELECTED_METRIC_STORAGE_KEY, migratedStoredMetricId);
+}
 const initialMetric =
-  (storedMetricId ? metricById.get(storedMetricId) : undefined) ??
+  (migratedStoredMetricId ? metricById.get(migratedStoredMetricId) : undefined) ??
   metricById.get(data.default_metric_id) ??
   data.metrics[0];
 let activeMetric = initialMetric;
@@ -275,7 +302,8 @@ function paletteBinForValue(value: number): number {
   const max = activeMetric.encoded_max;
   if (max === min) return Math.floor((PALETTE_BIN_COUNT - 1) / 2);
   const ratio = Math.max(0, Math.min(1, (value - min) / (max - min)));
-  return Math.min(PALETTE_BIN_COUNT - 1, Math.floor(ratio * PALETTE_BIN_COUNT));
+  const visualRatio = activeMetric.palette_reverse ? 1 - ratio : ratio;
+  return Math.min(PALETTE_BIN_COUNT - 1, Math.floor(visualRatio * PALETTE_BIN_COUNT));
 }
 
 function colorForPaletteBin(bin: number): string {
@@ -687,11 +715,23 @@ mapPanel.onAdd = () => {
   );
   if (initiallyCollapsed) div.classList.add("collapsed");
 
-  const metricRows = data.metrics.map((metric) => `
-    <label class="metric-option">
-      <input type="radio" name="climate-metric" value="${metric.id}" ${metric.id === activeMetric.id ? "checked" : ""}>
-      <span>${metric.label}</span>
-    </label>`).join("");
+  const metricGroups = [...data.categories]
+    .sort((left, right) => left.order - right.order)
+    .map((category) => {
+      const rows = data.metrics
+        .filter((metric) => metric.category_id === category.id)
+        .map((metric) => `
+          <label class="metric-option">
+            <input type="radio" name="climate-metric" value="${metric.id}" ${metric.id === activeMetric.id ? "checked" : ""}>
+            <span>${metric.label}</span>
+          </label>`).join("");
+      if (!rows) return "";
+      return `
+        <fieldset class="metric-category" data-category-id="${category.id}">
+          <legend class="metric-category-title">${category.label}</legend>
+          ${rows}
+        </fieldset>`;
+    }).join("");
 
   div.innerHTML = `
     <div class="map-panel-header">
@@ -705,7 +745,7 @@ mapPanel.onAdd = () => {
       ${data.preview_partial_sources ? '<div class="preview-warning">Preview build: metrics use only source months downloaded so far.</div>' : ""}
       <div class="panel-section">
         <strong class="panel-section-title">Climate measure</strong>
-        <div class="metric-list">${metricRows}</div>
+        <div class="metric-list">${metricGroups}</div>
       </div>
       <div class="panel-section">
         <label class="panel-option">

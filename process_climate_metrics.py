@@ -31,6 +31,10 @@ BNG_PROJ4 = (
 )
 NODATA_U16 = np.uint16(65535)
 THRESHOLDS_C = (25.0, 28.0, 30.0)
+METRIC_CATEGORIES = (
+    {"id": "heat", "label": "Heat", "order": 0},
+    {"id": "cold", "label": "Cold", "order": 1},
+)
 FILENAME_RE = re.compile(
     r"^(?P<variable>tasmax|tasmin)_hadukgrid_uk_1km_day_"
     r"(?P<start>\d{8})-(?P<end>\d{8})\.nc$"
@@ -83,6 +87,7 @@ class GridSpec:
 @dataclass
 class MetricResult:
     id: str
+    category_id: str
     label: str
     units: str
     period: str
@@ -93,6 +98,7 @@ class MetricResult:
     decimals: int
     source_variable: str
     coverage: dict
+    palette_reverse: bool = False
 
 
 def human_bytes(value: int) -> str:
@@ -432,7 +438,8 @@ def process_tasmax(
         threshold_id = int(threshold)
         results.append(
             MetricResult(
-                id=f"days_tmax_gt_{threshold_id}",
+                id=f"heat_days_tmax_gt_{threshold_id}",
+                category_id="heat",
                 label=f"Days Tmax > {threshold_id}°C",
                 units="days/year",
                 period=period,
@@ -452,7 +459,8 @@ def process_tasmax(
     longest_values = longest_run.astype(np.float32)
     results.append(
         MetricResult(
-            id="longest_run_tmax_gt_25",
+            id="heat_longest_run_tmax_gt_25",
+            category_id="heat",
             label="Longest run Tmax > 25°C",
             units="days",
             period=period,
@@ -501,7 +509,8 @@ def process_tasmax(
         results.extend(
             [
                 MetricResult(
-                    id="summer_tmax_p95",
+                    id="heat_summer_tmax_p95",
+                    category_id="heat",
                     label="Summer Tmax 95th percentile",
                     units="°C",
                     period=summer_period,
@@ -514,7 +523,8 @@ def process_tasmax(
                     coverage=summer_coverage,
                 ),
                 MetricResult(
-                    id="summer_tmax_p99",
+                    id="heat_summer_tmax_p99",
+                    category_id="heat",
                     label="Summer Tmax 99th percentile",
                     units="°C",
                     period=summer_period,
@@ -534,39 +544,76 @@ def process_tasmax(
     return results
 
 
-def process_tasmin(months: list[SourceMonth], grid: GridSpec, land_mask: np.ndarray) -> list[MetricResult]:
+def process_tasmin(
+    months: list[SourceMonth],
+    grid: GridSpec,
+    land_mask: np.ndarray,
+    temp_dir: Path,
+) -> list[MetricResult]:
     if not months:
         return []
+
     month_denominators = coverage_by_month(months)
-    annual = np.zeros((grid.height, grid.width), dtype=np.float32)
+    annual_tropical = np.zeros((grid.height, grid.width), dtype=np.float32)
+    annual_air_frost = np.zeros((grid.height, grid.width), dtype=np.float32)
+
+    available_months = {(item.year, item.month) for item in months}
+    complete_winter_end_years = [
+        year
+        for year in range(min(item.year for item in months) + 1, max(item.year for item in months) + 1)
+        if {(year - 1, 12), (year, 1), (year, 2)} <= available_months
+    ]
+    winter_month_keys = {
+        key
+        for year in complete_winter_end_years
+        for key in ((year - 1, 12), (year, 1), (year, 2))
+    }
+    winter_months = [item for item in months if (item.year, item.month) in winter_month_keys]
+    winter_days = sum(item.days for item in winter_months)
+    land_indices = np.flatnonzero(land_mask.ravel(order="C"))
+    winter_path = temp_dir / "winter-tasmin.float32"
+    winter = None
+    if winter_days:
+        winter = np.memmap(winter_path, mode="w+", dtype=np.float32, shape=(winter_days, land_indices.size))
+    winter_row = 0
+
     started = time.perf_counter()
     for file_index, item in enumerate(months, start=1):
-        monthly_count = np.zeros((grid.height, grid.width), dtype=np.uint8)
+        monthly_tropical = np.zeros((grid.height, grid.width), dtype=np.uint8)
+        monthly_air_frost = np.zeros((grid.height, grid.width), dtype=np.uint8)
         monthly_valid = np.zeros((grid.height, grid.width), dtype=np.uint8)
         with h5py.File(item.path, "r") as h5:
             source = validate_file_grid(h5, item, grid)
             for values, valid in read_blocks(source):
+                block_days = values.shape[0]
                 monthly_valid += np.sum(valid, axis=0, dtype=np.uint8)
-                monthly_count += np.sum(valid & (values > 20.0), axis=0, dtype=np.uint8)
+                monthly_tropical += np.sum(valid & (values > 20.0), axis=0, dtype=np.uint8)
+                monthly_air_frost += np.sum(valid & (values < 0.0), axis=0, dtype=np.uint8)
+                if winter is not None and (item.year, item.month) in winter_month_keys:
+                    flat = values.reshape(block_days, -1)
+                    winter[winter_row : winter_row + block_days, :] = flat[:, land_indices]
+                    winter_row += block_days
         if not np.all(monthly_valid[land_mask] == item.days):
             bad = int(np.count_nonzero(monthly_valid[land_mask] != item.days))
             raise RuntimeError(f"{item.path.name}: {bad} land cells do not have all {item.days} daily observations")
         denominator = int(month_denominators[str(item.month)])
-        annual += monthly_count.astype(np.float32) / np.float32(denominator)
+        annual_tropical += monthly_tropical.astype(np.float32) / np.float32(denominator)
+        annual_air_frost += monthly_air_frost.astype(np.float32) / np.float32(denominator)
         elapsed = time.perf_counter() - started
         print(f"tasmin {file_index}/{len(months)} {item.year}-{item.month:02d} ({elapsed:.1f}s elapsed)", flush=True)
 
     period = coverage_label(months)
-    coverage = {
+    annual_coverage = {
         "source_months": len(months),
         "by_calendar_month": month_denominators,
         "first_month": f"{months[0].year}-{months[0].month:02d}",
         "last_month": f"{months[-1].year}-{months[-1].month:02d}",
         "method": "Calendar-month means are summed so incomplete 2026 coverage does not count unpublished months as zero.",
     }
-    return [
+    results = [
         MetricResult(
-            id="tropical_nights_tmin_gt_20",
+            id="heat_tropical_nights_tmin_gt_20",
+            category_id="heat",
             label="Tropical nights: Tmin > 20°C",
             units="days/year",
             period=period,
@@ -574,14 +621,88 @@ def process_tasmin(months: list[SourceMonth], grid: GridSpec, land_mask: np.ndar
                 "Expected annual number of days whose HadUK-Grid daily minimum temperature is strictly above 20°C, calculated from calendar-month means across all available years. "
                 "HadUK-Grid daily Tmin follows the Met Office observation-day convention rather than a literal sunset-to-sunrise minimum."
             ),
-            values=annual,
+            values=annual_tropical,
             scale=0.1,
             offset=0.0,
             decimals=1,
             source_variable="tasmin",
-            coverage=coverage,
-        )
+            coverage=annual_coverage,
+        ),
+        MetricResult(
+            id="cold_air_frost_days",
+            category_id="cold",
+            label="Air-frost days",
+            units="days/year",
+            period=period,
+            definition=(
+                "Expected annual number of days with HadUK-Grid daily minimum air temperature strictly below 0°C. "
+                "An air frost is defined from Tmin; a day whose maximum temperature remains below freezing is instead an ice day. "
+                "Calculated as the sum of calendar-month means across all available years, so published 2026 months are included without treating unpublished months as zero."
+            ),
+            values=annual_air_frost,
+            scale=0.1,
+            offset=0.0,
+            decimals=1,
+            source_variable="tasmin",
+            coverage=annual_coverage,
+            palette_reverse=True,
+        ),
     ]
+
+    if winter is not None and winter_row != winter_days:
+        raise RuntimeError(f"Winter Tmin buffer contains {winter_row} rows; expected {winter_days}")
+    if winter is not None and winter_days:
+        winter.flush()
+        p05 = np.full((grid.height, grid.width), np.nan, dtype=np.float32)
+        flat05 = p05.ravel(order="C")
+        chunk_cells = 12_000
+        percentile_started = time.perf_counter()
+        for start_cell in range(0, land_indices.size, chunk_cells):
+            stop_cell = min(land_indices.size, start_cell + chunk_cells)
+            block = np.asarray(winter[:, start_cell:stop_cell])
+            percentile = np.percentile(block, 5.0, axis=0, method="linear")
+            selected_indices = land_indices[start_cell:stop_cell]
+            flat05[selected_indices] = percentile.astype(np.float32)
+        percentile_elapsed = time.perf_counter() - percentile_started
+        print(f"Winter Tmin 5th percentile over {winter_days} daily rasters: {percentile_elapsed:.1f}s")
+
+        first_end_year = complete_winter_end_years[0]
+        last_end_year = complete_winter_end_years[-1]
+        winter_period = (
+            f"Winters {first_end_year - 1}–{str(first_end_year)[-2:]} to {last_end_year - 1}–{str(last_end_year)[-2:]}"
+            if first_end_year != last_end_year
+            else f"Winter {first_end_year - 1}–{str(first_end_year)[-2:]}"
+        )
+        winter_coverage = {
+            "source_months": len(winter_months),
+            "daily_observations": winter_days,
+            "complete_winter_end_years": complete_winter_end_years,
+            "months_present": [f"{item.year}-{item.month:02d}" for item in winter_months],
+            "method": "Only complete December–February (DJF) winters are included; partial winters at either end of the source period are excluded.",
+        }
+        results.append(
+            MetricResult(
+                id="cold_winter_tmin_p05",
+                category_id="cold",
+                label="Winter Tmin 5th percentile",
+                units="°C",
+                period=winter_period,
+                definition=(
+                    "5th percentile of HadUK-Grid daily minimum temperature across complete December–February winters. "
+                    "Only complete DJF winters are used, so the statistic is not biased by partial seasonal coverage."
+                ),
+                values=p05,
+                scale=0.1,
+                offset=-50.0,
+                decimals=1,
+                source_variable="tasmin",
+                coverage=winter_coverage,
+            )
+        )
+        del winter
+        winter_path.unlink(missing_ok=True)
+
+    return results
 
 
 def encode_metric(values: np.ndarray, land_mask: np.ndarray, scale: float, offset: float) -> tuple[np.ndarray, int, int]:
@@ -663,6 +784,7 @@ def write_metric_blob(metric: MetricResult, land_mask: np.ndarray, grid: GridSpe
     )
     return {
         "id": metric.id,
+        "category_id": metric.category_id,
         "label": metric.label,
         "units": metric.units,
         "period": metric.period,
@@ -676,6 +798,7 @@ def write_metric_blob(metric: MetricResult, land_mask: np.ndarray, grid: GridSpe
         "encoded_max": encoded_max,
         "summary": {"min": decoded_min, "max": decoded_max},
         "coverage": metric.coverage,
+        "palette_reverse": metric.palette_reverse,
         "levels": level_meta,
         "blob_file": blob_name,
         "blob_encoding": "gzip+uint16le",
@@ -701,7 +824,7 @@ def build_manifest(
     historical_release = "CEDA HadUK-Grid v1.3.2.ceda" if any(item.status.startswith("CEDA") for item in all_months) else None
     provisional_release = "Met Office provisional 2026" if any(item.status.startswith("Met Office provisional") for item in all_months) else None
     manifest = {
-        "format_version": 1,
+        "format_version": 2,
         "generated_at_unix": int(time.time()),
         "preview_partial_sources": bool(allow_partial),
         "grid": {
@@ -721,6 +844,7 @@ def build_manifest(
             "column_order": "west_to_east",
             "bounds_wgs84": grid.bounds_wgs84,
         },
+        "categories": list(METRIC_CATEGORIES),
         "metrics": metric_meta,
         "data_pruning": [
             {
@@ -762,6 +886,10 @@ def build_manifest(
     }
     manifest_path = output_dir / "manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    referenced_blobs = {metric["blob_file"] for metric in metric_meta}
+    for stale_blob in output_dir.glob("*.u16.gz"):
+        if stale_blob.name not in referenced_blobs:
+            stale_blob.unlink()
     print(f"Wrote {manifest_path} with {len(metric_meta)} metrics")
     return manifest_path
 
@@ -814,15 +942,17 @@ def main() -> int:
     try:
         metrics: list[MetricResult] = []
         metrics.extend(process_tasmax(tasmax_months, grid, land_mask, temp_dir))
-        metrics.extend(process_tasmin(tasmin_months, grid, land_mask))
+        metrics.extend(process_tasmin(tasmin_months, grid, land_mask, temp_dir))
         order = {
-            "days_tmax_gt_25": 0,
-            "days_tmax_gt_28": 1,
-            "days_tmax_gt_30": 2,
-            "summer_tmax_p95": 3,
-            "summer_tmax_p99": 4,
-            "longest_run_tmax_gt_25": 5,
-            "tropical_nights_tmin_gt_20": 6,
+            "heat_days_tmax_gt_25": 0,
+            "heat_days_tmax_gt_28": 1,
+            "heat_days_tmax_gt_30": 2,
+            "heat_summer_tmax_p95": 3,
+            "heat_summer_tmax_p99": 4,
+            "heat_longest_run_tmax_gt_25": 5,
+            "heat_tropical_nights_tmin_gt_20": 6,
+            "cold_air_frost_days": 7,
+            "cold_winter_tmin_p05": 8,
         }
         metrics.sort(key=lambda metric: order.get(metric.id, 999))
         build_manifest(

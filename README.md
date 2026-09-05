@@ -1,10 +1,12 @@
 # Goldilocks Map
 
-Goldilocks Map is an experimental single-file UK location-suitability explorer built from Met Office HadUK-Grid daily 1 km observations. The climate layer supports several derived heat metrics over the full HadUK-Grid domain and lets the user switch between them without reloading the page.
+Goldilocks Map is an experimental single-file UK location-suitability explorer built from Met Office HadUK-Grid daily 1 km observations. Climate metrics are grouped into first-class categories (currently **Heat** and **Cold**) and can be switched without reloading the page.
 
 ## Climate metrics
 
 The processed bundle contains:
+
+**Heat**
 
 - expected annual days with `tasmax > 25°C`;
 - expected annual days with `tasmax > 28°C`;
@@ -14,7 +16,14 @@ The processed bundle contains:
 - longest observed consecutive run with `tasmax > 25°C`;
 - expected annual tropical-night count, defined as daily `tasmin > 20°C`.
 
-Stable historical observations come from CEDA HadUK-Grid v1.3.2.ceda for 2016–2025. Published provisional 2026 months are also included. For annual-count metrics, each calendar month is averaged across the years available for that month and the twelve monthly means are summed. This allows published 2026 months to contribute without treating unpublished months as zero.
+**Cold**
+
+- expected annual air-frost days, defined as daily `tasmin < 0°C`;
+- 5th percentile of daily `tasmin` across complete December–February (DJF) winters.
+
+An air-frost day is assigned when the minimum air temperature falls below freezing during the observation period; it does not mean the whole day remains below freezing. A day whose maximum temperature remains below freezing is instead an ice day.
+
+Stable historical observations come from CEDA HadUK-Grid v1.3.2.ceda for 2016–2025. Published provisional 2026 months are also included. For annual-count metrics, each calendar month is averaged across the years available for that month and the twelve monthly means are summed. This allows published 2026 months to contribute without treating unpublished months as zero. The winter Tmin percentile uses complete DJF winters only; with the current archive these are winters 2016–17 through 2025–26.
 
 HadUK-Grid is a gridded/interpolated climate-observation dataset. A 1 km grid-cell value should not be interpreted as a thermometer measurement physically made at that exact location.
 
@@ -105,7 +114,7 @@ Canvas geometry is batched per tile. Metric values are mapped to a 64-step visua
 
 For each Leaflet tile zoom, the renderer chooses the finest climate LOD whose nominal cells are at least about four screen pixels across. The reference pixel distance is projected only once at a fixed representative UK location (54.5°N, 2°W), so LOD choice depends only on zoom and thereafter requires only power-of-two scaling. Each tile still performs a small fixed set of inverse WGS84 -> BNG transforms to identify its candidate row/column range. Leaflet manages tile buffering, panning, clipping, recycling, and zoom transforms. Leaflet's default 200 ms tile fade animation is disabled because climate canvases render synchronously; replacement tiles therefore appear immediately instead of fading through the basemap during redraws and zoom changes.
 
-Clicking always resolves against active-metric LOD0, so popups retain the exact quantised 1 km value rather than a coarse averaged value. The selected-cell outline is a separate lightweight Leaflet vector overlay, so changing the selection does not regenerate any climate canvas tiles. The collapsible left-side panel contains the metric radio list, gridline control, legend, description and provenance. Panel state, gridline visibility and selected metric are stored independently in `localStorage`. Gridlines default to hidden when no preference has yet been saved.
+Clicking always resolves against active-metric LOD0, so popups retain the exact quantised 1 km value rather than a coarse averaged value. The selected-cell outline is a separate lightweight Leaflet vector overlay, so changing the selection does not regenerate any climate canvas tiles. The collapsible left-side panel groups metric radio buttons by the categories declared in the processed manifest (currently `heat` and `cold`), followed by the gridline control, legend, description and provenance. Metric identifiers are category-prefixed (for example `heat_days_tmax_gt_25` and `cold_air_frost_days`) so the same grouping remains explicit in code and generated data. Panel state, gridline visibility and selected metric are stored independently in `localStorage`; legacy unprefixed Heat metric selections are migrated automatically. Gridlines default to hidden when no preference has yet been saved.
 
 ## Basemap selection
 

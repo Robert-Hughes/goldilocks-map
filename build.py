@@ -22,14 +22,22 @@ DEFAULT_MANIFEST = DATA_DIR / "derived" / "climate-metrics" / "manifest.json"
 def load_metric_bundle(manifest_path: Path) -> dict:
     manifest_path = manifest_path.resolve()
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    if manifest.get("format_version") != 1:
+    if manifest.get("format_version") != 2:
         raise RuntimeError(f"Unsupported climate metric manifest format: {manifest.get('format_version')!r}")
     metrics = manifest.get("metrics")
     if not isinstance(metrics, list) or not metrics:
         raise RuntimeError(f"Metric manifest has no metrics: {manifest_path}")
+    categories = manifest.get("categories")
+    if not isinstance(categories, list) or not categories:
+        raise RuntimeError(f"Metric manifest has no categories: {manifest_path}")
+    category_ids = {category.get("id") for category in categories if isinstance(category, dict)}
+    if None in category_ids or len(category_ids) != len(categories):
+        raise RuntimeError(f"Metric manifest has invalid/duplicate categories: {manifest_path}")
 
     embedded_metrics = []
     for metric in metrics:
+        if metric.get("category_id") not in category_ids:
+            raise RuntimeError(f"Metric {metric.get('id')!r} references unknown category {metric.get('category_id')!r}")
         blob_name = metric.get("blob_file")
         if not blob_name:
             raise RuntimeError(f"Metric {metric.get('id')!r} has no blob_file")
@@ -55,8 +63,9 @@ def load_metric_bundle(manifest_path: Path) -> dict:
         embedded_metrics.append(embedded)
 
     return {
-        "format_version": 2,
+        "format_version": 3,
         "grid": manifest["grid"],
+        "categories": categories,
         "metrics": embedded_metrics,
         "default_metric_id": embedded_metrics[0]["id"],
         "sources": manifest.get("sources", {}),
