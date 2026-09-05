@@ -30,8 +30,27 @@
     .metric-option { display: flex; align-items: flex-start; gap: 0.45rem; padding: 0.18rem 0; cursor: pointer; }
     .metric-option input { margin: 0.18rem 0 0; flex: 0 0 auto; }
     .preview-warning { margin-top: 0.65rem; padding: 0.45rem 0.5rem; border: 1px solid #d4a72c; border-radius: 4px; background: #fff8db; color: #5e4b00; }
-    .legend-row { display: flex; align-items: center; gap: 0.45rem; margin: 0.18rem 0; white-space: nowrap; }
-    .legend-swatch { display: inline-block; width: 18px; height: 12px; border: 1px solid rgba(0,0,0,0.35); }
+    .range-heading { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+    .range-heading .panel-section-title { margin: 0; }
+    .range-reset { padding: 0.18rem 0.45rem; border: 1px solid #aeb8c0; border-radius: 4px; background: #fff; color: #17212b; font: inherit; cursor: pointer; }
+    .range-reset:disabled { opacity: 0.45; cursor: default; }
+    .display-range-control { margin-top: 0.4rem; }
+    .range-current-values { display: flex; justify-content: space-between; gap: 0.5rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .dual-range { position: relative; height: 28px; margin: 0.12rem 0 0.3rem; }
+    .range-track, .range-active { position: absolute; top: 11px; height: 6px; border-radius: 999px; pointer-events: none; }
+    .range-track { left: 0; right: 0; background: #d9dee2; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.12); }
+    .range-active { z-index: 1; }
+    .range-input { position: absolute; z-index: 2; left: 0; top: 0; width: 100%; height: 28px; margin: 0; padding: 0; appearance: none; -webkit-appearance: none; background: transparent; pointer-events: none; }
+    .range-input::-webkit-slider-runnable-track { height: 6px; border: 0; background: transparent; }
+    .range-input::-moz-range-track { height: 6px; border: 0; background: transparent; }
+    .range-input::-webkit-slider-thumb { width: 16px; height: 16px; margin-top: -5px; border: 1px solid #53626d; border-radius: 50%; appearance: none; -webkit-appearance: none; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.25); cursor: ew-resize; pointer-events: auto; }
+    .range-input::-moz-range-thumb { width: 16px; height: 16px; border: 1px solid #53626d; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.25); cursor: ew-resize; pointer-events: auto; }
+    .range-input:focus-visible::-webkit-slider-thumb { outline: 2px solid #17212b; outline-offset: 2px; }
+    .range-input:focus-visible::-moz-range-thumb { outline: 2px solid #17212b; outline-offset: 2px; }
+    .range-legend { display: grid; gap: 0.15rem; }
+    .range-legend-item { min-width: 0; text-align: center; color: #44515b; font-size: 0.7rem; font-variant-numeric: tabular-nums; }
+    .range-legend-swatch { display: block; width: min(34px, 100%); height: 10px; margin: 0 auto 0.12rem; border: 1px solid rgba(0,0,0,0.3); box-sizing: border-box; }
+    .range-unit { margin-top: 0.12rem; text-align: center; color: #697781; font-size: 0.7rem; }
     .leaflet-popup-content { line-height: 1.45; }
     .leaflet-popup-content dl { display: grid; grid-template-columns: auto 1fr; gap: 0.15rem 0.55rem; margin: 0; }
     .leaflet-popup-content dt { font-weight: 600; }

@@ -105,6 +105,11 @@ type RasterCell = {
 
 type TilePoint = { x: number; y: number };
 
+type DisplayRange = {
+  minEncoded: number;
+  maxEncoded: number;
+};
+
 type RasterProjectionLookup = {
   worldX: Float64Array;
   worldY: Float64Array;
@@ -115,6 +120,7 @@ type RasterProjectionLookup = {
 const PANEL_COLLAPSED_STORAGE_KEY = "goldilocks.infoPanelCollapsed";
 const GRIDLINES_STORAGE_KEY = "goldilocks.showGridLines";
 const SELECTED_METRIC_STORAGE_KEY = "goldilocks.selectedMetric";
+const DISPLAY_RANGE_STORAGE_PREFIX = "goldilocks.displayRange.";
 const LOD_MIN_CELL_PIXELS = 4;
 const LOD_REFERENCE_LAT = 54.5;
 const LOD_REFERENCE_LON = -2.0;
@@ -182,6 +188,46 @@ function readStoredString(key: string): string | null {
 function writeStoredString(key: string, value: string) {
   try {
     window.localStorage.setItem(key, value);
+  } catch {
+    // Controls still work without persistence.
+  }
+}
+
+function fullDisplayRange(metric: MetricTransport): DisplayRange {
+  return { minEncoded: metric.encoded_min, maxEncoded: metric.encoded_max };
+}
+
+function displayRangeStorageKey(metric: MetricTransport): string {
+  return `${DISPLAY_RANGE_STORAGE_PREFIX}${metric.id}`;
+}
+
+function readStoredDisplayRange(metric: MetricTransport): DisplayRange {
+  const full = fullDisplayRange(metric);
+  try {
+    const raw = window.localStorage.getItem(displayRangeStorageKey(metric));
+    if (!raw) return full;
+    const parsed = JSON.parse(raw) as Partial<DisplayRange>;
+    if (!Number.isFinite(parsed.minEncoded) || !Number.isFinite(parsed.maxEncoded)) return full;
+    const minEncoded = Math.max(full.minEncoded, Math.min(full.maxEncoded, Math.round(parsed.minEncoded as number)));
+    const maxEncoded = Math.max(full.minEncoded, Math.min(full.maxEncoded, Math.round(parsed.maxEncoded as number)));
+    if (minEncoded > maxEncoded || (full.minEncoded < full.maxEncoded && minEncoded === maxEncoded)) return full;
+    return { minEncoded, maxEncoded };
+  } catch {
+    return full;
+  }
+}
+
+function writeStoredDisplayRange(metric: MetricTransport, range: DisplayRange) {
+  try {
+    window.localStorage.setItem(displayRangeStorageKey(metric), JSON.stringify(range));
+  } catch {
+    // Controls still work without persistence.
+  }
+}
+
+function clearStoredDisplayRange(metric: MetricTransport) {
+  try {
+    window.localStorage.removeItem(displayRangeStorageKey(metric));
   } catch {
     // Controls still work without persistence.
   }
@@ -277,7 +323,7 @@ const LEGACY_METRIC_ID_MAP: Record<string, string> = {
 };
 const storedMetricId = readStoredString(SELECTED_METRIC_STORAGE_KEY);
 const migratedStoredMetricId = storedMetricId ? (LEGACY_METRIC_ID_MAP[storedMetricId] ?? storedMetricId) : null;
-if (storedMetricId && migratedStoredMetricId !== storedMetricId) {
+if (storedMetricId && migratedStoredMetricId && migratedStoredMetricId !== storedMetricId) {
   writeStoredString(SELECTED_METRIC_STORAGE_KEY, migratedStoredMetricId);
 }
 const initialMetric =
@@ -288,6 +334,7 @@ let activeMetric = initialMetric;
 let activeRuntime = decodeMetric(activeMetric);
 let lodLevels = activeRuntime.levels;
 let baseRasterValues = lodLevels[0].values;
+let activeDisplayRange = readStoredDisplayRange(activeMetric);
 
 function decodedMetricValue(metric: MetricTransport, encoded: number): number {
   return encoded * metric.scale + metric.offset;
@@ -298,8 +345,8 @@ function formatMetricValue(metric: MetricTransport, encoded: number): string {
 }
 
 function paletteBinForValue(value: number): number {
-  const min = activeMetric.encoded_min;
-  const max = activeMetric.encoded_max;
+  const min = activeDisplayRange.minEncoded;
+  const max = activeDisplayRange.maxEncoded;
   if (max === min) return Math.floor((PALETTE_BIN_COUNT - 1) / 2);
   const ratio = Math.max(0, Math.min(1, (value - min) / (max - min)));
   const visualRatio = activeMetric.palette_reverse ? 1 - ratio : ratio;
@@ -684,15 +731,25 @@ map.on("click", (event: any) => {
   L.popup().setLatLng(bngToLatLng(cell.easting, cell.northing)).setContent(popupHtml(cell)).openOn(map);
 });
 
-function legendEncodedValues(): number[] {
-  const min = activeMetric.encoded_min;
-  const max = activeMetric.encoded_max;
-  const steps = Math.min(6, Math.max(1, max - min + 1));
+function displayRangeSampleValues(): number[] {
+  const min = activeDisplayRange.minEncoded;
+  const max = activeDisplayRange.maxEncoded;
+  const steps = Math.min(5, Math.max(1, max - min + 1));
   const values: number[] = [];
   for (let index = 0; index < steps; index += 1) {
     values.push(Math.round(min + ((max - min) * index) / Math.max(1, steps - 1)));
   }
   return [...new Set(values)];
+}
+
+function formatMetricNumber(metric: MetricTransport, encoded: number): string {
+  return decodedMetricValue(metric, encoded).toFixed(metric.decimals);
+}
+
+function displayRangePercent(metric: MetricTransport, encoded: number): number {
+  const span = metric.encoded_max - metric.encoded_min;
+  if (span <= 0) return 50;
+  return ((encoded - metric.encoded_min) / span) * 100;
 }
 
 function sourceDescription(): string {
@@ -754,8 +811,24 @@ mapPanel.onAdd = () => {
         </label>
       </div>
       <div class="panel-section">
-        <strong class="panel-section-title">Legend</strong>
-        <div class="metric-legend"></div>
+        <div class="range-heading">
+          <strong class="panel-section-title">Display range</strong>
+          <button class="range-reset" type="button">Reset</button>
+        </div>
+        <div class="display-range-control">
+          <div class="range-current-values">
+            <output class="range-min-output"></output>
+            <output class="range-max-output"></output>
+          </div>
+          <div class="dual-range">
+            <div class="range-track"></div>
+            <div class="range-active"></div>
+            <input class="range-input range-input-min" type="range" step="1" aria-label="Minimum display value">
+            <input class="range-input range-input-max" type="range" step="1" aria-label="Maximum display value">
+          </div>
+          <div class="range-legend"></div>
+          <div class="range-unit"></div>
+        </div>
       </div>
       <div class="panel-section">
         <strong class="panel-section-title">About</strong>
@@ -768,17 +841,60 @@ mapPanel.onAdd = () => {
     </div>`;
 
   const subtitle = div.querySelector(".map-panel-subtitle") as HTMLElement;
-  const legend = div.querySelector(".metric-legend") as HTMLElement;
   const description = div.querySelector(".metric-description") as HTMLElement;
   const source = div.querySelector(".metric-source") as HTMLElement;
+  const rangeMin = div.querySelector(".range-input-min") as HTMLInputElement;
+  const rangeMax = div.querySelector(".range-input-max") as HTMLInputElement;
+  const rangeMinOutput = div.querySelector(".range-min-output") as HTMLOutputElement;
+  const rangeMaxOutput = div.querySelector(".range-max-output") as HTMLOutputElement;
+  const rangeActive = div.querySelector(".range-active") as HTMLElement;
+  const rangeLegend = div.querySelector(".range-legend") as HTMLElement;
+  const rangeUnit = div.querySelector(".range-unit") as HTMLElement;
+  const rangeReset = div.querySelector(".range-reset") as HTMLButtonElement;
+
+  function refreshDisplayRangeControl() {
+    const full = fullDisplayRange(activeMetric);
+    const minPercent = displayRangePercent(activeMetric, activeDisplayRange.minEncoded);
+    const maxPercent = displayRangePercent(activeMetric, activeDisplayRange.maxEncoded);
+    for (const input of [rangeMin, rangeMax]) {
+      input.min = String(full.minEncoded);
+      input.max = String(full.maxEncoded);
+      input.disabled = full.minEncoded === full.maxEncoded;
+    }
+    rangeMin.value = String(activeDisplayRange.minEncoded);
+    rangeMax.value = String(activeDisplayRange.maxEncoded);
+    rangeMin.setAttribute("aria-valuetext", formatMetricValue(activeMetric, activeDisplayRange.minEncoded));
+    rangeMax.setAttribute("aria-valuetext", formatMetricValue(activeMetric, activeDisplayRange.maxEncoded));
+    rangeMinOutput.textContent = formatMetricNumber(activeMetric, activeDisplayRange.minEncoded);
+    rangeMaxOutput.textContent = formatMetricNumber(activeMetric, activeDisplayRange.maxEncoded);
+    rangeActive.style.left = `${minPercent}%`;
+    rangeActive.style.right = `${100 - maxPercent}%`;
+
+    const samples = displayRangeSampleValues();
+    const gradientStops = samples.map((value, index) => {
+      const percent = samples.length <= 1 ? 50 : (index / (samples.length - 1)) * 100;
+      return `${colorForValue(value)} ${percent}%`;
+    });
+    rangeActive.style.background = gradientStops.length > 1
+      ? `linear-gradient(to right, ${gradientStops.join(", ")})`
+      : (samples.length ? colorForValue(samples[0]) : "#888");
+    rangeLegend.style.gridTemplateColumns = `repeat(${Math.max(1, samples.length)}, minmax(0, 1fr))`;
+    rangeLegend.innerHTML = samples.map((value, index) => {
+      const prefix = index === 0 && value > activeMetric.encoded_min
+        ? "≤"
+        : (index === samples.length - 1 && value < activeMetric.encoded_max ? "≥" : "");
+      return `<div class="range-legend-item">
+        <span class="range-legend-swatch" style="background:${colorForValue(value)}"></span>
+        <span>${prefix}${formatMetricNumber(activeMetric, value)}</span>
+      </div>`;
+    }).join("");
+    rangeUnit.textContent = activeMetric.units;
+    rangeReset.disabled = activeDisplayRange.minEncoded === full.minEncoded && activeDisplayRange.maxEncoded === full.maxEncoded;
+  }
 
   function refreshMetricText() {
     subtitle.textContent = `${activeMetric.label} · ${activeMetric.period}`;
-    legend.innerHTML = legendEncodedValues().map((value) => `
-      <div class="legend-row">
-        <span class="legend-swatch" style="background:${colorForValue(value)}"></span>
-        <span>${formatMetricValue(activeMetric, value)}</span>
-      </div>`).join("");
+    refreshDisplayRangeControl();
     description.textContent = activeMetric.definition;
     const pruning = pruningDescription();
     source.innerHTML = `
@@ -803,6 +919,53 @@ mapPanel.onAdd = () => {
     writeStoredBoolean(GRIDLINES_STORAGE_KEY, show);
   });
 
+  let pendingRangeRedraw: number | null = null;
+  function scheduleRangeRedraw() {
+    if (pendingRangeRedraw !== null) return;
+    pendingRangeRedraw = window.requestAnimationFrame(() => {
+      pendingRangeRedraw = null;
+      rasterLayer.redraw();
+    });
+  }
+
+  function setActiveDisplayRange(range: DisplayRange, persist: boolean) {
+    activeDisplayRange = range;
+    if (persist) writeStoredDisplayRange(activeMetric, range);
+    refreshDisplayRangeControl();
+    scheduleRangeRedraw();
+  }
+
+  rangeMin.addEventListener("input", () => {
+    const full = fullDisplayRange(activeMetric);
+    const gap = full.minEncoded < full.maxEncoded ? 1 : 0;
+    const requested = Math.round(Number(rangeMin.value));
+    const minEncoded = Math.max(full.minEncoded, Math.min(requested, activeDisplayRange.maxEncoded - gap));
+    if (minEncoded === activeDisplayRange.minEncoded) {
+      rangeMin.value = String(minEncoded);
+      return;
+    }
+    setActiveDisplayRange({ minEncoded, maxEncoded: activeDisplayRange.maxEncoded }, true);
+  });
+
+  rangeMax.addEventListener("input", () => {
+    const full = fullDisplayRange(activeMetric);
+    const gap = full.minEncoded < full.maxEncoded ? 1 : 0;
+    const requested = Math.round(Number(rangeMax.value));
+    const maxEncoded = Math.min(full.maxEncoded, Math.max(requested, activeDisplayRange.minEncoded + gap));
+    if (maxEncoded === activeDisplayRange.maxEncoded) {
+      rangeMax.value = String(maxEncoded);
+      return;
+    }
+    setActiveDisplayRange({ minEncoded: activeDisplayRange.minEncoded, maxEncoded }, true);
+  });
+
+  rangeReset.addEventListener("click", () => {
+    activeDisplayRange = fullDisplayRange(activeMetric);
+    clearStoredDisplayRange(activeMetric);
+    refreshDisplayRangeControl();
+    scheduleRangeRedraw();
+  });
+
   const metricInputs = Array.from(div.querySelectorAll('input[name="climate-metric"]') as NodeListOf<HTMLInputElement>);
   for (const input of metricInputs) {
     input.addEventListener("change", () => {
@@ -814,6 +977,7 @@ mapPanel.onAdd = () => {
       activeRuntime = runtime;
       lodLevels = runtime.levels;
       baseRasterValues = lodLevels[0].values;
+      activeDisplayRange = readStoredDisplayRange(next);
       writeStoredString(SELECTED_METRIC_STORAGE_KEY, next.id);
       map.closePopup();
       setSelectedCell(null);
