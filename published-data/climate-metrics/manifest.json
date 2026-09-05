@@ -1,0 +1,3070 @@
+{
+  "format_version": 2,
+  "generated_at_unix": 1788620236,
+  "preview_partial_sources": false,
+  "grid": {
+    "crs": "EPSG:27700",
+    "proj4": "+proj=tmerc +lat_0=49 +lon_0=-2 +k=0.9996012717 +x_0=400000 +y_0=-100000 +ellps=airy +towgs84=446.448,-125.157,542.06,0.1502,0.247,0.8421,-20.4894 +units=m +no_defs",
+    "cell_size_m": 1000,
+    "width": 900,
+    "height": 1450,
+    "cell_count": 1305000,
+    "valid_cell_count": 245069,
+    "source_valid_cell_count": 245077,
+    "west": -200000,
+    "south": -200000,
+    "east": 700000,
+    "north": 1250000,
+    "row_order": "south_to_north",
+    "column_order": "west_to_east",
+    "bounds_wgs84": [
+      [
+        47.8194568,
+        -10.0188353
+      ],
+      [
+        48.0297473,
+        2.024735
+      ],
+      [
+        61.0184075,
+        3.555117
+      ],
+      [
+        60.6790004,
+        -13.019528
+      ]
+    ]
+  },
+  "categories": [
+    {
+      "id": "heat",
+      "label": "Heat",
+      "order": 0
+    },
+    {
+      "id": "cold",
+      "label": "Cold",
+      "order": 1
+    }
+  ],
+  "metrics": [
+    {
+      "id": "heat_days_tmax_gt_25",
+      "category_id": "heat",
+      "label": "Days Tmax > 25\u00b0C",
+      "units": "days/year",
+      "period": "2016-01 to 2026-08",
+      "definition": "Expected annual number of days with HadUK-Grid daily maximum temperature strictly above 25\u00b0C. Calculated as the sum of calendar-month means across all available years, so published 2026 months are included without treating unpublished 2026 months as zero.",
+      "source_variable": "tasmax",
+      "scale": 0.1,
+      "offset": 0.0,
+      "decimals": 1,
+      "nodata": 65535,
+      "encoded_min": 0,
+      "encoded_max": 433,
+      "summary": {
+        "min": 0.0,
+        "max": 43.300000000000004
+      },
+      "coverage": {
+        "source_months": 128,
+        "by_calendar_month": {
+          "1": 11,
+          "2": 11,
+          "3": 11,
+          "4": 11,
+          "5": 11,
+          "6": 11,
+          "7": 11,
+          "8": 11,
+          "9": 10,
+          "10": 10,
+          "11": 10,
+          "12": 10
+        },
+        "first_month": "2016-01",
+        "last_month": "2026-08",
+        "method": "Calendar-month means are summed so incomplete 2026 coverage does not count unpublished months as zero."
+      },
+      "palette_reverse": false,
+      "levels": [
+        {
+          "level": 0,
+          "width": 900,
+          "height": 1450,
+          "cell_size_m": 1000,
+          "value_offset": 0,
+          "value_count": 1305000
+        },
+        {
+          "level": 1,
+          "width": 450,
+          "height": 725,
+          "cell_size_m": 2000,
+          "value_offset": 1305000,
+          "value_count": 326250
+        },
+        {
+          "level": 2,
+          "width": 225,
+          "height": 363,
+          "cell_size_m": 4000,
+          "value_offset": 1631250,
+          "value_count": 81675
+        },
+        {
+          "level": 3,
+          "width": 113,
+          "height": 182,
+          "cell_size_m": 8000,
+          "value_offset": 1712925,
+          "value_count": 20566
+        },
+        {
+          "level": 4,
+          "width": 57,
+          "height": 91,
+          "cell_size_m": 16000,
+          "value_offset": 1733491,
+          "value_count": 5187
+        },
+        {
+          "level": 5,
+          "width": 29,
+          "height": 46,
+          "cell_size_m": 32000,
+          "value_offset": 1738678,
+          "value_count": 1334
+        },
+        {
+          "level": 6,
+          "width": 15,
+          "height": 23,
+          "cell_size_m": 64000,
+          "value_offset": 1740012,
+          "value_count": 345
+        },
+        {
+          "level": 7,
+          "width": 8,
+          "height": 12,
+          "cell_size_m": 128000,
+          "value_offset": 1740357,
+          "value_count": 96
+        },
+        {
+          "level": 8,
+          "width": 4,
+          "height": 6,
+          "cell_size_m": 256000,
+          "value_offset": 1740453,
+          "value_count": 24
+        },
+        {
+          "level": 9,
+          "width": 2,
+          "height": 3,
+          "cell_size_m": 512000,
+          "value_offset": 1740477,
+          "value_count": 6
+        },
+        {
+          "level": 10,
+          "width": 1,
+          "height": 2,
+          "cell_size_m": 1024000,
+          "value_offset": 1740483,
+          "value_count": 2
+        },
+        {
+          "level": 11,
+          "width": 1,
+          "height": 1,
+          "cell_size_m": 2048000,
+          "value_offset": 1740485,
+          "value_count": 1
+        }
+      ],
+      "blob_file": "heat_days_tmax_gt_25.u16.gz",
+      "blob_encoding": "gzip+uint16le",
+      "raw_bytes": 3480972,
+      "compressed_bytes": 380807,
+      "sha256_raw": "95ee13cb0c470996b8fe74b77dbafefab8fca8904e7d6b9f096862b391118ed9"
+    },
+    {
+      "id": "heat_days_tmax_gt_28",
+      "category_id": "heat",
+      "label": "Days Tmax > 28\u00b0C",
+      "units": "days/year",
+      "period": "2016-01 to 2026-08",
+      "definition": "Expected annual number of days with HadUK-Grid daily maximum temperature strictly above 28\u00b0C. Calculated as the sum of calendar-month means across all available years, so published 2026 months are included without treating unpublished 2026 months as zero.",
+      "source_variable": "tasmax",
+      "scale": 0.1,
+      "offset": 0.0,
+      "decimals": 1,
+      "nodata": 65535,
+      "encoded_min": 0,
+      "encoded_max": 191,
+      "summary": {
+        "min": 0.0,
+        "max": 19.1
+      },
+      "coverage": {
+        "source_months": 128,
+        "by_calendar_month": {
+          "1": 11,
+          "2": 11,
+          "3": 11,
+          "4": 11,
+          "5": 11,
+          "6": 11,
+          "7": 11,
+          "8": 11,
+          "9": 10,
+          "10": 10,
+          "11": 10,
+          "12": 10
+        },
+        "first_month": "2016-01",
+        "last_month": "2026-08",
+        "method": "Calendar-month means are summed so incomplete 2026 coverage does not count unpublished months as zero."
+      },
+      "palette_reverse": false,
+      "levels": [
+        {
+          "level": 0,
+          "width": 900,
+          "height": 1450,
+          "cell_size_m": 1000,
+          "value_offset": 0,
+          "value_count": 1305000
+        },
+        {
+          "level": 1,
+          "width": 450,
+          "height": 725,
+          "cell_size_m": 2000,
+          "value_offset": 1305000,
+          "value_count": 326250
+        },
+        {
+          "level": 2,
+          "width": 225,
+          "height": 363,
+          "cell_size_m": 4000,
+          "value_offset": 1631250,
+          "value_count": 81675
+        },
+        {
+          "level": 3,
+          "width": 113,
+          "height": 182,
+          "cell_size_m": 8000,
+          "value_offset": 1712925,
+          "value_count": 20566
+        },
+        {
+          "level": 4,
+          "width": 57,
+          "height": 91,
+          "cell_size_m": 16000,
+          "value_offset": 1733491,
+          "value_count": 5187
+        },
+        {
+          "level": 5,
+          "width": 29,
+          "height": 46,
+          "cell_size_m": 32000,
+          "value_offset": 1738678,
+          "value_count": 1334
+        },
+        {
+          "level": 6,
+          "width": 15,
+          "height": 23,
+          "cell_size_m": 64000,
+          "value_offset": 1740012,
+          "value_count": 345
+        },
+        {
+          "level": 7,
+          "width": 8,
+          "height": 12,
+          "cell_size_m": 128000,
+          "value_offset": 1740357,
+          "value_count": 96
+        },
+        {
+          "level": 8,
+          "width": 4,
+          "height": 6,
+          "cell_size_m": 256000,
+          "value_offset": 1740453,
+          "value_count": 24
+        },
+        {
+          "level": 9,
+          "width": 2,
+          "height": 3,
+          "cell_size_m": 512000,
+          "value_offset": 1740477,
+          "value_count": 6
+        },
+        {
+          "level": 10,
+          "width": 1,
+          "height": 2,
+          "cell_size_m": 1024000,
+          "value_offset": 1740483,
+          "value_count": 2
+        },
+        {
+          "level": 11,
+          "width": 1,
+          "height": 1,
+          "cell_size_m": 2048000,
+          "value_offset": 1740485,
+          "value_count": 1
+        }
+      ],
+      "blob_file": "heat_days_tmax_gt_28.u16.gz",
+      "blob_encoding": "gzip+uint16le",
+      "raw_bytes": 3480972,
+      "compressed_bytes": 263015,
+      "sha256_raw": "7e6238791dc373ee1378b369130bff3d18f1eb2f84ae0f788e55bdd8e6f4678c"
+    },
+    {
+      "id": "heat_days_tmax_gt_30",
+      "category_id": "heat",
+      "label": "Days Tmax > 30\u00b0C",
+      "units": "days/year",
+      "period": "2016-01 to 2026-08",
+      "definition": "Expected annual number of days with HadUK-Grid daily maximum temperature strictly above 30\u00b0C. Calculated as the sum of calendar-month means across all available years, so published 2026 months are included without treating unpublished 2026 months as zero.",
+      "source_variable": "tasmax",
+      "scale": 0.1,
+      "offset": 0.0,
+      "decimals": 1,
+      "nodata": 65535,
+      "encoded_min": 0,
+      "encoded_max": 113,
+      "summary": {
+        "min": 0.0,
+        "max": 11.3
+      },
+      "coverage": {
+        "source_months": 128,
+        "by_calendar_month": {
+          "1": 11,
+          "2": 11,
+          "3": 11,
+          "4": 11,
+          "5": 11,
+          "6": 11,
+          "7": 11,
+          "8": 11,
+          "9": 10,
+          "10": 10,
+          "11": 10,
+          "12": 10
+        },
+        "first_month": "2016-01",
+        "last_month": "2026-08",
+        "method": "Calendar-month means are summed so incomplete 2026 coverage does not count unpublished months as zero."
+      },
+      "palette_reverse": false,
+      "levels": [
+        {
+          "level": 0,
+          "width": 900,
+          "height": 1450,
+          "cell_size_m": 1000,
+          "value_offset": 0,
+          "value_count": 1305000
+        },
+        {
+          "level": 1,
+          "width": 450,
+          "height": 725,
+          "cell_size_m": 2000,
+          "value_offset": 1305000,
+          "value_count": 326250
+        },
+        {
+          "level": 2,
+          "width": 225,
+          "height": 363,
+          "cell_size_m": 4000,
+          "value_offset": 1631250,
+          "value_count": 81675
+        },
+        {
+          "level": 3,
+          "width": 113,
+          "height": 182,
+          "cell_size_m": 8000,
+          "value_offset": 1712925,
+          "value_count": 20566
+        },
+        {
+          "level": 4,
+          "width": 57,
+          "height": 91,
+          "cell_size_m": 16000,
+          "value_offset": 1733491,
+          "value_count": 5187
+        },
+        {
+          "level": 5,
+          "width": 29,
+          "height": 46,
+          "cell_size_m": 32000,
+          "value_offset": 1738678,
+          "value_count": 1334
+        },
+        {
+          "level": 6,
+          "width": 15,
+          "height": 23,
+          "cell_size_m": 64000,
+          "value_offset": 1740012,
+          "value_count": 345
+        },
+        {
+          "level": 7,
+          "width": 8,
+          "height": 12,
+          "cell_size_m": 128000,
+          "value_offset": 1740357,
+          "value_count": 96
+        },
+        {
+          "level": 8,
+          "width": 4,
+          "height": 6,
+          "cell_size_m": 256000,
+          "value_offset": 1740453,
+          "value_count": 24
+        },
+        {
+          "level": 9,
+          "width": 2,
+          "height": 3,
+          "cell_size_m": 512000,
+          "value_offset": 1740477,
+          "value_count": 6
+        },
+        {
+          "level": 10,
+          "width": 1,
+          "height": 2,
+          "cell_size_m": 1024000,
+          "value_offset": 1740483,
+          "value_count": 2
+        },
+        {
+          "level": 11,
+          "width": 1,
+          "height": 1,
+          "cell_size_m": 2048000,
+          "value_offset": 1740485,
+          "value_count": 1
+        }
+      ],
+      "blob_file": "heat_days_tmax_gt_30.u16.gz",
+      "blob_encoding": "gzip+uint16le",
+      "raw_bytes": 3480972,
+      "compressed_bytes": 178911,
+      "sha256_raw": "c4c60d1a06a8ee3e1fd22b1b886c41599e8ce791112a6a2b3a3a8892ffc499f0"
+    },
+    {
+      "id": "heat_summer_tmax_p95",
+      "category_id": "heat",
+      "label": "Summer Tmax 95th percentile",
+      "units": "\u00b0C",
+      "period": "Summers 2016\u20132026",
+      "definition": "95th percentile of all available June\u2013August HadUK-Grid daily maximum temperatures in the selected 2016\u20132026 observation period.",
+      "source_variable": "tasmax",
+      "scale": 0.1,
+      "offset": -50.0,
+      "decimals": 1,
+      "nodata": 65535,
+      "encoded_min": 656,
+      "encoded_max": 821,
+      "summary": {
+        "min": 15.600000000000009,
+        "max": 32.10000000000001
+      },
+      "coverage": {
+        "source_months": 33,
+        "daily_observations": 1012,
+        "years": [
+          2016,
+          2017,
+          2018,
+          2019,
+          2020,
+          2021,
+          2022,
+          2023,
+          2024,
+          2025,
+          2026
+        ],
+        "months_present": [
+          "2016-06",
+          "2016-07",
+          "2016-08",
+          "2017-06",
+          "2017-07",
+          "2017-08",
+          "2018-06",
+          "2018-07",
+          "2018-08",
+          "2019-06",
+          "2019-07",
+          "2019-08",
+          "2020-06",
+          "2020-07",
+          "2020-08",
+          "2021-06",
+          "2021-07",
+          "2021-08",
+          "2022-06",
+          "2022-07",
+          "2022-08",
+          "2023-06",
+          "2023-07",
+          "2023-08",
+          "2024-06",
+          "2024-07",
+          "2024-08",
+          "2025-06",
+          "2025-07",
+          "2025-08",
+          "2026-06",
+          "2026-07",
+          "2026-08"
+        ]
+      },
+      "palette_reverse": false,
+      "levels": [
+        {
+          "level": 0,
+          "width": 900,
+          "height": 1450,
+          "cell_size_m": 1000,
+          "value_offset": 0,
+          "value_count": 1305000
+        },
+        {
+          "level": 1,
+          "width": 450,
+          "height": 725,
+          "cell_size_m": 2000,
+          "value_offset": 1305000,
+          "value_count": 326250
+        },
+        {
+          "level": 2,
+          "width": 225,
+          "height": 363,
+          "cell_size_m": 4000,
+          "value_offset": 1631250,
+          "value_count": 81675
+        },
+        {
+          "level": 3,
+          "width": 113,
+          "height": 182,
+          "cell_size_m": 8000,
+          "value_offset": 1712925,
+          "value_count": 20566
+        },
+        {
+          "level": 4,
+          "width": 57,
+          "height": 91,
+          "cell_size_m": 16000,
+          "value_offset": 1733491,
+          "value_count": 5187
+        },
+        {
+          "level": 5,
+          "width": 29,
+          "height": 46,
+          "cell_size_m": 32000,
+          "value_offset": 1738678,
+          "value_count": 1334
+        },
+        {
+          "level": 6,
+          "width": 15,
+          "height": 23,
+          "cell_size_m": 64000,
+          "value_offset": 1740012,
+          "value_count": 345
+        },
+        {
+          "level": 7,
+          "width": 8,
+          "height": 12,
+          "cell_size_m": 128000,
+          "value_offset": 1740357,
+          "value_count": 96
+        },
+        {
+          "level": 8,
+          "width": 4,
+          "height": 6,
+          "cell_size_m": 256000,
+          "value_offset": 1740453,
+          "value_count": 24
+        },
+        {
+          "level": 9,
+          "width": 2,
+          "height": 3,
+          "cell_size_m": 512000,
+          "value_offset": 1740477,
+          "value_count": 6
+        },
+        {
+          "level": 10,
+          "width": 1,
+          "height": 2,
+          "cell_size_m": 1024000,
+          "value_offset": 1740483,
+          "value_count": 2
+        },
+        {
+          "level": 11,
+          "width": 1,
+          "height": 1,
+          "cell_size_m": 2048000,
+          "value_offset": 1740485,
+          "value_count": 1
+        }
+      ],
+      "blob_file": "heat_summer_tmax_p95.u16.gz",
+      "blob_encoding": "gzip+uint16le",
+      "raw_bytes": 3480972,
+      "compressed_bytes": 293660,
+      "sha256_raw": "487e010471c3d757b94c1ae078085938c81e2dc047e4da617fa5f6292262e01c"
+    },
+    {
+      "id": "heat_summer_tmax_p99",
+      "category_id": "heat",
+      "label": "Summer Tmax 99th percentile",
+      "units": "\u00b0C",
+      "period": "Summers 2016\u20132026",
+      "definition": "99th percentile of all available June\u2013August HadUK-Grid daily maximum temperatures in the selected 2016\u20132026 observation period.",
+      "source_variable": "tasmax",
+      "scale": 0.1,
+      "offset": -50.0,
+      "decimals": 1,
+      "nodata": 65535,
+      "encoded_min": 676,
+      "encoded_max": 853,
+      "summary": {
+        "min": 17.60000000000001,
+        "max": 35.30000000000001
+      },
+      "coverage": {
+        "source_months": 33,
+        "daily_observations": 1012,
+        "years": [
+          2016,
+          2017,
+          2018,
+          2019,
+          2020,
+          2021,
+          2022,
+          2023,
+          2024,
+          2025,
+          2026
+        ],
+        "months_present": [
+          "2016-06",
+          "2016-07",
+          "2016-08",
+          "2017-06",
+          "2017-07",
+          "2017-08",
+          "2018-06",
+          "2018-07",
+          "2018-08",
+          "2019-06",
+          "2019-07",
+          "2019-08",
+          "2020-06",
+          "2020-07",
+          "2020-08",
+          "2021-06",
+          "2021-07",
+          "2021-08",
+          "2022-06",
+          "2022-07",
+          "2022-08",
+          "2023-06",
+          "2023-07",
+          "2023-08",
+          "2024-06",
+          "2024-07",
+          "2024-08",
+          "2025-06",
+          "2025-07",
+          "2025-08",
+          "2026-06",
+          "2026-07",
+          "2026-08"
+        ]
+      },
+      "palette_reverse": false,
+      "levels": [
+        {
+          "level": 0,
+          "width": 900,
+          "height": 1450,
+          "cell_size_m": 1000,
+          "value_offset": 0,
+          "value_count": 1305000
+        },
+        {
+          "level": 1,
+          "width": 450,
+          "height": 725,
+          "cell_size_m": 2000,
+          "value_offset": 1305000,
+          "value_count": 326250
+        },
+        {
+          "level": 2,
+          "width": 225,
+          "height": 363,
+          "cell_size_m": 4000,
+          "value_offset": 1631250,
+          "value_count": 81675
+        },
+        {
+          "level": 3,
+          "width": 113,
+          "height": 182,
+          "cell_size_m": 8000,
+          "value_offset": 1712925,
+          "value_count": 20566
+        },
+        {
+          "level": 4,
+          "width": 57,
+          "height": 91,
+          "cell_size_m": 16000,
+          "value_offset": 1733491,
+          "value_count": 5187
+        },
+        {
+          "level": 5,
+          "width": 29,
+          "height": 46,
+          "cell_size_m": 32000,
+          "value_offset": 1738678,
+          "value_count": 1334
+        },
+        {
+          "level": 6,
+          "width": 15,
+          "height": 23,
+          "cell_size_m": 64000,
+          "value_offset": 1740012,
+          "value_count": 345
+        },
+        {
+          "level": 7,
+          "width": 8,
+          "height": 12,
+          "cell_size_m": 128000,
+          "value_offset": 1740357,
+          "value_count": 96
+        },
+        {
+          "level": 8,
+          "width": 4,
+          "height": 6,
+          "cell_size_m": 256000,
+          "value_offset": 1740453,
+          "value_count": 24
+        },
+        {
+          "level": 9,
+          "width": 2,
+          "height": 3,
+          "cell_size_m": 512000,
+          "value_offset": 1740477,
+          "value_count": 6
+        },
+        {
+          "level": 10,
+          "width": 1,
+          "height": 2,
+          "cell_size_m": 1024000,
+          "value_offset": 1740483,
+          "value_count": 2
+        },
+        {
+          "level": 11,
+          "width": 1,
+          "height": 1,
+          "cell_size_m": 2048000,
+          "value_offset": 1740485,
+          "value_count": 1
+        }
+      ],
+      "blob_file": "heat_summer_tmax_p99.u16.gz",
+      "blob_encoding": "gzip+uint16le",
+      "raw_bytes": 3480972,
+      "compressed_bytes": 292663,
+      "sha256_raw": "8e37cf81f04ac706d675e738d232ca65ebf566268f701a8875cc0053ca0db73a"
+    },
+    {
+      "id": "heat_longest_run_tmax_gt_25",
+      "category_id": "heat",
+      "label": "Longest run Tmax > 25\u00b0C",
+      "units": "days",
+      "period": "2016-01 to 2026-08",
+      "definition": "Longest observed consecutive run of days with HadUK-Grid daily maximum temperature strictly above 25\u00b0C. Runs reset at calendar-year boundaries and at any gap in the available monthly source record; 2026 is included through the latest published month.",
+      "source_variable": "tasmax",
+      "scale": 1.0,
+      "offset": 0.0,
+      "decimals": 0,
+      "nodata": 65535,
+      "encoded_min": 0,
+      "encoded_max": 36,
+      "summary": {
+        "min": 0.0,
+        "max": 36.0
+      },
+      "coverage": {
+        "source_months": 128,
+        "by_calendar_month": {
+          "1": 11,
+          "2": 11,
+          "3": 11,
+          "4": 11,
+          "5": 11,
+          "6": 11,
+          "7": 11,
+          "8": 11,
+          "9": 10,
+          "10": 10,
+          "11": 10,
+          "12": 10
+        },
+        "first_month": "2016-01",
+        "last_month": "2026-08",
+        "method": "Calendar-month means are summed so incomplete 2026 coverage does not count unpublished months as zero."
+      },
+      "palette_reverse": false,
+      "levels": [
+        {
+          "level": 0,
+          "width": 900,
+          "height": 1450,
+          "cell_size_m": 1000,
+          "value_offset": 0,
+          "value_count": 1305000
+        },
+        {
+          "level": 1,
+          "width": 450,
+          "height": 725,
+          "cell_size_m": 2000,
+          "value_offset": 1305000,
+          "value_count": 326250
+        },
+        {
+          "level": 2,
+          "width": 225,
+          "height": 363,
+          "cell_size_m": 4000,
+          "value_offset": 1631250,
+          "value_count": 81675
+        },
+        {
+          "level": 3,
+          "width": 113,
+          "height": 182,
+          "cell_size_m": 8000,
+          "value_offset": 1712925,
+          "value_count": 20566
+        },
+        {
+          "level": 4,
+          "width": 57,
+          "height": 91,
+          "cell_size_m": 16000,
+          "value_offset": 1733491,
+          "value_count": 5187
+        },
+        {
+          "level": 5,
+          "width": 29,
+          "height": 46,
+          "cell_size_m": 32000,
+          "value_offset": 1738678,
+          "value_count": 1334
+        },
+        {
+          "level": 6,
+          "width": 15,
+          "height": 23,
+          "cell_size_m": 64000,
+          "value_offset": 1740012,
+          "value_count": 345
+        },
+        {
+          "level": 7,
+          "width": 8,
+          "height": 12,
+          "cell_size_m": 128000,
+          "value_offset": 1740357,
+          "value_count": 96
+        },
+        {
+          "level": 8,
+          "width": 4,
+          "height": 6,
+          "cell_size_m": 256000,
+          "value_offset": 1740453,
+          "value_count": 24
+        },
+        {
+          "level": 9,
+          "width": 2,
+          "height": 3,
+          "cell_size_m": 512000,
+          "value_offset": 1740477,
+          "value_count": 6
+        },
+        {
+          "level": 10,
+          "width": 1,
+          "height": 2,
+          "cell_size_m": 1024000,
+          "value_offset": 1740483,
+          "value_count": 2
+        },
+        {
+          "level": 11,
+          "width": 1,
+          "height": 1,
+          "cell_size_m": 2048000,
+          "value_offset": 1740485,
+          "value_count": 1
+        }
+      ],
+      "blob_file": "heat_longest_run_tmax_gt_25.u16.gz",
+      "blob_encoding": "gzip+uint16le",
+      "raw_bytes": 3480972,
+      "compressed_bytes": 108955,
+      "sha256_raw": "f52a06e86b3e7707a25a486883bf95911d9ba614c5a61d42d8cfee40777ec4b8"
+    },
+    {
+      "id": "heat_tropical_nights_tmin_gt_20",
+      "category_id": "heat",
+      "label": "Tropical nights: Tmin > 20\u00b0C",
+      "units": "days/year",
+      "period": "2016-01 to 2026-08",
+      "definition": "Expected annual number of days whose HadUK-Grid daily minimum temperature is strictly above 20\u00b0C, calculated from calendar-month means across all available years. HadUK-Grid daily Tmin follows the Met Office observation-day convention rather than a literal sunset-to-sunrise minimum.",
+      "source_variable": "tasmin",
+      "scale": 0.1,
+      "offset": 0.0,
+      "decimals": 1,
+      "nodata": 65535,
+      "encoded_min": 0,
+      "encoded_max": 18,
+      "summary": {
+        "min": 0.0,
+        "max": 1.8
+      },
+      "coverage": {
+        "source_months": 128,
+        "by_calendar_month": {
+          "1": 11,
+          "2": 11,
+          "3": 11,
+          "4": 11,
+          "5": 11,
+          "6": 11,
+          "7": 11,
+          "8": 11,
+          "9": 10,
+          "10": 10,
+          "11": 10,
+          "12": 10
+        },
+        "first_month": "2016-01",
+        "last_month": "2026-08",
+        "method": "Calendar-month means are summed so incomplete 2026 coverage does not count unpublished months as zero."
+      },
+      "palette_reverse": false,
+      "levels": [
+        {
+          "level": 0,
+          "width": 900,
+          "height": 1450,
+          "cell_size_m": 1000,
+          "value_offset": 0,
+          "value_count": 1305000
+        },
+        {
+          "level": 1,
+          "width": 450,
+          "height": 725,
+          "cell_size_m": 2000,
+          "value_offset": 1305000,
+          "value_count": 326250
+        },
+        {
+          "level": 2,
+          "width": 225,
+          "height": 363,
+          "cell_size_m": 4000,
+          "value_offset": 1631250,
+          "value_count": 81675
+        },
+        {
+          "level": 3,
+          "width": 113,
+          "height": 182,
+          "cell_size_m": 8000,
+          "value_offset": 1712925,
+          "value_count": 20566
+        },
+        {
+          "level": 4,
+          "width": 57,
+          "height": 91,
+          "cell_size_m": 16000,
+          "value_offset": 1733491,
+          "value_count": 5187
+        },
+        {
+          "level": 5,
+          "width": 29,
+          "height": 46,
+          "cell_size_m": 32000,
+          "value_offset": 1738678,
+          "value_count": 1334
+        },
+        {
+          "level": 6,
+          "width": 15,
+          "height": 23,
+          "cell_size_m": 64000,
+          "value_offset": 1740012,
+          "value_count": 345
+        },
+        {
+          "level": 7,
+          "width": 8,
+          "height": 12,
+          "cell_size_m": 128000,
+          "value_offset": 1740357,
+          "value_count": 96
+        },
+        {
+          "level": 8,
+          "width": 4,
+          "height": 6,
+          "cell_size_m": 256000,
+          "value_offset": 1740453,
+          "value_count": 24
+        },
+        {
+          "level": 9,
+          "width": 2,
+          "height": 3,
+          "cell_size_m": 512000,
+          "value_offset": 1740477,
+          "value_count": 6
+        },
+        {
+          "level": 10,
+          "width": 1,
+          "height": 2,
+          "cell_size_m": 1024000,
+          "value_offset": 1740483,
+          "value_count": 2
+        },
+        {
+          "level": 11,
+          "width": 1,
+          "height": 1,
+          "cell_size_m": 2048000,
+          "value_offset": 1740485,
+          "value_count": 1
+        }
+      ],
+      "blob_file": "heat_tropical_nights_tmin_gt_20.u16.gz",
+      "blob_encoding": "gzip+uint16le",
+      "raw_bytes": 3480972,
+      "compressed_bytes": 46732,
+      "sha256_raw": "e868c58e1b2a558e89de5574d925a7a757f7c3f39a5e4a1d5b4353bdaf7c5e1e"
+    },
+    {
+      "id": "cold_air_frost_days",
+      "category_id": "cold",
+      "label": "Air-frost days",
+      "units": "days/year",
+      "period": "2016-01 to 2026-08",
+      "definition": "Expected annual number of days with HadUK-Grid daily minimum air temperature strictly below 0\u00b0C. An air frost is defined from Tmin; a day whose maximum temperature remains below freezing is instead an ice day. Calculated as the sum of calendar-month means across all available years, so published 2026 months are included without treating unpublished months as zero.",
+      "source_variable": "tasmin",
+      "scale": 0.1,
+      "offset": 0.0,
+      "decimals": 1,
+      "nodata": 65535,
+      "encoded_min": 5,
+      "encoded_max": 2000,
+      "summary": {
+        "min": 0.5,
+        "max": 200.0
+      },
+      "coverage": {
+        "source_months": 128,
+        "by_calendar_month": {
+          "1": 11,
+          "2": 11,
+          "3": 11,
+          "4": 11,
+          "5": 11,
+          "6": 11,
+          "7": 11,
+          "8": 11,
+          "9": 10,
+          "10": 10,
+          "11": 10,
+          "12": 10
+        },
+        "first_month": "2016-01",
+        "last_month": "2026-08",
+        "method": "Calendar-month means are summed so incomplete 2026 coverage does not count unpublished months as zero."
+      },
+      "palette_reverse": true,
+      "levels": [
+        {
+          "level": 0,
+          "width": 900,
+          "height": 1450,
+          "cell_size_m": 1000,
+          "value_offset": 0,
+          "value_count": 1305000
+        },
+        {
+          "level": 1,
+          "width": 450,
+          "height": 725,
+          "cell_size_m": 2000,
+          "value_offset": 1305000,
+          "value_count": 326250
+        },
+        {
+          "level": 2,
+          "width": 225,
+          "height": 363,
+          "cell_size_m": 4000,
+          "value_offset": 1631250,
+          "value_count": 81675
+        },
+        {
+          "level": 3,
+          "width": 113,
+          "height": 182,
+          "cell_size_m": 8000,
+          "value_offset": 1712925,
+          "value_count": 20566
+        },
+        {
+          "level": 4,
+          "width": 57,
+          "height": 91,
+          "cell_size_m": 16000,
+          "value_offset": 1733491,
+          "value_count": 5187
+        },
+        {
+          "level": 5,
+          "width": 29,
+          "height": 46,
+          "cell_size_m": 32000,
+          "value_offset": 1738678,
+          "value_count": 1334
+        },
+        {
+          "level": 6,
+          "width": 15,
+          "height": 23,
+          "cell_size_m": 64000,
+          "value_offset": 1740012,
+          "value_count": 345
+        },
+        {
+          "level": 7,
+          "width": 8,
+          "height": 12,
+          "cell_size_m": 128000,
+          "value_offset": 1740357,
+          "value_count": 96
+        },
+        {
+          "level": 8,
+          "width": 4,
+          "height": 6,
+          "cell_size_m": 256000,
+          "value_offset": 1740453,
+          "value_count": 24
+        },
+        {
+          "level": 9,
+          "width": 2,
+          "height": 3,
+          "cell_size_m": 512000,
+          "value_offset": 1740477,
+          "value_count": 6
+        },
+        {
+          "level": 10,
+          "width": 1,
+          "height": 2,
+          "cell_size_m": 1024000,
+          "value_offset": 1740483,
+          "value_count": 2
+        },
+        {
+          "level": 11,
+          "width": 1,
+          "height": 1,
+          "cell_size_m": 2048000,
+          "value_offset": 1740485,
+          "value_count": 1
+        }
+      ],
+      "blob_file": "cold_air_frost_days.u16.gz",
+      "blob_encoding": "gzip+uint16le",
+      "raw_bytes": 3480972,
+      "compressed_bytes": 487746,
+      "sha256_raw": "bed05db7606ea92dc0b3c6b00ed0a37bd258354e888335dd002ce812f2dab8cc"
+    },
+    {
+      "id": "cold_winter_tmin_p05",
+      "category_id": "cold",
+      "label": "Winter Tmin 5th percentile",
+      "units": "\u00b0C",
+      "period": "Winters 2016\u201317 to 2025\u201326",
+      "definition": "5th percentile of HadUK-Grid daily minimum temperature across complete December\u2013February winters. Only complete DJF winters are used, so the statistic is not biased by partial seasonal coverage.",
+      "source_variable": "tasmin",
+      "scale": 0.1,
+      "offset": -50.0,
+      "decimals": 1,
+      "nodata": 65535,
+      "encoded_min": 401,
+      "encoded_max": 539,
+      "summary": {
+        "min": -9.899999999999999,
+        "max": 3.9000000000000057
+      },
+      "coverage": {
+        "source_months": 30,
+        "daily_observations": 902,
+        "complete_winter_end_years": [
+          2017,
+          2018,
+          2019,
+          2020,
+          2021,
+          2022,
+          2023,
+          2024,
+          2025,
+          2026
+        ],
+        "months_present": [
+          "2016-12",
+          "2017-01",
+          "2017-02",
+          "2017-12",
+          "2018-01",
+          "2018-02",
+          "2018-12",
+          "2019-01",
+          "2019-02",
+          "2019-12",
+          "2020-01",
+          "2020-02",
+          "2020-12",
+          "2021-01",
+          "2021-02",
+          "2021-12",
+          "2022-01",
+          "2022-02",
+          "2022-12",
+          "2023-01",
+          "2023-02",
+          "2023-12",
+          "2024-01",
+          "2024-02",
+          "2024-12",
+          "2025-01",
+          "2025-02",
+          "2025-12",
+          "2026-01",
+          "2026-02"
+        ],
+        "method": "Only complete December\u2013February (DJF) winters are included; partial winters at either end of the source period are excluded."
+      },
+      "palette_reverse": false,
+      "levels": [
+        {
+          "level": 0,
+          "width": 900,
+          "height": 1450,
+          "cell_size_m": 1000,
+          "value_offset": 0,
+          "value_count": 1305000
+        },
+        {
+          "level": 1,
+          "width": 450,
+          "height": 725,
+          "cell_size_m": 2000,
+          "value_offset": 1305000,
+          "value_count": 326250
+        },
+        {
+          "level": 2,
+          "width": 225,
+          "height": 363,
+          "cell_size_m": 4000,
+          "value_offset": 1631250,
+          "value_count": 81675
+        },
+        {
+          "level": 3,
+          "width": 113,
+          "height": 182,
+          "cell_size_m": 8000,
+          "value_offset": 1712925,
+          "value_count": 20566
+        },
+        {
+          "level": 4,
+          "width": 57,
+          "height": 91,
+          "cell_size_m": 16000,
+          "value_offset": 1733491,
+          "value_count": 5187
+        },
+        {
+          "level": 5,
+          "width": 29,
+          "height": 46,
+          "cell_size_m": 32000,
+          "value_offset": 1738678,
+          "value_count": 1334
+        },
+        {
+          "level": 6,
+          "width": 15,
+          "height": 23,
+          "cell_size_m": 64000,
+          "value_offset": 1740012,
+          "value_count": 345
+        },
+        {
+          "level": 7,
+          "width": 8,
+          "height": 12,
+          "cell_size_m": 128000,
+          "value_offset": 1740357,
+          "value_count": 96
+        },
+        {
+          "level": 8,
+          "width": 4,
+          "height": 6,
+          "cell_size_m": 256000,
+          "value_offset": 1740453,
+          "value_count": 24
+        },
+        {
+          "level": 9,
+          "width": 2,
+          "height": 3,
+          "cell_size_m": 512000,
+          "value_offset": 1740477,
+          "value_count": 6
+        },
+        {
+          "level": 10,
+          "width": 1,
+          "height": 2,
+          "cell_size_m": 1024000,
+          "value_offset": 1740483,
+          "value_count": 2
+        },
+        {
+          "level": 11,
+          "width": 1,
+          "height": 1,
+          "cell_size_m": 2048000,
+          "value_offset": 1740485,
+          "value_count": 1
+        }
+      ],
+      "blob_file": "cold_winter_tmin_p05.u16.gz",
+      "blob_encoding": "gzip+uint16le",
+      "raw_bytes": 3480972,
+      "compressed_bytes": 235368,
+      "sha256_raw": "ec628c7b87b5c226e6a5f745fba1bb32bbc3dceff8a70874f649689fd2d12141"
+    }
+  ],
+  "data_pruning": [
+    {
+      "id": "st-kilda-cross-variable-temperature-qc",
+      "area": "St Kilda archipelago",
+      "action": "Exclude these eight 1 km cells from all derived metrics before LOD construction.",
+      "reason": "A full 2016-01 to 2026-08 audit comparing each daily Tmin with the Tmax covering the same 24-hour observation period found severe interpolation inconsistencies at every St Kilda cell. All UK cells with ordering errors greater than 10\u00b0C were these eight cells, and all tropical-night candidate events with ordering errors greater than 5\u00b0C occurred in them.",
+      "audit_period": "2016-01 to 2026-08",
+      "audit_summary": {
+        "source_valid_cells": 245077,
+        "pruned_cells": 8,
+        "st_kilda_tropical_candidate_events": 160,
+        "st_kilda_tropical_candidates_with_any_ordering_error": 152,
+        "st_kilda_tropical_candidates_with_gt_5c_ordering_error": 135
+      },
+      "cells": [
+        {
+          "row": 1098,
+          "column": 209,
+          "easting": 9500,
+          "northing": 898500,
+          "latitude": 57.8050178,
+          "longitude": -8.5784783
+        },
+        {
+          "row": 1099,
+          "column": 208,
+          "easting": 8500,
+          "northing": 899500,
+          "latitude": 57.8130684,
+          "longitude": -8.5968288
+        },
+        {
+          "row": 1099,
+          "column": 209,
+          "easting": 9500,
+          "northing": 899500,
+          "latitude": 57.8139407,
+          "longitude": -8.5801101
+        },
+        {
+          "row": 1099,
+          "column": 210,
+          "easting": 10500,
+          "northing": 899500,
+          "latitude": 57.8148107,
+          "longitude": -8.5633904
+        },
+        {
+          "row": 1100,
+          "column": 208,
+          "easting": 8500,
+          "northing": 900500,
+          "latitude": 57.821991,
+          "longitude": -8.5984657
+        },
+        {
+          "row": 1100,
+          "column": 209,
+          "easting": 9500,
+          "northing": 900500,
+          "latitude": 57.8228635,
+          "longitude": -8.5817429
+        },
+        {
+          "row": 1101,
+          "column": 206,
+          "easting": 6500,
+          "northing": 901500,
+          "latitude": 57.8291612,
+          "longitude": -8.6335543
+        },
+        {
+          "row": 1105,
+          "column": 215,
+          "easting": 15500,
+          "northing": 905500,
+          "latitude": 57.872675,
+          "longitude": -8.4894418
+        }
+      ]
+    }
+  ],
+  "sources": {
+    "provider": "Met Office HadUK-Grid",
+    "resolution": "1 km daily",
+    "historical_release": "CEDA HadUK-Grid v1.3.2.ceda",
+    "historical_citation": "Met Office; Hollis, D.; Carlisle, E.; Kendon, M.; Packman, S.; Doherty, A. (2026): HadUK-Grid Gridded Climate Observations on a 1km grid over the UK, v1.3.2.ceda (1836-2025). NERC EDS Centre for Environmental Data Analysis, 23 June 2026.",
+    "historical_doi_url": "https://doi.org/10.5285/789b3065d74a4c948ab05d33556c86d0",
+    "method_citation": "Hollis, D.; McCarthy, M. P.; Kendon, M.; Legg, T.; Simpson, I. (2019): HadUK-Grid - A new UK dataset of gridded climate observations. Geoscience Data Journal, 6, 151-159.",
+    "method_doi_url": "https://doi.org/10.1002/gdj3.78",
+    "provisional_release": "Met Office provisional 2026",
+    "provisional_url": "https://www.metoffice.gov.uk/hadobs/hadukgrid/",
+    "licence_name": "Open Government Licence v3.0",
+    "licence_url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+    "derived_product_notice": "Goldilocks Map climate metrics are derived from HadUK-Grid and are not an official Met Office product.",
+    "tasmax_months": [
+      {
+        "year": 2016,
+        "month": 1,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20160101-20160131.nc"
+      },
+      {
+        "year": 2016,
+        "month": 2,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20160201-20160229.nc"
+      },
+      {
+        "year": 2016,
+        "month": 3,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20160301-20160331.nc"
+      },
+      {
+        "year": 2016,
+        "month": 4,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20160401-20160430.nc"
+      },
+      {
+        "year": 2016,
+        "month": 5,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20160501-20160531.nc"
+      },
+      {
+        "year": 2016,
+        "month": 6,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20160601-20160630.nc"
+      },
+      {
+        "year": 2016,
+        "month": 7,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20160701-20160731.nc"
+      },
+      {
+        "year": 2016,
+        "month": 8,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20160801-20160831.nc"
+      },
+      {
+        "year": 2016,
+        "month": 9,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20160901-20160930.nc"
+      },
+      {
+        "year": 2016,
+        "month": 10,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20161001-20161031.nc"
+      },
+      {
+        "year": 2016,
+        "month": 11,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20161101-20161130.nc"
+      },
+      {
+        "year": 2016,
+        "month": 12,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20161201-20161231.nc"
+      },
+      {
+        "year": 2017,
+        "month": 1,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20170101-20170131.nc"
+      },
+      {
+        "year": 2017,
+        "month": 2,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20170201-20170228.nc"
+      },
+      {
+        "year": 2017,
+        "month": 3,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20170301-20170331.nc"
+      },
+      {
+        "year": 2017,
+        "month": 4,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20170401-20170430.nc"
+      },
+      {
+        "year": 2017,
+        "month": 5,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20170501-20170531.nc"
+      },
+      {
+        "year": 2017,
+        "month": 6,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20170601-20170630.nc"
+      },
+      {
+        "year": 2017,
+        "month": 7,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20170701-20170731.nc"
+      },
+      {
+        "year": 2017,
+        "month": 8,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20170801-20170831.nc"
+      },
+      {
+        "year": 2017,
+        "month": 9,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20170901-20170930.nc"
+      },
+      {
+        "year": 2017,
+        "month": 10,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20171001-20171031.nc"
+      },
+      {
+        "year": 2017,
+        "month": 11,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20171101-20171130.nc"
+      },
+      {
+        "year": 2017,
+        "month": 12,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20171201-20171231.nc"
+      },
+      {
+        "year": 2018,
+        "month": 1,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20180101-20180131.nc"
+      },
+      {
+        "year": 2018,
+        "month": 2,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20180201-20180228.nc"
+      },
+      {
+        "year": 2018,
+        "month": 3,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20180301-20180331.nc"
+      },
+      {
+        "year": 2018,
+        "month": 4,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20180401-20180430.nc"
+      },
+      {
+        "year": 2018,
+        "month": 5,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20180501-20180531.nc"
+      },
+      {
+        "year": 2018,
+        "month": 6,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20180601-20180630.nc"
+      },
+      {
+        "year": 2018,
+        "month": 7,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20180701-20180731.nc"
+      },
+      {
+        "year": 2018,
+        "month": 8,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20180801-20180831.nc"
+      },
+      {
+        "year": 2018,
+        "month": 9,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20180901-20180930.nc"
+      },
+      {
+        "year": 2018,
+        "month": 10,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20181001-20181031.nc"
+      },
+      {
+        "year": 2018,
+        "month": 11,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20181101-20181130.nc"
+      },
+      {
+        "year": 2018,
+        "month": 12,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20181201-20181231.nc"
+      },
+      {
+        "year": 2019,
+        "month": 1,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20190101-20190131.nc"
+      },
+      {
+        "year": 2019,
+        "month": 2,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20190201-20190228.nc"
+      },
+      {
+        "year": 2019,
+        "month": 3,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20190301-20190331.nc"
+      },
+      {
+        "year": 2019,
+        "month": 4,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20190401-20190430.nc"
+      },
+      {
+        "year": 2019,
+        "month": 5,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20190501-20190531.nc"
+      },
+      {
+        "year": 2019,
+        "month": 6,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20190601-20190630.nc"
+      },
+      {
+        "year": 2019,
+        "month": 7,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20190701-20190731.nc"
+      },
+      {
+        "year": 2019,
+        "month": 8,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20190801-20190831.nc"
+      },
+      {
+        "year": 2019,
+        "month": 9,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20190901-20190930.nc"
+      },
+      {
+        "year": 2019,
+        "month": 10,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20191001-20191031.nc"
+      },
+      {
+        "year": 2019,
+        "month": 11,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20191101-20191130.nc"
+      },
+      {
+        "year": 2019,
+        "month": 12,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20191201-20191231.nc"
+      },
+      {
+        "year": 2020,
+        "month": 1,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20200101-20200131.nc"
+      },
+      {
+        "year": 2020,
+        "month": 2,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20200201-20200229.nc"
+      },
+      {
+        "year": 2020,
+        "month": 3,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20200301-20200331.nc"
+      },
+      {
+        "year": 2020,
+        "month": 4,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20200401-20200430.nc"
+      },
+      {
+        "year": 2020,
+        "month": 5,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20200501-20200531.nc"
+      },
+      {
+        "year": 2020,
+        "month": 6,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20200601-20200630.nc"
+      },
+      {
+        "year": 2020,
+        "month": 7,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20200701-20200731.nc"
+      },
+      {
+        "year": 2020,
+        "month": 8,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20200801-20200831.nc"
+      },
+      {
+        "year": 2020,
+        "month": 9,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20200901-20200930.nc"
+      },
+      {
+        "year": 2020,
+        "month": 10,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20201001-20201031.nc"
+      },
+      {
+        "year": 2020,
+        "month": 11,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20201101-20201130.nc"
+      },
+      {
+        "year": 2020,
+        "month": 12,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20201201-20201231.nc"
+      },
+      {
+        "year": 2021,
+        "month": 1,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20210101-20210131.nc"
+      },
+      {
+        "year": 2021,
+        "month": 2,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20210201-20210228.nc"
+      },
+      {
+        "year": 2021,
+        "month": 3,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20210301-20210331.nc"
+      },
+      {
+        "year": 2021,
+        "month": 4,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20210401-20210430.nc"
+      },
+      {
+        "year": 2021,
+        "month": 5,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20210501-20210531.nc"
+      },
+      {
+        "year": 2021,
+        "month": 6,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20210601-20210630.nc"
+      },
+      {
+        "year": 2021,
+        "month": 7,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20210701-20210731.nc"
+      },
+      {
+        "year": 2021,
+        "month": 8,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20210801-20210831.nc"
+      },
+      {
+        "year": 2021,
+        "month": 9,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20210901-20210930.nc"
+      },
+      {
+        "year": 2021,
+        "month": 10,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20211001-20211031.nc"
+      },
+      {
+        "year": 2021,
+        "month": 11,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20211101-20211130.nc"
+      },
+      {
+        "year": 2021,
+        "month": 12,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20211201-20211231.nc"
+      },
+      {
+        "year": 2022,
+        "month": 1,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20220101-20220131.nc"
+      },
+      {
+        "year": 2022,
+        "month": 2,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20220201-20220228.nc"
+      },
+      {
+        "year": 2022,
+        "month": 3,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20220301-20220331.nc"
+      },
+      {
+        "year": 2022,
+        "month": 4,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20220401-20220430.nc"
+      },
+      {
+        "year": 2022,
+        "month": 5,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20220501-20220531.nc"
+      },
+      {
+        "year": 2022,
+        "month": 6,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20220601-20220630.nc"
+      },
+      {
+        "year": 2022,
+        "month": 7,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20220701-20220731.nc"
+      },
+      {
+        "year": 2022,
+        "month": 8,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20220801-20220831.nc"
+      },
+      {
+        "year": 2022,
+        "month": 9,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20220901-20220930.nc"
+      },
+      {
+        "year": 2022,
+        "month": 10,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20221001-20221031.nc"
+      },
+      {
+        "year": 2022,
+        "month": 11,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20221101-20221130.nc"
+      },
+      {
+        "year": 2022,
+        "month": 12,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20221201-20221231.nc"
+      },
+      {
+        "year": 2023,
+        "month": 1,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20230101-20230131.nc"
+      },
+      {
+        "year": 2023,
+        "month": 2,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20230201-20230228.nc"
+      },
+      {
+        "year": 2023,
+        "month": 3,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20230301-20230331.nc"
+      },
+      {
+        "year": 2023,
+        "month": 4,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20230401-20230430.nc"
+      },
+      {
+        "year": 2023,
+        "month": 5,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20230501-20230531.nc"
+      },
+      {
+        "year": 2023,
+        "month": 6,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20230601-20230630.nc"
+      },
+      {
+        "year": 2023,
+        "month": 7,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20230701-20230731.nc"
+      },
+      {
+        "year": 2023,
+        "month": 8,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20230801-20230831.nc"
+      },
+      {
+        "year": 2023,
+        "month": 9,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20230901-20230930.nc"
+      },
+      {
+        "year": 2023,
+        "month": 10,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20231001-20231031.nc"
+      },
+      {
+        "year": 2023,
+        "month": 11,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20231101-20231130.nc"
+      },
+      {
+        "year": 2023,
+        "month": 12,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20231201-20231231.nc"
+      },
+      {
+        "year": 2024,
+        "month": 1,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20240101-20240131.nc"
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20240201-20240229.nc"
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20240301-20240331.nc"
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20240401-20240430.nc"
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20240501-20240531.nc"
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20240601-20240630.nc"
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20240701-20240731.nc"
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20240801-20240831.nc"
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20240901-20240930.nc"
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20241001-20241031.nc"
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20241101-20241130.nc"
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20241201-20241231.nc"
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20250101-20250131.nc"
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20250201-20250228.nc"
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20250301-20250331.nc"
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20250401-20250430.nc"
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20250501-20250531.nc"
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20250601-20250630.nc"
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20250701-20250731.nc"
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20250801-20250831.nc"
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20250901-20250930.nc"
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20251001-20251031.nc"
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20251101-20251130.nc"
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmax_hadukgrid_uk_1km_day_20251201-20251231.nc"
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "status": "Met Office provisional 2026",
+        "file": "tasmax_hadukgrid_uk_1km_day_20260101-20260131.nc"
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "status": "Met Office provisional 2026",
+        "file": "tasmax_hadukgrid_uk_1km_day_20260201-20260228.nc"
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "status": "Met Office provisional 2026",
+        "file": "tasmax_hadukgrid_uk_1km_day_20260301-20260331.nc"
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "status": "Met Office provisional 2026",
+        "file": "tasmax_hadukgrid_uk_1km_day_20260401-20260430.nc"
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "status": "Met Office provisional 2026",
+        "file": "tasmax_hadukgrid_uk_1km_day_20260501-20260531.nc"
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "status": "Met Office provisional 2026",
+        "file": "tasmax_hadukgrid_uk_1km_day_20260601-20260630.nc"
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "status": "Met Office provisional 2026",
+        "file": "tasmax_hadukgrid_uk_1km_day_20260701-20260731.nc"
+      },
+      {
+        "year": 2026,
+        "month": 8,
+        "status": "Met Office provisional 2026",
+        "file": "tasmax_hadukgrid_uk_1km_day_20260801-20260831.nc"
+      }
+    ],
+    "tasmin_months": [
+      {
+        "year": 2016,
+        "month": 1,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20160101-20160131.nc"
+      },
+      {
+        "year": 2016,
+        "month": 2,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20160201-20160229.nc"
+      },
+      {
+        "year": 2016,
+        "month": 3,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20160301-20160331.nc"
+      },
+      {
+        "year": 2016,
+        "month": 4,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20160401-20160430.nc"
+      },
+      {
+        "year": 2016,
+        "month": 5,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20160501-20160531.nc"
+      },
+      {
+        "year": 2016,
+        "month": 6,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20160601-20160630.nc"
+      },
+      {
+        "year": 2016,
+        "month": 7,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20160701-20160731.nc"
+      },
+      {
+        "year": 2016,
+        "month": 8,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20160801-20160831.nc"
+      },
+      {
+        "year": 2016,
+        "month": 9,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20160901-20160930.nc"
+      },
+      {
+        "year": 2016,
+        "month": 10,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20161001-20161031.nc"
+      },
+      {
+        "year": 2016,
+        "month": 11,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20161101-20161130.nc"
+      },
+      {
+        "year": 2016,
+        "month": 12,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20161201-20161231.nc"
+      },
+      {
+        "year": 2017,
+        "month": 1,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20170101-20170131.nc"
+      },
+      {
+        "year": 2017,
+        "month": 2,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20170201-20170228.nc"
+      },
+      {
+        "year": 2017,
+        "month": 3,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20170301-20170331.nc"
+      },
+      {
+        "year": 2017,
+        "month": 4,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20170401-20170430.nc"
+      },
+      {
+        "year": 2017,
+        "month": 5,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20170501-20170531.nc"
+      },
+      {
+        "year": 2017,
+        "month": 6,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20170601-20170630.nc"
+      },
+      {
+        "year": 2017,
+        "month": 7,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20170701-20170731.nc"
+      },
+      {
+        "year": 2017,
+        "month": 8,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20170801-20170831.nc"
+      },
+      {
+        "year": 2017,
+        "month": 9,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20170901-20170930.nc"
+      },
+      {
+        "year": 2017,
+        "month": 10,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20171001-20171031.nc"
+      },
+      {
+        "year": 2017,
+        "month": 11,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20171101-20171130.nc"
+      },
+      {
+        "year": 2017,
+        "month": 12,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20171201-20171231.nc"
+      },
+      {
+        "year": 2018,
+        "month": 1,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20180101-20180131.nc"
+      },
+      {
+        "year": 2018,
+        "month": 2,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20180201-20180228.nc"
+      },
+      {
+        "year": 2018,
+        "month": 3,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20180301-20180331.nc"
+      },
+      {
+        "year": 2018,
+        "month": 4,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20180401-20180430.nc"
+      },
+      {
+        "year": 2018,
+        "month": 5,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20180501-20180531.nc"
+      },
+      {
+        "year": 2018,
+        "month": 6,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20180601-20180630.nc"
+      },
+      {
+        "year": 2018,
+        "month": 7,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20180701-20180731.nc"
+      },
+      {
+        "year": 2018,
+        "month": 8,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20180801-20180831.nc"
+      },
+      {
+        "year": 2018,
+        "month": 9,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20180901-20180930.nc"
+      },
+      {
+        "year": 2018,
+        "month": 10,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20181001-20181031.nc"
+      },
+      {
+        "year": 2018,
+        "month": 11,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20181101-20181130.nc"
+      },
+      {
+        "year": 2018,
+        "month": 12,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20181201-20181231.nc"
+      },
+      {
+        "year": 2019,
+        "month": 1,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20190101-20190131.nc"
+      },
+      {
+        "year": 2019,
+        "month": 2,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20190201-20190228.nc"
+      },
+      {
+        "year": 2019,
+        "month": 3,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20190301-20190331.nc"
+      },
+      {
+        "year": 2019,
+        "month": 4,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20190401-20190430.nc"
+      },
+      {
+        "year": 2019,
+        "month": 5,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20190501-20190531.nc"
+      },
+      {
+        "year": 2019,
+        "month": 6,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20190601-20190630.nc"
+      },
+      {
+        "year": 2019,
+        "month": 7,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20190701-20190731.nc"
+      },
+      {
+        "year": 2019,
+        "month": 8,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20190801-20190831.nc"
+      },
+      {
+        "year": 2019,
+        "month": 9,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20190901-20190930.nc"
+      },
+      {
+        "year": 2019,
+        "month": 10,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20191001-20191031.nc"
+      },
+      {
+        "year": 2019,
+        "month": 11,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20191101-20191130.nc"
+      },
+      {
+        "year": 2019,
+        "month": 12,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20191201-20191231.nc"
+      },
+      {
+        "year": 2020,
+        "month": 1,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20200101-20200131.nc"
+      },
+      {
+        "year": 2020,
+        "month": 2,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20200201-20200229.nc"
+      },
+      {
+        "year": 2020,
+        "month": 3,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20200301-20200331.nc"
+      },
+      {
+        "year": 2020,
+        "month": 4,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20200401-20200430.nc"
+      },
+      {
+        "year": 2020,
+        "month": 5,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20200501-20200531.nc"
+      },
+      {
+        "year": 2020,
+        "month": 6,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20200601-20200630.nc"
+      },
+      {
+        "year": 2020,
+        "month": 7,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20200701-20200731.nc"
+      },
+      {
+        "year": 2020,
+        "month": 8,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20200801-20200831.nc"
+      },
+      {
+        "year": 2020,
+        "month": 9,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20200901-20200930.nc"
+      },
+      {
+        "year": 2020,
+        "month": 10,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20201001-20201031.nc"
+      },
+      {
+        "year": 2020,
+        "month": 11,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20201101-20201130.nc"
+      },
+      {
+        "year": 2020,
+        "month": 12,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20201201-20201231.nc"
+      },
+      {
+        "year": 2021,
+        "month": 1,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20210101-20210131.nc"
+      },
+      {
+        "year": 2021,
+        "month": 2,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20210201-20210228.nc"
+      },
+      {
+        "year": 2021,
+        "month": 3,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20210301-20210331.nc"
+      },
+      {
+        "year": 2021,
+        "month": 4,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20210401-20210430.nc"
+      },
+      {
+        "year": 2021,
+        "month": 5,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20210501-20210531.nc"
+      },
+      {
+        "year": 2021,
+        "month": 6,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20210601-20210630.nc"
+      },
+      {
+        "year": 2021,
+        "month": 7,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20210701-20210731.nc"
+      },
+      {
+        "year": 2021,
+        "month": 8,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20210801-20210831.nc"
+      },
+      {
+        "year": 2021,
+        "month": 9,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20210901-20210930.nc"
+      },
+      {
+        "year": 2021,
+        "month": 10,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20211001-20211031.nc"
+      },
+      {
+        "year": 2021,
+        "month": 11,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20211101-20211130.nc"
+      },
+      {
+        "year": 2021,
+        "month": 12,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20211201-20211231.nc"
+      },
+      {
+        "year": 2022,
+        "month": 1,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20220101-20220131.nc"
+      },
+      {
+        "year": 2022,
+        "month": 2,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20220201-20220228.nc"
+      },
+      {
+        "year": 2022,
+        "month": 3,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20220301-20220331.nc"
+      },
+      {
+        "year": 2022,
+        "month": 4,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20220401-20220430.nc"
+      },
+      {
+        "year": 2022,
+        "month": 5,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20220501-20220531.nc"
+      },
+      {
+        "year": 2022,
+        "month": 6,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20220601-20220630.nc"
+      },
+      {
+        "year": 2022,
+        "month": 7,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20220701-20220731.nc"
+      },
+      {
+        "year": 2022,
+        "month": 8,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20220801-20220831.nc"
+      },
+      {
+        "year": 2022,
+        "month": 9,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20220901-20220930.nc"
+      },
+      {
+        "year": 2022,
+        "month": 10,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20221001-20221031.nc"
+      },
+      {
+        "year": 2022,
+        "month": 11,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20221101-20221130.nc"
+      },
+      {
+        "year": 2022,
+        "month": 12,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20221201-20221231.nc"
+      },
+      {
+        "year": 2023,
+        "month": 1,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20230101-20230131.nc"
+      },
+      {
+        "year": 2023,
+        "month": 2,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20230201-20230228.nc"
+      },
+      {
+        "year": 2023,
+        "month": 3,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20230301-20230331.nc"
+      },
+      {
+        "year": 2023,
+        "month": 4,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20230401-20230430.nc"
+      },
+      {
+        "year": 2023,
+        "month": 5,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20230501-20230531.nc"
+      },
+      {
+        "year": 2023,
+        "month": 6,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20230601-20230630.nc"
+      },
+      {
+        "year": 2023,
+        "month": 7,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20230701-20230731.nc"
+      },
+      {
+        "year": 2023,
+        "month": 8,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20230801-20230831.nc"
+      },
+      {
+        "year": 2023,
+        "month": 9,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20230901-20230930.nc"
+      },
+      {
+        "year": 2023,
+        "month": 10,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20231001-20231031.nc"
+      },
+      {
+        "year": 2023,
+        "month": 11,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20231101-20231130.nc"
+      },
+      {
+        "year": 2023,
+        "month": 12,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20231201-20231231.nc"
+      },
+      {
+        "year": 2024,
+        "month": 1,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20240101-20240131.nc"
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20240201-20240229.nc"
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20240301-20240331.nc"
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20240401-20240430.nc"
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20240501-20240531.nc"
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20240601-20240630.nc"
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20240701-20240731.nc"
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20240801-20240831.nc"
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20240901-20240930.nc"
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20241001-20241031.nc"
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20241101-20241130.nc"
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20241201-20241231.nc"
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20250101-20250131.nc"
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20250201-20250228.nc"
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20250301-20250331.nc"
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20250401-20250430.nc"
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20250501-20250531.nc"
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20250601-20250630.nc"
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20250701-20250731.nc"
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20250801-20250831.nc"
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20250901-20250930.nc"
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20251001-20251031.nc"
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20251101-20251130.nc"
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "status": "CEDA v1.3.2.ceda",
+        "file": "tasmin_hadukgrid_uk_1km_day_20251201-20251231.nc"
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "status": "Met Office provisional 2026",
+        "file": "tasmin_hadukgrid_uk_1km_day_20260101-20260131.nc"
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "status": "Met Office provisional 2026",
+        "file": "tasmin_hadukgrid_uk_1km_day_20260201-20260228.nc"
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "status": "Met Office provisional 2026",
+        "file": "tasmin_hadukgrid_uk_1km_day_20260301-20260331.nc"
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "status": "Met Office provisional 2026",
+        "file": "tasmin_hadukgrid_uk_1km_day_20260401-20260430.nc"
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "status": "Met Office provisional 2026",
+        "file": "tasmin_hadukgrid_uk_1km_day_20260501-20260531.nc"
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "status": "Met Office provisional 2026",
+        "file": "tasmin_hadukgrid_uk_1km_day_20260601-20260630.nc"
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "status": "Met Office provisional 2026",
+        "file": "tasmin_hadukgrid_uk_1km_day_20260701-20260731.nc"
+      },
+      {
+        "year": 2026,
+        "month": 8,
+        "status": "Met Office provisional 2026",
+        "file": "tasmin_hadukgrid_uk_1km_day_20260801-20260831.nc"
+      }
+    ],
+    "note": "HadUK-Grid is a gridded/interpolated climate-observation dataset; a grid cell is not a physical thermometer measurement at that exact point."
+  }
+}
