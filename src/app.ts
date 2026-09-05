@@ -29,6 +29,7 @@ type MetricTransport = {
   units: string;
   period: string;
   definition: string;
+  source_id: string;
   source_variable: string;
   scale: number;
   offset: number;
@@ -47,8 +48,24 @@ type MetricTransport = {
   blob_base64: string;
 };
 
+type DataSource = {
+  provider?: string;
+  dataset?: string;
+  resolution?: string;
+  homepage_url?: string;
+  licence_name?: string;
+  licence_url?: string;
+  citation?: string;
+  citation_url?: string;
+  method_citation?: string;
+  method_url?: string;
+  derived_product_notice?: string;
+  note?: string;
+  releases?: Array<{ label: string; status?: string; url?: string }>;
+};
+
 type GoldilocksData = {
-  format_version: 3;
+  format_version: 4;
   grid: {
     crs: string;
     proj4: string;
@@ -70,28 +87,15 @@ type GoldilocksData = {
   metrics: MetricTransport[];
   default_metric_id: string;
   preview_partial_sources: boolean;
-  sources: {
-    provider?: string;
-    resolution?: string;
-    historical_release?: string;
-    historical_citation?: string;
-    historical_doi_url?: string;
-    method_citation?: string;
-    method_doi_url?: string;
-    provisional_release?: string;
-    provisional_url?: string;
-    licence_name?: string;
-    licence_url?: string;
-    derived_product_notice?: string;
-    note?: string;
-  };
+  sources: Record<string, DataSource>;
   data_pruning: Array<{
     id: string;
+    source_id?: string;
     area: string;
     action: string;
     reason: string;
-    audit_period: string;
-    cells: Array<{ row: number; column: number; easting: number; northing: number }>;
+    audit_period?: string;
+    cells?: Array<{ row: number; column: number; easting: number; northing: number }>;
   }>;
 };
 
@@ -143,13 +147,14 @@ const data = JSON.parse(dataElement.textContent) as GoldilocksData;
 dataElement.textContent = "";
 const thirdPartyNoticesTemplate = document.getElementById("goldilocks-third-party-notices") as HTMLTemplateElement | null;
 const thirdPartyNotices = thirdPartyNoticesTemplate?.content.textContent?.trim() ?? "";
-if (data.format_version !== 3 || !data.metrics?.length || !data.categories?.length) {
-  throw new Error("This frontend requires Goldilocks categorized multi-metric data format v3");
+if (data.format_version !== 4 || !data.metrics?.length || !data.categories?.length) {
+  throw new Error("This frontend requires Goldilocks categorized multi-source metric data format v4");
 }
 const categoryById = new Map(data.categories.map((category) => [category.id, category]));
 if (categoryById.size !== data.categories.length) throw new Error("Metric category IDs must be unique");
 for (const metric of data.metrics) {
   if (!categoryById.has(metric.category_id)) throw new Error(`Metric ${metric.id} references unknown category ${metric.category_id}`);
+  if (!data.sources[metric.source_id]) throw new Error(`Metric ${metric.id} references unknown source ${metric.source_id}`);
 }
 const geometryReference = data.metrics[0];
 for (const metric of data.metrics) {
@@ -334,6 +339,11 @@ function decodeMetric(metric: MetricTransport): MetricRuntime {
   console.info(`Goldilocks metric decode ${metric.id}: ${elapsed.toFixed(1)} ms`);
   return runtime;
 }
+
+// The first metric defines the canonical land geometry used for cached map projection.
+// Individual datasets may contain additional nodata cells, so this must not depend on
+// whichever metric happened to be restored from localStorage at startup.
+const geometryRuntime = decodeMetric(geometryReference);
 
 const LEGACY_METRIC_ID_MAP: Record<string, string> = {
   days_tmax_gt_25: "heat_days_tmax_gt_25",
@@ -548,11 +558,11 @@ function worldPixelAtZoom0(lon: number, lat: number): [number, number] {
 function buildRasterProjectionLookup(): RasterProjectionLookup {
   const started = performance.now();
   const needed = new Uint8Array(BASE_CORNER_COUNT);
-  for (const level of lodLevels) {
+  for (const level of geometryRuntime.levels) {
     for (let row = 0; row < level.height; row += 1) {
       const rowOffset = row * level.width;
       for (let column = 0; column < level.width; column += 1) {
-        if (level.values[rowOffset + column] === activeMetric.nodata) continue;
+        if (level.values[rowOffset + column] === geometryReference.nodata) continue;
         needed[baseCornerIndexForLodEdge(level, row, column)] = 1;
         needed[baseCornerIndexForLodEdge(level, row, column + 1)] = 1;
         needed[baseCornerIndexForLodEdge(level, row + 1, column)] = 1;
@@ -837,15 +847,15 @@ function displayRangePercent(metric: MetricTransport, encoded: number): number {
   return ((encoded - metric.encoded_min) / span) * 100;
 }
 
-function sourceDescription(): string {
-  const bits = [data.sources.historical_release, data.sources.provisional_release, data.sources.resolution].filter(Boolean);
-  return bits.join("; ");
+function sourceDescription(source: DataSource): string {
+  return [source.dataset, source.resolution].filter(Boolean).join("; ");
 }
 
 function pruningDescription(): string {
-  return data.data_pruning.map((item) =>
-    `QC pruning: ${item.cells.length} 1 km cells in ${item.area} excluded offline after severe Tmin/Tmax interpolation inconsistencies.`
-  ).join("<br>");
+  return data.data_pruning
+    .filter((item) => !item.source_id || item.source_id === activeMetric.source_id)
+    .map((item) => `QC pruning: ${item.action}`)
+    .join("<br>");
 }
 
 const mapPanel = L.control({ position: "topleft" });
@@ -884,9 +894,9 @@ mapPanel.onAdd = () => {
       <button class="map-panel-toggle" type="button" aria-label="${initiallyCollapsed ? "Expand" : "Collapse"} map panel" aria-expanded="${!initiallyCollapsed}">${initiallyCollapsed ? "+" : "−"}</button>
     </div>
     <div class="map-panel-body">
-      ${data.preview_partial_sources ? '<div class="preview-warning">Preview build: metrics use only source months downloaded so far.</div>' : ""}
+      ${data.preview_partial_sources ? '<div class="preview-warning">Preview build: one or more metrics use only the source data currently available.</div>' : ""}
       <div class="panel-section">
-        <strong class="panel-section-title">Climate measure</strong>
+        <strong class="panel-section-title">Measure</strong>
         <div class="metric-list">${metricGroups}</div>
       </div>
       <div class="panel-section">
@@ -900,7 +910,7 @@ mapPanel.onAdd = () => {
           <strong class="panel-section-title">Layer opacity</strong>
           <output class="opacity-output">${Math.round(initialLayerOpacity * 100)}%</output>
         </div>
-        <input class="opacity-input" type="range" min="0" max="100" step="1" value="${Math.round(initialLayerOpacity * 100)}" aria-label="Climate layer opacity" aria-valuetext="${Math.round(initialLayerOpacity * 100)}%">
+        <input class="opacity-input" type="range" min="0" max="100" step="1" value="${Math.round(initialLayerOpacity * 100)}" aria-label="Data layer opacity" aria-valuetext="${Math.round(initialLayerOpacity * 100)}%">
       </div>
       <div class="panel-section">
         <div class="range-heading">
@@ -1000,32 +1010,42 @@ mapPanel.onAdd = () => {
     subtitle.textContent = `${activeMetric.label} · ${activeMetric.period}`;
     refreshDisplayRangeControl();
     description.textContent = activeMetric.definition;
+    const sourceMeta = data.sources[activeMetric.source_id];
     const pruning = pruningDescription();
-    const licence = data.sources.licence_name && data.sources.licence_url
-      ? `<a href="${data.sources.licence_url}" target="_blank" rel="noopener">${data.sources.licence_name}</a>`
-      : (data.sources.licence_name ?? "Open Government Licence");
-    const historicalCitation = data.sources.historical_citation && data.sources.historical_doi_url
-      ? `<a href="${data.sources.historical_doi_url}" target="_blank" rel="noopener">${data.sources.historical_citation}</a>`
-      : (data.sources.historical_citation ?? data.sources.historical_release ?? "");
-    const methodCitation = data.sources.method_citation && data.sources.method_doi_url
-      ? `<a href="${data.sources.method_doi_url}" target="_blank" rel="noopener">${data.sources.method_citation}</a>`
-      : (data.sources.method_citation ?? "");
-    const provisional = data.sources.provisional_release
-      ? (data.sources.provisional_url
-          ? `<a href="${data.sources.provisional_url}" target="_blank" rel="noopener">${data.sources.provisional_release}</a>`
-          : data.sources.provisional_release)
+    const licence = sourceMeta.licence_name && sourceMeta.licence_url
+      ? `<a href="${sourceMeta.licence_url}" target="_blank" rel="noopener">${sourceMeta.licence_name}</a>`
+      : (sourceMeta.licence_name ?? "Open Government Licence");
+    const datasetLabel = sourceMeta.homepage_url
+      ? `<a href="${sourceMeta.homepage_url}" target="_blank" rel="noopener">${sourceMeta.dataset ?? activeMetric.source_id}</a>`
+      : (sourceMeta.dataset ?? activeMetric.source_id);
+    const citation = sourceMeta.citation
+      ? (sourceMeta.citation_url
+          ? `<a href="${sourceMeta.citation_url}" target="_blank" rel="noopener">${sourceMeta.citation}</a>`
+          : sourceMeta.citation)
       : "";
+    const methodCitation = sourceMeta.method_citation
+      ? (sourceMeta.method_url
+          ? `<a href="${sourceMeta.method_url}" target="_blank" rel="noopener">${sourceMeta.method_citation}</a>`
+          : sourceMeta.method_citation)
+      : "";
+    const releases = (sourceMeta.releases ?? []).map((release) => {
+      const label = release.url
+        ? `<a href="${release.url}" target="_blank" rel="noopener">${release.label}</a>`
+        : release.label;
+      return `<div><strong>Release:</strong> ${label}${release.status ? ` (${release.status})` : ""}</div>`;
+    }).join("");
     source.innerHTML = `
-      ${data.sources.provider ?? "Met Office HadUK-Grid"}; ${sourceDescription()}.<br>
+      ${sourceMeta.provider ?? "Data source"}; ${sourceDescription(sourceMeta)}.<br>
+      Dataset: ${datasetLabel}.<br>
       Variable: <code>${activeMetric.source_variable}</code>.<br>
       Licence: ${licence}.<br>
-      ${data.sources.note ?? ""}${pruning ? `<br>${pruning}` : ""}
+      ${sourceMeta.note ?? ""}${pruning ? `<br>${pruning}` : ""}
       <details class="provenance-details">
-        <summary>Dataset citations and status</summary>
-        ${historicalCitation ? `<div><strong>Historical dataset:</strong> ${historicalCitation}</div>` : ""}
+        <summary>Dataset details and status</summary>
+        ${citation ? `<div><strong>Citation:</strong> ${citation}</div>` : ""}
         ${methodCitation ? `<div><strong>Method:</strong> ${methodCitation}</div>` : ""}
-        ${provisional ? `<div><strong>Provisional data:</strong> ${provisional}. These data may be amended or revised before the next citable annual release.</div>` : ""}
-        ${data.sources.derived_product_notice ? `<div><strong>Derived product:</strong> ${data.sources.derived_product_notice}</div>` : ""}
+        ${releases}
+        ${sourceMeta.derived_product_notice ? `<div><strong>Derived product:</strong> ${sourceMeta.derived_product_notice}</div>` : ""}
       </details>`;
   }
 

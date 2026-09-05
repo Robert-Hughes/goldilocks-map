@@ -1,8 +1,8 @@
 # Goldilocks Map
 
-Goldilocks Map is an experimental single-file UK location-suitability explorer built from Met Office HadUK-Grid daily 1 km observations. Climate metrics are grouped into first-class categories (currently **Heat** and **Cold**) and can be switched without reloading the page.
+Goldilocks Map is an experimental single-file UK location-suitability explorer built from multiple gridded public datasets. Metrics are grouped into first-class categories (currently **Heat**, **Cold** and **Pollution**) and can be switched without reloading the page.
 
-## Climate metrics
+## Metrics
 
 The processed bundle contains:
 
@@ -20,6 +20,15 @@ The processed bundle contains:
 
 - expected annual air-frost days, defined as daily `tasmin < 0°C`;
 - 5th percentile of daily `tasmin` across complete December–February (DJF) winters.
+
+**Pollution**
+
+- 2022–2024 mean PM2.5 background annual concentration;
+- 2022–2024 mean NO₂ background annual concentration;
+- 2022–2024 mean PM10 background annual concentration;
+- 2022–2024 mean annual ozone DGT120 exceedance days (days where the daily maximum running 8-hour mean exceeds 120 µg/m³).
+
+Pollution metrics come from Defra UK-AIR Pollution Climate Mapping (PCM) 1 km annual grids. Goldilocks requires a value in all three selected years and takes their arithmetic mean. PCM values are modelled background concentrations/metrics rather than measurements at individual grid-cell centres; Defra also updates the PCM modelling methodology over time, so the annual products should not be treated as a perfectly homogeneous observational time series.
 
 An air-frost day is assigned when the minimum air temperature falls below freezing during the observation period; it does not mean the whole day remains below freezing. A day whose maximum temperature remains below freezing is instead an ice day.
 
@@ -55,38 +64,43 @@ npm install
 
 On platforms where binary Python wheels are available, a normal virtualenv and `python -m pip install -e .` is sufficient.
 
-After the raw source download is complete, generate the derived metric bundle and HTML:
+After the raw source download is complete, generate each dataset fragment, assemble the common bundle and build the HTML:
 
 ```sh
 python process_climate_metrics.py
+python process_pollution_metrics.py
+python assemble_metrics.py
 python build.py
 ```
 
-`process_climate_metrics.py` streams the monthly NetCDF/HDF5 files, derives all metrics, quantises them to `uint16`, builds the complete nodata-aware LOD pyramid for each metric, and writes independently gzip-compressed metric blobs plus `data/derived/climate-metrics/manifest.json`. Summer percentile input is staged in a temporary memory-mapped file so the full multi-year daily cube is never held in RAM.
+`goldilocks_raster.py` provides the common canonical-grid, quantisation, nodata-aware LOD and gzip-blob machinery. Each dataset processor writes a self-contained dataset manifest with categories, metrics and source provenance. `assemble_metrics.py` validates that those fragments use the same canonical 1 km BNG raster geometry, merges their categories/sources and copies the metric blobs into `data/derived/goldilocks-metrics/`.
 
-`build.py` validates the derived blobs, bundles/minifies the TypeScript frontend (including `proj4` and `fflate`), base64-embeds the compressed blobs and metadata, and writes the self-contained application to `dist/goldilocks.html`.
+`process_climate_metrics.py` streams the monthly NetCDF/HDF5 files; summer percentile input is staged in a temporary memory-mapped file so the full multi-year daily cube is never held in RAM. `process_pollution_metrics.py` aligns the 2022–2024 Defra PCM CSV grids to the canonical Goldilocks/HadUK 1 km grid and derives the three-year arithmetic means.
+
+`build.py` validates the assembled blobs and source references, bundles/minifies the TypeScript frontend (including `proj4` and `fflate`), base64-embeds the compressed blobs and metadata, and writes the self-contained application to `dist/goldilocks.html`.
 
 For development while the source archive is still downloading, a partial preview can be generated explicitly, for example:
 
 ```sh
 python process_climate_metrics.py --min-year 2016 --max-year 2016 --no-provisional --allow-partial --output-dir data/derived/climate-metrics-preview
-python build.py --metrics-manifest data/derived/climate-metrics-preview/manifest.json
+python assemble_metrics.py --dataset-manifest data/derived/climate-metrics-preview/manifest.json --output-dir data/derived/goldilocks-metrics-preview
+python build.py --metrics-manifest data/derived/goldilocks-metrics-preview/manifest.json
 ```
 
 ## GitHub Pages deployment
 
 The public repository is intended to be named `goldilocks-map`, giving a default project-site URL of `https://<account>.github.io/goldilocks-map/`.
 
-The raw CEDA/Met Office NetCDF archive is never required by GitHub Actions and remains git-ignored. After regenerating local metrics, explicitly refresh the small publishable snapshot with:
+The raw CEDA/Met Office NetCDF archive and Defra PCM CSV inputs are never required by GitHub Actions and remain git-ignored. After regenerating local metrics, explicitly refresh the small publishable snapshot with:
 
 ```sh
-python publish_climate_snapshot.py
+python publish_metrics_snapshot.py
 ```
 
-This copies only the derived manifest and the metric blobs referenced by it into `published-data/climate-metrics/`. Commit that snapshot along with the source changes. The Pages workflow then installs the JavaScript build dependencies, runs:
+This copies only the assembled manifest and the metric blobs referenced by it into `published-data/goldilocks-metrics/`. Commit that snapshot along with the source changes. The Pages workflow then installs the JavaScript build dependencies, runs:
 
 ```sh
-python3 build.py --metrics-manifest published-data/climate-metrics/manifest.json
+python3 build.py --metrics-manifest published-data/goldilocks-metrics/manifest.json
 ```
 
 and publishes the generated `goldilocks.html` as the artifact-root `index.html`. No CEDA account token or other repository secret is required for deployment.
@@ -95,7 +109,7 @@ The workflow in `.github/workflows/pages.yml` follows GitHub's custom Pages buil
 
 ## Historical climate source download
 
-`download_climate_sources.py` prepares the raw daily temperature archive needed for the planned 2016–2026 multi-metric build. It discovers rather than hardcodes CEDA's current daily release subdirectory, downloads both `tasmax` and `tasmin` for every month of 2016–2025 from HadUK-Grid v1.3.2.ceda, and also discovers the currently published 2026 provisional monthly files from the Met Office site.
+`download_climate_sources.py` prepares the raw daily temperature archive used by the current 2016–2026 climate build. It discovers rather than hardcodes CEDA's current daily release subdirectory, downloads both `tasmax` and `tasmin` for every month of 2016–2025 from HadUK-Grid v1.3.2.ceda, and also discovers the currently published 2026 provisional monthly files from the Met Office site.
 
 CEDA downloads require a registered-user archive access token. Put it in the git-ignored repo-local `.env` file as:
 
@@ -124,46 +138,64 @@ Completed CEDA files are checked against the MD5 hashes published in CEDA's JSON
 
 The stable historical source is kept separate from provisional 2026 data because the latter can be revised before the next annual CEDA release. The derived-metric build can therefore record which observations came from the citable annual release and which were provisional.
 
+## Pollution source download
+
+`download_pollution_sources.py` discovers the required Defra UK-AIR PCM CSV links from the live PCM data page rather than hardcoding the datastore URLs. The default selection is PM2.5, NO₂, PM10 and ozone DGT120 for 2022, 2023 and 2024.
+
+```sh
+# Verify that all 12 annual grids are currently discoverable.
+python download_pollution_sources.py --dry-run
+
+# Download/resume the source CSVs.
+python download_pollution_sources.py --workers 3
+```
+
+Downloads go under `data/source/defra-pcm/<year>/` and are git-ignored. A local `discovery.json` records the exact source URLs, byte sizes and SHA-256 hashes. `process_pollution_metrics.py` maps the OSGB cell centres directly onto the canonical Goldilocks 1 km grid; no reprojection or spatial interpolation is required. Cells absent from PCM remain nodata rather than being filled from neighbours.
+
 ## Browser architecture
 
-The climate layer is a custom Leaflet `GridLayer` whose tiles are 256 x 256 canvas elements generated locally from the selected metric's embedded raster pyramid. Every metric is transported as a gzip-compressed little-endian `uint16` blob; only the initially selected metric is decompressed at startup, and other metrics are decoded lazily the first time their radio button is selected. Decoded metrics remain cached as typed-array views over one contiguous buffer.
+The data layer is a custom Leaflet `GridLayer` whose tiles are 256 x 256 canvas elements generated locally from the selected metric's embedded raster pyramid. Every metric is transported as a gzip-compressed little-endian `uint16` blob; only the initially selected metric is decompressed at startup, and other metrics are decoded lazily the first time their radio button is selected. Decoded metrics remain cached as typed-array views over one contiguous buffer.
 
-At page startup, the browser marks every base-grid intersection used by a valid cell at any LOD and projects each required point exactly once from British National Grid into zoom-0 Web-Mercator world pixels. All metrics are required to share the same LOD dimensions and nodata geometry, so this projection lookup is reused when the selected climate measure changes. Tile rendering then converts a corner to local canvas coordinates with only `cached_world_pixel * 2^zoom - tile_origin`.
+At page startup, the browser decodes the first metric as the canonical land-geometry reference, marks every base-grid intersection required by that geometry at any LOD, and projects each required point exactly once from British National Grid into zoom-0 Web-Mercator world pixels. All metrics share the same grid dimensions and LOD structure, but individual datasets may contain additional nodata cells. The canonical projection lookup is therefore independent of whichever metric is restored from localStorage and is safely reused when switching between datasets. Tile rendering then converts a corner to local canvas coordinates with only `cached_world_pixel * 2^zoom - tile_origin`.
 
 Canvas geometry is batched per tile. Metric values are mapped to a 64-step visual palette and cell polygons sharing a palette bin are accumulated into one `Path2D`, placing a fixed upper bound on fill calls even for percentile metrics with hundreds of distinct encoded values. When gridlines are enabled, all valid-cell outlines are accumulated into one additional `Path2D` and drawn with a single `stroke()` call; when disabled, that grid path is not built at all.
 
-For each Leaflet tile zoom, the renderer chooses the finest climate LOD whose nominal cells are at least about four screen pixels across. The reference pixel distance is projected only once at a fixed representative UK location (54.5°N, 2°W), so LOD choice depends only on zoom and thereafter requires only power-of-two scaling. Each tile still performs a small fixed set of inverse WGS84 -> BNG transforms to identify its candidate row/column range. Leaflet manages tile buffering, panning, clipping, recycling, and zoom transforms. Leaflet's default 200 ms tile fade animation is disabled because climate canvases render synchronously; replacement tiles therefore appear immediately instead of fading through the basemap during redraws and zoom changes.
+For each Leaflet tile zoom, the renderer chooses the finest metric LOD whose nominal cells are at least about four screen pixels across. The reference pixel distance is projected only once at a fixed representative UK location (54.5°N, 2°W), so LOD choice depends only on zoom and thereafter requires only power-of-two scaling. Each tile still performs a small fixed set of inverse WGS84 -> BNG transforms to identify its candidate row/column range. Leaflet manages tile buffering, panning, clipping, recycling, and zoom transforms. Leaflet's default 200 ms tile fade animation is disabled because metric canvases render synchronously; replacement tiles therefore appear immediately instead of fading through the basemap during redraws and zoom changes.
 
-Clicking always resolves against active-metric LOD0, so popups retain the exact quantised 1 km value rather than a coarse averaged value. The selected-cell outline is a separate lightweight Leaflet vector overlay, so changing the selection does not regenerate any climate canvas tiles. The collapsible left-side panel groups metric radio buttons by the categories declared in the processed manifest (currently `heat` and `cold`), followed by gridline visibility, climate-layer opacity, a per-metric dual-ended display-range slider with integrated colour samples, description and provenance. Layer opacity defaults to 62% to preserve the original map appearance and is applied by Leaflet to the existing tile layer without repainting raster canvases. Narrowing the display range clips only the colour mapping; underlying raster and popup values remain unchanged. Display-range scrubbing repaints the existing cached climate canvases in place rather than invoking Leaflet `GridLayer.redraw()`, avoiding tile removal/recreation and the resulting basemap flicker. Display ranges, layer opacity, panel state, gridline visibility and selected metric are stored independently in `localStorage`, and each range can be reset to that metric's observed minimum/maximum. Metric identifiers are category-prefixed (for example `heat_days_tmax_gt_25` and `cold_air_frost_days`) so the same grouping remains explicit in code and generated data; legacy unprefixed Heat metric selections are migrated automatically. Gridlines default to hidden when no preference has yet been saved. Leaflet's zoom control is positioned at bottom-right so the main information panel can occupy the top-left corner cleanly.
+Clicking always resolves against active-metric LOD0, so popups retain the exact quantised 1 km value rather than a coarse averaged value. The selected-cell outline is a separate lightweight Leaflet vector overlay, so changing the selection does not regenerate any metric canvas tiles. The collapsible left-side panel groups metric radio buttons by the categories declared in the processed manifest (currently `heat`, `cold` and `pollution`), followed by gridline visibility, data-layer opacity, a per-metric dual-ended display-range slider with integrated colour samples, description and provenance. Layer opacity defaults to 62% to preserve the original map appearance and is applied by Leaflet to the existing tile layer without repainting raster canvases. Narrowing the display range clips only the colour mapping; underlying raster and popup values remain unchanged. Display-range scrubbing repaints the existing cached metric canvases in place rather than invoking Leaflet `GridLayer.redraw()`, avoiding tile removal/recreation and the resulting basemap flicker. Display ranges, layer opacity, panel state, gridline visibility and selected metric are stored independently in `localStorage`, and each range can be reset to that metric's observed minimum/maximum. Metric identifiers are category-prefixed (for example `heat_days_tmax_gt_25` and `cold_air_frost_days`) so the same grouping remains explicit in code and generated data; legacy unprefixed Heat metric selections are migrated automatically. Gridlines default to hidden when no preference has yet been saved. Leaflet's zoom control is positioned at bottom-right so the main information panel can occupy the top-left corner cleanly.
 
 ## Basemap selection
 
 The generated page needs internet access for Leaflet and map tiles when it is served over `http:` or `https:`. It uses the standard OpenStreetMap tile server and displays the required OpenStreetMap attribution.
 
-Direct `file://` opening still renders the embedded Goldilocks climate layer, but intentionally does not request a third-party basemap. Serve `dist/` with a small HTTP server for the normal local experience. This avoids referrer-less requests to the standard OpenStreetMap tile service and keeps Goldilocks dependent on only one basemap provider.
+Direct `file://` opening still renders the embedded Goldilocks data layer, but intentionally does not request a third-party basemap. Serve `dist/` with a small HTTP server for the normal local experience. This avoids referrer-less requests to the standard OpenStreetMap tile service and keeps Goldilocks dependent on only one basemap provider.
 
 ## Project layout
 
 - `download_climate_sources.py` — authenticated/resumable CEDA download plus provisional 2026 discovery
-- `process_climate_metrics.py` — streaming metric derivation, percentile staging, quantisation, LOD construction and compression
-- `build.py` — validates/embeds the processed metric bundle, bundles the frontend and embeds third-party software notices
-- `publish_climate_snapshot.py` — copies the validated local derived bundle into the tracked public snapshot used by Pages
+- `goldilocks_raster.py` — common canonical-grid, quantisation, LOD, compression and dataset-manifest helpers
+- `process_climate_metrics.py` — streaming HadUK-Grid climate metric derivation and climate dataset fragment
+- `download_pollution_sources.py` — discovers/downloads Defra UK-AIR PCM annual 1 km CSV grids
+- `process_pollution_metrics.py` — derives 2022–2024 Pollution means on the canonical grid
+- `assemble_metrics.py` — validates and combines dataset fragments into the common Goldilocks metric bundle
+- `build.py` — validates/embeds the assembled metric bundle, bundles the frontend and embeds third-party software notices
+- `publish_metrics_snapshot.py` — copies the validated assembled bundle into the tracked public snapshot used by Pages
 - `.github/workflows/pages.yml` — builds the static artifact from the public snapshot and deploys it to GitHub Pages
 - `templates/goldilocks.html` — single-page HTML shell
 - `src/app.ts` — Leaflet/custom-canvas multi-metric frontend
-- `data/source/` — cached raw NetCDF source data (git-ignored and never published)
+- `data/source/` — cached raw source data (HadUK NetCDF + Defra PCM CSV; git-ignored and never published)
 - `data/derived/` — local generated metric bundles (git-ignored)
-- `published-data/climate-metrics/` — tracked, publishable snapshot of the derived metric bundle used by GitHub Pages
+- `published-data/goldilocks-metrics/` — tracked, publishable snapshot of the derived metric bundle used by GitHub Pages
 - `dist/goldilocks.html` — generated application artifact (git-ignored)
-- `DATA-LICENCE.md` — HadUK-Grid licence, attribution and dataset citations
+- `DATA-LICENCE.md` — source-data licences, attribution and provenance notes
 - `THIRD-PARTY-NOTICES.txt` — licences for JavaScript incorporated into the generated HTML
 
 ## Data licence and provenance
 
-The source data are © Crown copyright, Met Office HadUK-Grid, and are provided under the [Open Government Licence v3.0](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/). Goldilocks Map climate metrics are derived from HadUK-Grid and are not an official Met Office product.
+The current source datasets are © Crown copyright Met Office HadUK-Grid and Defra UK-AIR Pollution Climate Mapping data, both provided under the [Open Government Licence v3.0](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/). Goldilocks metrics are derived products and are not official Met Office or Defra products.
 
 Stable 2016–2025 observations are taken from the citable CEDA HadUK-Grid v1.3.2.ceda release:
 
 Met Office; Hollis, D.; Carlisle, E.; Kendon, M.; Packman, S.; Doherty, A. (2026): *HadUK-Grid Gridded Climate Observations on a 1km grid over the UK, v1.3.2.ceda (1836-2025).* NERC EDS Centre for Environmental Data Analysis, 23 June 2026. [doi:10.5285/789b3065d74a4c948ab05d33556c86d0](https://doi.org/10.5285/789b3065d74a4c948ab05d33556c86d0).
 
-Available 2026 months are provisional Met Office HadUK-Grid data and may be amended before a later annual CEDA release. See [`DATA-LICENCE.md`](DATA-LICENCE.md) for the full licence, attribution, provisional-data status and the HadUK-Grid method reference.
+Available 2026 climate months are provisional Met Office HadUK-Grid data and may be amended before a later annual CEDA release. Pollution metrics use Defra PCM 2022–2024 annual background grids. See [`DATA-LICENCE.md`](DATA-LICENCE.md) for full licence, attribution and source-specific provenance notes.

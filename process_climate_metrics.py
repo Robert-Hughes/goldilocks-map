@@ -3,9 +3,6 @@ from __future__ import annotations
 
 import argparse
 import calendar
-import gzip
-import hashlib
-import json
 import re
 import shutil
 import time
@@ -17,19 +14,14 @@ import h5py
 import numpy as np
 from pyproj import Transformer
 
+from goldilocks_raster import GRID_CRS, GridSpec, MetricResult, write_dataset_manifest
+
 ROOT = Path(__file__).resolve().parent
 SOURCE_ROOT = ROOT / "data" / "source" / "hadukgrid"
 DEFAULT_OUTPUT_DIR = ROOT / "data" / "derived" / "climate-metrics"
 HISTORICAL_ROOT = SOURCE_ROOT / "historical"
 PROVISIONAL_ROOT = SOURCE_ROOT / "provisional-2026"
 
-GRID_CRS = "EPSG:27700"
-BNG_PROJ4 = (
-    "+proj=tmerc +lat_0=49 +lon_0=-2 +k=0.9996012717 +x_0=400000 +y_0=-100000 "
-    "+ellps=airy +towgs84=446.448,-125.157,542.06,0.1502,0.247,0.8421,-20.4894 "
-    "+units=m +no_defs"
-)
-NODATA_U16 = np.uint16(65535)
 THRESHOLDS_C = (25.0, 28.0, 30.0)
 METRIC_CATEGORIES = (
     {"id": "heat", "label": "Heat", "order": 0},
@@ -86,46 +78,6 @@ class SourceMonth:
     @property
     def days(self) -> int:
         return calendar.monthrange(self.year, self.month)[1]
-
-
-@dataclass(frozen=True)
-class GridSpec:
-    width: int
-    height: int
-    cell_size_m: int
-    x: np.ndarray
-    y: np.ndarray
-    west: float
-    south: float
-    east: float
-    north: float
-    bounds_wgs84: list[list[float]]
-
-
-@dataclass
-class MetricResult:
-    id: str
-    category_id: str
-    label: str
-    units: str
-    period: str
-    definition: str
-    values: np.ndarray
-    scale: float
-    offset: float
-    decimals: int
-    source_variable: str
-    coverage: dict
-    palette_reverse: bool = False
-
-
-def human_bytes(value: int) -> str:
-    amount = float(value)
-    for unit in ("B", "KiB", "MiB", "GiB", "TiB"):
-        if amount < 1024 or unit == "TiB":
-            return f"{amount:.2f} {unit}"
-        amount /= 1024
-    raise AssertionError("unreachable")
 
 
 def h5_text(value: object) -> str:
@@ -234,7 +186,18 @@ def grid_from_file(path: Path, variable: str) -> tuple[GridSpec, np.ndarray]:
         land_mask = valid
 
     return (
-        GridSpec(width, height, int(x_step), x, y, west, south, east, north, bounds_wgs84),
+        GridSpec(
+            width=width,
+            height=height,
+            cell_size_m=int(x_step),
+            west=west,
+            south=south,
+            east=east,
+            north=north,
+            bounds_wgs84=bounds_wgs84,
+            x=x,
+            y=y,
+        ),
         land_mask,
     )
 
@@ -469,6 +432,7 @@ def process_tasmax(
                 scale=0.1,
                 offset=0.0,
                 decimals=1,
+                source_id="hadukgrid",
                 source_variable="tasmax",
                 coverage=coverage,
             )
@@ -490,6 +454,7 @@ def process_tasmax(
             scale=1.0,
             offset=0.0,
             decimals=0,
+            source_id="hadukgrid",
             source_variable="tasmax",
             coverage=coverage,
         )
@@ -537,6 +502,7 @@ def process_tasmax(
                     scale=0.1,
                     offset=-50.0,
                     decimals=1,
+                    source_id="hadukgrid",
                     source_variable="tasmax",
                     coverage=summer_coverage,
                 ),
@@ -551,6 +517,7 @@ def process_tasmax(
                     scale=0.1,
                     offset=-50.0,
                     decimals=1,
+                    source_id="hadukgrid",
                     source_variable="tasmax",
                     coverage=summer_coverage,
                 ),
@@ -643,6 +610,7 @@ def process_tasmin(
             scale=0.1,
             offset=0.0,
             decimals=1,
+            source_id="hadukgrid",
             source_variable="tasmin",
             coverage=annual_coverage,
         ),
@@ -661,6 +629,7 @@ def process_tasmin(
             scale=0.1,
             offset=0.0,
             decimals=1,
+            source_id="hadukgrid",
             source_variable="tasmin",
             coverage=annual_coverage,
             palette_reverse=True,
@@ -713,6 +682,7 @@ def process_tasmin(
                 scale=0.1,
                 offset=-50.0,
                 decimals=1,
+                source_id="hadukgrid",
                 source_variable="tasmin",
                 coverage=winter_coverage,
             )
@@ -721,109 +691,6 @@ def process_tasmin(
         winter_path.unlink(missing_ok=True)
 
     return results
-
-
-def encode_metric(values: np.ndarray, land_mask: np.ndarray, scale: float, offset: float) -> tuple[np.ndarray, int, int]:
-    if values.shape != land_mask.shape:
-        raise RuntimeError("Metric grid shape does not match validity mask")
-    encoded = np.full(values.shape, NODATA_U16, dtype=np.uint16)
-    valid = land_mask & np.isfinite(values)
-    scaled = (values[valid].astype(np.float64) - offset) / scale
-    rounded = np.floor(scaled + 0.5)
-    if rounded.size and (rounded.min() < 0 or rounded.max() >= int(NODATA_U16)):
-        raise RuntimeError(
-            f"Metric encoding range {rounded.min()}..{rounded.max()} does not fit uint16 with nodata={int(NODATA_U16)}"
-        )
-    encoded[valid] = rounded.astype(np.uint16)
-    valid_values = encoded[valid]
-    return encoded, int(valid_values.min()), int(valid_values.max())
-
-
-def build_lod_levels(values: np.ndarray, cell_size_m: int) -> list[np.ndarray]:
-    current = np.asarray(values, dtype=np.uint16)
-    levels: list[np.ndarray] = []
-    while True:
-        levels.append(current)
-        height, width = current.shape
-        if height == 1 and width == 1:
-            break
-        parent_height = (height + 1) // 2
-        parent_width = (width + 1) // 2
-        padded = np.full((parent_height * 2, parent_width * 2), NODATA_U16, dtype=np.uint16)
-        padded[:height, :width] = current
-        valid = padded != NODATA_U16
-        blocks_valid = valid.reshape(parent_height, 2, parent_width, 2)
-        counts = blocks_valid.sum(axis=(1, 3), dtype=np.uint8)
-        sums = np.where(valid, padded, 0).reshape(parent_height, 2, parent_width, 2).sum(
-            axis=(1, 3), dtype=np.uint32
-        )
-        parent = np.full((parent_height, parent_width), NODATA_U16, dtype=np.uint16)
-        has_children = counts > 0
-        numerator = 2 * sums[has_children] + counts[has_children].astype(np.uint32)
-        denominator = 2 * counts[has_children].astype(np.uint32)
-        parent[has_children] = (numerator // denominator).astype(np.uint16)
-        current = parent
-    return levels
-
-
-def write_metric_blob(metric: MetricResult, land_mask: np.ndarray, grid: GridSpec, output_dir: Path) -> dict:
-    encoded, encoded_min, encoded_max = encode_metric(metric.values, land_mask, metric.scale, metric.offset)
-    levels = build_lod_levels(encoded, grid.cell_size_m)
-    level_meta: list[dict] = []
-    raw_parts: list[bytes] = []
-    value_offset = 0
-    cell_size = grid.cell_size_m
-    for level_number, level in enumerate(levels):
-        flat = np.asarray(level, dtype="<u2").ravel(order="C")
-        raw_parts.append(flat.tobytes())
-        level_meta.append(
-            {
-                "level": level_number,
-                "width": int(level.shape[1]),
-                "height": int(level.shape[0]),
-                "cell_size_m": int(cell_size),
-                "value_offset": value_offset,
-                "value_count": int(flat.size),
-            }
-        )
-        value_offset += int(flat.size)
-        cell_size *= 2
-    raw = b"".join(raw_parts)
-    compressed = gzip.compress(raw, compresslevel=9, mtime=0)
-    blob_name = f"{metric.id}.u16.gz"
-    blob_path = output_dir / blob_name
-    blob_path.write_bytes(compressed)
-    digest = hashlib.sha256(raw).hexdigest()
-    decoded_min = encoded_min * metric.scale + metric.offset
-    decoded_max = encoded_max * metric.scale + metric.offset
-    print(
-        f"{metric.id}: {human_bytes(len(raw))} raw -> {human_bytes(len(compressed))} gzip "
-        f"({len(compressed) / len(raw) * 100:.1f}%), range {decoded_min:g}..{decoded_max:g} {metric.units}"
-    )
-    return {
-        "id": metric.id,
-        "category_id": metric.category_id,
-        "label": metric.label,
-        "units": metric.units,
-        "period": metric.period,
-        "definition": metric.definition,
-        "source_variable": metric.source_variable,
-        "scale": metric.scale,
-        "offset": metric.offset,
-        "decimals": metric.decimals,
-        "nodata": int(NODATA_U16),
-        "encoded_min": encoded_min,
-        "encoded_max": encoded_max,
-        "summary": {"min": decoded_min, "max": decoded_max},
-        "coverage": metric.coverage,
-        "palette_reverse": metric.palette_reverse,
-        "levels": level_meta,
-        "blob_file": blob_name,
-        "blob_encoding": "gzip+uint16le",
-        "raw_bytes": len(raw),
-        "compressed_bytes": len(compressed),
-        "sha256_raw": digest,
-    }
 
 
 def build_manifest(
@@ -836,88 +703,91 @@ def build_manifest(
     allow_partial: bool,
     pruned_cells: list[dict],
 ) -> Path:
-    output_dir.mkdir(parents=True, exist_ok=True)
-    metric_meta = [write_metric_blob(metric, land_mask, grid, output_dir) for metric in metrics]
     all_months = tasmax_months + tasmin_months
-    historical_release = "CEDA HadUK-Grid v1.3.2.ceda" if any(item.status.startswith("CEDA") for item in all_months) else None
-    provisional_release = "Met Office provisional 2026" if any(item.status.startswith("Met Office provisional") for item in all_months) else None
-    manifest = {
-        "format_version": 2,
-        "generated_at_unix": int(time.time()),
-        "preview_partial_sources": bool(allow_partial),
-        "grid": {
-            "crs": GRID_CRS,
-            "proj4": BNG_PROJ4,
-            "cell_size_m": grid.cell_size_m,
-            "width": grid.width,
-            "height": grid.height,
-            "cell_count": grid.width * grid.height,
-            "valid_cell_count": int(np.count_nonzero(land_mask)),
-            "source_valid_cell_count": int(np.count_nonzero(land_mask)) + len(pruned_cells),
-            "west": int(round(grid.west)),
-            "south": int(round(grid.south)),
-            "east": int(round(grid.east)),
-            "north": int(round(grid.north)),
-            "row_order": "south_to_north",
-            "column_order": "west_to_east",
-            "bounds_wgs84": grid.bounds_wgs84,
-        },
-        "categories": list(METRIC_CATEGORIES),
-        "metrics": metric_meta,
-        "data_pruning": [
-            {
-                "id": "st-kilda-cross-variable-temperature-qc",
-                "area": "St Kilda archipelago",
-                "action": "Exclude these eight 1 km cells from all derived metrics before LOD construction.",
-                "reason": (
-                    "A full 2016-01 to 2026-08 audit comparing each daily Tmin with the Tmax covering the same "
-                    "24-hour observation period found severe interpolation inconsistencies at every St Kilda cell. "
-                    "All UK cells with ordering errors greater than 10°C were these eight cells, and all tropical-night "
-                    "candidate events with ordering errors greater than 5°C occurred in them."
-                ),
-                "audit_period": "2016-01 to 2026-08",
-                "audit_summary": {
-                    "source_valid_cells": int(np.count_nonzero(land_mask)) + len(pruned_cells),
-                    "pruned_cells": len(pruned_cells),
-                    "st_kilda_tropical_candidate_events": 160,
-                    "st_kilda_tropical_candidates_with_any_ordering_error": 152,
-                    "st_kilda_tropical_candidates_with_gt_5c_ordering_error": 135,
-                },
-                "cells": pruned_cells,
-            }
-        ],
-        "sources": {
-            "provider": "Met Office HadUK-Grid",
+    historical_release = "CEDA HadUK-Grid v1.3.2.ceda" if any(
+        item.status.startswith("CEDA") for item in all_months
+    ) else None
+    provisional_release = "Met Office provisional 2026" if any(
+        item.status.startswith("Met Office provisional") for item in all_months
+    ) else None
+    source_valid_cell_count = int(np.count_nonzero(land_mask)) + len(pruned_cells)
+    sources = {
+        "hadukgrid": {
+            "provider": "Met Office",
+            "dataset": "HadUK-Grid gridded climate observations",
             "resolution": "1 km daily",
-            "historical_release": historical_release,
-            "historical_citation": HADUKGRID_DATASET_CITATION,
-            "historical_doi_url": HADUKGRID_DATASET_DOI_URL,
-            "method_citation": HADUKGRID_METHOD_CITATION,
-            "method_doi_url": HADUKGRID_METHOD_DOI_URL,
-            "provisional_release": provisional_release,
-            "provisional_url": HADUKGRID_PROVISIONAL_URL,
+            "homepage_url": "https://www.metoffice.gov.uk/hadobs/hadukgrid/",
             "licence_name": HADUKGRID_LICENCE_NAME,
             "licence_url": HADUKGRID_LICENCE_URL,
+            "citation": HADUKGRID_DATASET_CITATION,
+            "citation_url": HADUKGRID_DATASET_DOI_URL,
+            "method_citation": HADUKGRID_METHOD_CITATION,
+            "method_url": HADUKGRID_METHOD_DOI_URL,
             "derived_product_notice": DERIVED_PRODUCT_NOTICE,
-            "tasmax_months": [
-                {"year": item.year, "month": item.month, "status": item.status, "file": item.path.name}
-                for item in tasmax_months
+            "note": (
+                "HadUK-Grid is a gridded/interpolated climate-observation dataset; "
+                "a grid cell is not a physical thermometer measurement at that exact point."
+            ),
+            "releases": [
+                *(
+                    [{"label": historical_release, "status": "stable", "url": HADUKGRID_DATASET_DOI_URL}]
+                    if historical_release
+                    else []
+                ),
+                *(
+                    [{"label": provisional_release, "status": "provisional", "url": HADUKGRID_PROVISIONAL_URL}]
+                    if provisional_release
+                    else []
+                ),
             ],
-            "tasmin_months": [
-                {"year": item.year, "month": item.month, "status": item.status, "file": item.path.name}
-                for item in tasmin_months
-            ],
-            "note": "HadUK-Grid is a gridded/interpolated climate-observation dataset; a grid cell is not a physical thermometer measurement at that exact point.",
-        },
+            "source_files": {
+                "tasmax": [
+                    {"year": item.year, "month": item.month, "status": item.status, "file": item.path.name}
+                    for item in tasmax_months
+                ],
+                "tasmin": [
+                    {"year": item.year, "month": item.month, "status": item.status, "file": item.path.name}
+                    for item in tasmin_months
+                ],
+            },
+        }
     }
-    manifest_path = output_dir / "manifest.json"
-    manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
-    referenced_blobs = {metric["blob_file"] for metric in metric_meta}
-    for stale_blob in output_dir.glob("*.u16.gz"):
-        if stale_blob.name not in referenced_blobs:
-            stale_blob.unlink()
-    print(f"Wrote {manifest_path} with {len(metric_meta)} metrics")
-    return manifest_path
+    data_pruning = [
+        {
+            "id": "st-kilda-cross-variable-temperature-qc",
+            "source_id": "hadukgrid",
+            "area": "St Kilda archipelago",
+            "action": "Exclude these eight 1 km cells from all HadUK-Grid-derived metrics before LOD construction.",
+            "reason": (
+                "A full 2016-01 to 2026-08 audit comparing each daily Tmin with the Tmax covering the same "
+                "24-hour observation period found severe interpolation inconsistencies at every St Kilda cell. "
+                "All UK cells with ordering errors greater than 10°C were these eight cells, and all tropical-night "
+                "candidate events with ordering errors greater than 5°C occurred in them."
+            ),
+            "audit_period": "2016-01 to 2026-08",
+            "audit_summary": {
+                "source_valid_cells": source_valid_cell_count,
+                "pruned_cells": len(pruned_cells),
+                "st_kilda_tropical_candidate_events": 160,
+                "st_kilda_tropical_candidates_with_any_ordering_error": 152,
+                "st_kilda_tropical_candidates_with_gt_5c_ordering_error": 135,
+            },
+            "cells": pruned_cells,
+        }
+    ]
+    return write_dataset_manifest(
+        dataset_id="climate",
+        categories=list(METRIC_CATEGORIES),
+        metrics=metrics,
+        grid=grid,
+        output_dir=output_dir,
+        sources=sources,
+        validity_mask=land_mask,
+        grid_valid_cell_count=int(np.count_nonzero(land_mask)),
+        source_valid_cell_count=source_valid_cell_count,
+        data_pruning=data_pruning,
+        preview_partial_sources=allow_partial,
+    )
 
 
 def parse_args() -> argparse.Namespace:

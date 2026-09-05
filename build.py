@@ -18,14 +18,16 @@ THIRD_PARTY_NOTICES_PATH = ROOT / "THIRD-PARTY-NOTICES.txt"
 APP_TS = ROOT / "src" / "app.ts"
 APP_JS = DIST_DIR / "app.js"
 OUTPUT_HTML = DIST_DIR / "goldilocks.html"
-DEFAULT_MANIFEST = DATA_DIR / "derived" / "climate-metrics" / "manifest.json"
+DEFAULT_MANIFEST = DATA_DIR / "derived" / "goldilocks-metrics" / "manifest.json"
 
 
 def load_metric_bundle(manifest_path: Path) -> dict:
     manifest_path = manifest_path.resolve()
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    if manifest.get("format_version") != 2:
-        raise RuntimeError(f"Unsupported climate metric manifest format: {manifest.get('format_version')!r}")
+    if manifest.get("format_version") != 3 or manifest.get("kind") != "goldilocks-bundle":
+        raise RuntimeError(
+            f"Unsupported Goldilocks metric bundle: version={manifest.get('format_version')!r}, kind={manifest.get('kind')!r}"
+        )
     metrics = manifest.get("metrics")
     if not isinstance(metrics, list) or not metrics:
         raise RuntimeError(f"Metric manifest has no metrics: {manifest_path}")
@@ -35,11 +37,17 @@ def load_metric_bundle(manifest_path: Path) -> dict:
     category_ids = {category.get("id") for category in categories if isinstance(category, dict)}
     if None in category_ids or len(category_ids) != len(categories):
         raise RuntimeError(f"Metric manifest has invalid/duplicate categories: {manifest_path}")
+    sources = manifest.get("sources")
+    if not isinstance(sources, dict) or not sources:
+        raise RuntimeError(f"Metric manifest has no data sources: {manifest_path}")
+    source_ids = set(sources)
 
     embedded_metrics = []
     for metric in metrics:
         if metric.get("category_id") not in category_ids:
             raise RuntimeError(f"Metric {metric.get('id')!r} references unknown category {metric.get('category_id')!r}")
+        if metric.get("source_id") not in source_ids:
+            raise RuntimeError(f"Metric {metric.get('id')!r} references unknown source {metric.get('source_id')!r}")
         blob_name = metric.get("blob_file")
         if not blob_name:
             raise RuntimeError(f"Metric {metric.get('id')!r} has no blob_file")
@@ -65,7 +73,7 @@ def load_metric_bundle(manifest_path: Path) -> dict:
         embedded_metrics.append(embedded)
 
     return {
-        "format_version": 3,
+        "format_version": 4,
         "grid": manifest["grid"],
         "categories": categories,
         "metrics": embedded_metrics,
@@ -130,15 +138,15 @@ def main() -> int:
         "--metrics-manifest",
         type=Path,
         default=DEFAULT_MANIFEST,
-        help=f"processed metric manifest to embed (default: {DEFAULT_MANIFEST.relative_to(ROOT)})",
+        help=f"assembled metric manifest to embed (default: {DEFAULT_MANIFEST.relative_to(ROOT)})",
     )
     args = parser.parse_args()
     if not args.metrics_manifest.is_file():
         raise SystemExit(
-            f"Processed metric manifest not found: {args.metrics_manifest}. "
-            "Run process_climate_metrics.py first, or pass --metrics-manifest for a preview bundle."
+            f"Assembled metric manifest not found: {args.metrics_manifest}. "
+            "Run the dataset processors and assemble_metrics.py first, or pass --metrics-manifest for another assembled bundle."
         )
-    print(f"Loading processed climate metrics: {args.metrics_manifest}")
+    print(f"Loading assembled Goldilocks metrics: {args.metrics_manifest}")
     data = load_metric_bundle(args.metrics_manifest)
     app_js = bundle_typescript()
     render_html(data, app_js)

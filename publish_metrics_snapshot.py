@@ -7,13 +7,13 @@ import shutil
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-DEFAULT_SOURCE = ROOT / "data" / "derived" / "climate-metrics" / "manifest.json"
-DEFAULT_DESTINATION = ROOT / "published-data" / "climate-metrics"
+DEFAULT_SOURCE = ROOT / "data" / "derived" / "goldilocks-metrics" / "manifest.json"
+DEFAULT_DESTINATION = ROOT / "published-data" / "goldilocks-metrics"
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Copy the validated derived climate bundle into the tracked public snapshot directory."
+        description="Copy the validated assembled Goldilocks metric bundle into the tracked public snapshot directory."
     )
     parser.add_argument("--manifest", type=Path, default=DEFAULT_SOURCE)
     parser.add_argument("--destination", type=Path, default=DEFAULT_DESTINATION)
@@ -22,8 +22,10 @@ def main() -> int:
     manifest_path = args.manifest.resolve()
     destination = args.destination.resolve()
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    if manifest.get("format_version") != 2:
-        raise SystemExit(f"Unsupported manifest format: {manifest.get('format_version')!r}")
+    if manifest.get("format_version") != 3 or manifest.get("kind") != "goldilocks-bundle":
+        raise SystemExit(
+            f"Unsupported metric bundle: version={manifest.get('format_version')!r}, kind={manifest.get('kind')!r}"
+        )
 
     metrics = manifest.get("metrics")
     if not isinstance(metrics, list) or not metrics:
@@ -55,7 +57,7 @@ def main() -> int:
         shutil.copy2(manifest_path.parent / blob_name, destination / blob_name)
 
     total_bytes = sum((destination / name).stat().st_size for name in keep)
-    print(f"Published climate snapshot: {len(blob_names)} metric blobs, {total_bytes:,} bytes")
+    print(f"Published metric snapshot: {len(blob_names)} metric blobs, {total_bytes:,} bytes")
     print(destination)
     return 0
 
