@@ -73,6 +73,26 @@ python process_climate_metrics.py --min-year 2016 --max-year 2016 --no-provision
 python build.py --metrics-manifest data/derived/climate-metrics-preview/manifest.json
 ```
 
+## GitHub Pages deployment
+
+The public repository is intended to be named `goldilocks-map`, giving a default project-site URL of `https://<account>.github.io/goldilocks-map/`.
+
+The raw CEDA/Met Office NetCDF archive is never required by GitHub Actions and remains git-ignored. After regenerating local metrics, explicitly refresh the small publishable snapshot with:
+
+```sh
+python publish_climate_snapshot.py
+```
+
+This copies only the derived manifest and the metric blobs referenced by it into `published-data/climate-metrics/`. Commit that snapshot along with the source changes. The Pages workflow then installs the JavaScript build dependencies, runs:
+
+```sh
+python3 build.py --metrics-manifest published-data/climate-metrics/manifest.json
+```
+
+and publishes the generated `goldilocks.html` as the artifact-root `index.html`. No CEDA account token or other repository secret is required for deployment.
+
+The workflow in `.github/workflows/pages.yml` follows GitHub's custom Pages build/deploy model. In repository **Settings → Pages**, select **GitHub Actions** as the publishing source. The deployment environment is `github-pages`.
+
 ## Historical climate source download
 
 `download_climate_sources.py` prepares the raw daily temperature archive needed for the planned 2016–2026 multi-metric build. It discovers rather than hardcodes CEDA's current daily release subdirectory, downloads both `tasmax` and `tasmin` for every month of 2016–2025 from HadUK-Grid v1.3.2.ceda, and also discovers the currently published 2026 provisional monthly files from the Met Office site.
@@ -118,26 +138,32 @@ Clicking always resolves against active-metric LOD0, so popups retain the exact 
 
 ## Basemap selection
 
-The generated page needs internet access for Leaflet and map tiles.
+The generated page needs internet access for Leaflet and map tiles when it is served over `http:` or `https:`. It uses the standard OpenStreetMap tile server and displays the required OpenStreetMap attribution.
 
-- When served over `http:` or `https:`, it uses the standard OpenStreetMap tile server.
-- When opened directly as a `file:` URL, it uses CARTO's OpenStreetMap-backed tiles because the standard OSM tile service rejects referrer-less `file://` requests.
-
-Attribution is changed accordingly.
+Direct `file://` opening still renders the embedded Goldilocks climate layer, but intentionally does not request a third-party basemap. Serve `dist/` with a small HTTP server for the normal local experience. This avoids referrer-less requests to the standard OpenStreetMap tile service and keeps Goldilocks dependent on only one basemap provider.
 
 ## Project layout
 
 - `download_climate_sources.py` — authenticated/resumable CEDA download plus provisional 2026 discovery
 - `process_climate_metrics.py` — streaming metric derivation, percentile staging, quantisation, LOD construction and compression
-- `build.py` — validates/embeds the processed metric bundle and bundles the frontend
+- `build.py` — validates/embeds the processed metric bundle, bundles the frontend and embeds third-party software notices
+- `publish_climate_snapshot.py` — copies the validated local derived bundle into the tracked public snapshot used by Pages
+- `.github/workflows/pages.yml` — builds the static artifact from the public snapshot and deploys it to GitHub Pages
 - `templates/goldilocks.html` — single-page HTML shell
 - `src/app.ts` — Leaflet/custom-canvas multi-metric frontend
-- `data/source/` — cached raw NetCDF source data (git-ignored)
-- `data/derived/` — generated compressed metric bundles (git-ignored)
-- `dist/goldilocks.html` — generated artifact (git-ignored)
+- `data/source/` — cached raw NetCDF source data (git-ignored and never published)
+- `data/derived/` — local generated metric bundles (git-ignored)
+- `published-data/climate-metrics/` — tracked, publishable snapshot of the derived metric bundle used by GitHub Pages
+- `dist/goldilocks.html` — generated application artifact (git-ignored)
+- `DATA-LICENCE.md` — HadUK-Grid licence, attribution and dataset citations
+- `THIRD-PARTY-NOTICES.txt` — licences for JavaScript incorporated into the generated HTML
 
-## Data provenance
+## Data licence and provenance
 
-The source data are © Crown copyright, Met Office HadUK-Grid. Stable 2016–2025 observations are taken from CEDA HadUK-Grid v1.3.2.ceda; available 2026 months are provisional Met Office HadUK-Grid data and may be revised before a later annual release.
+The source data are © Crown copyright, Met Office HadUK-Grid, and are provided under the [Open Government Licence v3.0](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/). Goldilocks Map climate metrics are derived from HadUK-Grid and are not an official Met Office product.
 
-HadUK-Grid reference: Hollis, D., McCarthy, M. P., Kendon, M., Legg, T. & Simpson, I. (2019), “HadUK-Grid — A new UK dataset of gridded climate observations”, *Geoscience Data Journal*, 6, 151–159, https://doi.org/10.1002/gdj3.78.
+Stable 2016–2025 observations are taken from the citable CEDA HadUK-Grid v1.3.2.ceda release:
+
+Met Office; Hollis, D.; Carlisle, E.; Kendon, M.; Packman, S.; Doherty, A. (2026): *HadUK-Grid Gridded Climate Observations on a 1km grid over the UK, v1.3.2.ceda (1836-2025).* NERC EDS Centre for Environmental Data Analysis, 23 June 2026. [doi:10.5285/789b3065d74a4c948ab05d33556c86d0](https://doi.org/10.5285/789b3065d74a4c948ab05d33556c86d0).
+
+Available 2026 months are provisional Met Office HadUK-Grid data and may be amended before a later annual CEDA release. See [`DATA-LICENCE.md`](DATA-LICENCE.md) for the full licence, attribution, provisional-data status and the HadUK-Grid method reference.

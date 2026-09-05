@@ -1,0 +1,61 @@
+name: Deploy Goldilocks Map to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build static application
+        run: python3 build.py --metrics-manifest published-data/climate-metrics/manifest.json
+
+      - name: Prepare Pages artifact
+        run: |
+          mkdir -p _site
+          cp dist/goldilocks.html _site/index.html
+          cp DATA-LICENCE.md _site/DATA-LICENCE.md
+          cp THIRD-PARTY-NOTICES.txt _site/THIRD-PARTY-NOTICES.txt
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
