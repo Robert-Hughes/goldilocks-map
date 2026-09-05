@@ -337,7 +337,12 @@ function popupHtml(cell: RasterCell): string {
     </dl>`;
 }
 
-const map = L.map("map");
+const map = L.map("map", {
+  // Leaflet normally fades every newly ready GridLayer tile from opacity 0 to 1
+  // over 200 ms. Our climate canvases render synchronously, so that fade only
+  // makes redraws/zoom tile replacement look like a distracting white flash.
+  fadeAnimation: false,
+});
 const useFileBasemap = window.location.protocol === "file:";
 if (useFileBasemap) {
   L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png", {
@@ -632,7 +637,7 @@ const RasterGridLayer = L.GridLayer.extend({
   },
 });
 
-const initialGridLinesVisible = readStoredBoolean(GRIDLINES_STORAGE_KEY, true);
+const initialGridLinesVisible = readStoredBoolean(GRIDLINES_STORAGE_KEY, false);
 const rasterLayer = new RasterGridLayer({
   tileSize: 256,
   pane: "overlayPane",

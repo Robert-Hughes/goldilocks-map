@@ -18,6 +18,8 @@ Stable historical observations come from CEDA HadUK-Grid v1.3.2.ceda for 2016–
 
 HadUK-Grid is a gridded/interpolated climate-observation dataset. A 1 km grid-cell value should not be interpreted as a thermometer measurement physically made at that exact location.
 
+The longest-run metric is intentionally a hard-threshold statistic and is therefore not spatially smooth even when the underlying `tasmax` field is smooth. A single day at 25.01°C versus 24.99°C can preserve or break a multi-week run and create a sharp boundary between neighbouring 1 km cells. An independent year-by-year audit of the current bundle matched the stored streak raster exactly; every cell whose longest run is at least 25 days is driven by the provisional 2026 summer.
+
 ## Data quality pruning
 
 The offline metric processor deliberately masks eight 1 km HadUK-Grid cells covering the St Kilda archipelago before deriving any metric or building any LOD level. The exclusion is expressed as exact British National Grid cell centres, not as a geographic bounding box, so neighbouring Hebridean cells are not affected.
@@ -101,9 +103,9 @@ At page startup, the browser marks every base-grid intersection used by a valid 
 
 Canvas geometry is batched per tile. Metric values are mapped to a 64-step visual palette and cell polygons sharing a palette bin are accumulated into one `Path2D`, placing a fixed upper bound on fill calls even for percentile metrics with hundreds of distinct encoded values. When gridlines are enabled, all valid-cell outlines are accumulated into one additional `Path2D` and drawn with a single `stroke()` call; when disabled, that grid path is not built at all.
 
-For each Leaflet tile zoom, the renderer chooses the finest climate LOD whose nominal cells are at least about four screen pixels across. The reference pixel distance is projected only once at a fixed representative UK location (54.5°N, 2°W), so LOD choice depends only on zoom and thereafter requires only power-of-two scaling. Each tile still performs a small fixed set of inverse WGS84 -> BNG transforms to identify its candidate row/column range. Leaflet manages tile buffering, panning, clipping, recycling, and zoom transforms.
+For each Leaflet tile zoom, the renderer chooses the finest climate LOD whose nominal cells are at least about four screen pixels across. The reference pixel distance is projected only once at a fixed representative UK location (54.5°N, 2°W), so LOD choice depends only on zoom and thereafter requires only power-of-two scaling. Each tile still performs a small fixed set of inverse WGS84 -> BNG transforms to identify its candidate row/column range. Leaflet manages tile buffering, panning, clipping, recycling, and zoom transforms. Leaflet's default 200 ms tile fade animation is disabled because climate canvases render synchronously; replacement tiles therefore appear immediately instead of fading through the basemap during redraws and zoom changes.
 
-Clicking always resolves against active-metric LOD0, so popups retain the exact quantised 1 km value rather than a coarse averaged value. The collapsible left-side panel contains the metric radio list, gridline control, legend, description and provenance. Panel state, gridline visibility and selected metric are stored independently in `localStorage`.
+Clicking always resolves against active-metric LOD0, so popups retain the exact quantised 1 km value rather than a coarse averaged value. The collapsible left-side panel contains the metric radio list, gridline control, legend, description and provenance. Panel state, gridline visibility and selected metric are stored independently in `localStorage`. Gridlines default to hidden when no preference has yet been saved.
 
 ## Basemap selection
 
