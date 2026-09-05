@@ -517,7 +517,6 @@ function appendCellPath(
 const RasterGridLayer = L.GridLayer.extend({
   initialize(this: any, options: any) {
     L.GridLayer.prototype.initialize.call(this, options);
-    this._selectedIndex = null;
     this._showGridLines = options.showGridLines !== false;
   },
 
@@ -537,13 +536,7 @@ const RasterGridLayer = L.GridLayer.extend({
     canvas.dataset.lod = String(level.level);
     canvas.dataset.lodCellSizeM = String(level.cell_size_m);
     this._drawTile(context, coords, tileSize, level);
-    this._drawSelectionTile(context, coords, tileSize);
     return canvas;
-  },
-
-  setSelectedIndex(this: any, index: number | null) {
-    this._selectedIndex = index;
-    if (this._map) this.redraw();
   },
 
   setShowGridLines(this: any, show: boolean) {
@@ -608,33 +601,6 @@ const RasterGridLayer = L.GridLayer.extend({
       context.stroke(gridPath);
     }
   },
-
-  _drawSelectionTile(this: any, context: CanvasRenderingContext2D, coords: any, tileSize: any) {
-    if (this._selectedIndex === null) return;
-    const row = Math.floor(this._selectedIndex / data.grid.width);
-    const column = this._selectedIndex % data.grid.width;
-    if (row < 0 || row >= data.grid.height || column < 0 || column >= data.grid.width) return;
-    const worldScale = Math.pow(2, coords.z);
-    const tileOriginX = coords.x * tileSize.x;
-    const tileOriginY = coords.y * tileSize.y;
-    const level = lodLevels[0];
-    const points = [
-      cachedCornerTilePoint(level, row, column, worldScale, tileOriginX, tileOriginY),
-      cachedCornerTilePoint(level, row, column + 1, worldScale, tileOriginX, tileOriginY),
-      cachedCornerTilePoint(level, row + 1, column + 1, worldScale, tileOriginX, tileOriginY),
-      cachedCornerTilePoint(level, row + 1, column, worldScale, tileOriginX, tileOriginY),
-    ];
-    context.beginPath();
-    context.moveTo(points[0].x, points[0].y);
-    for (let pointIndex = 1; pointIndex < points.length; pointIndex += 1) {
-      context.lineTo(points[pointIndex].x, points[pointIndex].y);
-    }
-    context.closePath();
-    context.globalAlpha = 1;
-    context.strokeStyle = "#111";
-    context.lineWidth = 2.2;
-    context.stroke();
-  },
 });
 
 const initialGridLinesVisible = readStoredBoolean(GRIDLINES_STORAGE_KEY, false);
@@ -651,15 +617,42 @@ const rasterLayer = new RasterGridLayer({
   showGridLines: initialGridLinesVisible,
 });
 rasterLayer.addTo(map);
+
+
+const selectionPane = map.createPane("goldilocks-selection");
+selectionPane.style.zIndex = "450";
+selectionPane.style.pointerEvents = "none";
+const selectionOutline = L.polygon([], {
+  pane: "goldilocks-selection",
+  fill: false,
+  color: "#111",
+  weight: 2.2,
+  opacity: 1,
+  interactive: false,
+}).addTo(map);
+
+function setSelectedCell(cell: RasterCell | null) {
+  if (!cell) {
+    selectionOutline.setLatLngs([]);
+    return;
+  }
+  const west = data.grid.west + cell.column * data.grid.cell_size_m;
+  const south = data.grid.south + cell.row * data.grid.cell_size_m;
+  const east = west + data.grid.cell_size_m;
+  const north = south + data.grid.cell_size_m;
+  selectionOutline.setLatLngs([
+    bngToLatLng(west, south),
+    bngToLatLng(east, south),
+    bngToLatLng(east, north),
+    bngToLatLng(west, north),
+  ]);
+}
 map.fitBounds(L.latLngBounds(data.grid.bounds_wgs84), { padding: [18, 18] });
 
 map.on("click", (event: any) => {
   const cell = cellAtLatLng(event.latlng);
-  if (!cell) {
-    rasterLayer.setSelectedIndex(null);
-    return;
-  }
-  rasterLayer.setSelectedIndex(cell.index);
+  setSelectedCell(cell);
+  if (!cell) return;
   L.popup().setLatLng(bngToLatLng(cell.easting, cell.northing)).setContent(popupHtml(cell)).openOn(map);
 });
 
@@ -783,7 +776,7 @@ mapPanel.onAdd = () => {
       baseRasterValues = lodLevels[0].values;
       writeStoredString(SELECTED_METRIC_STORAGE_KEY, next.id);
       map.closePopup();
-      rasterLayer.setSelectedIndex(null);
+      setSelectedCell(null);
       refreshMetricText();
       rasterLayer.redraw();
     });
