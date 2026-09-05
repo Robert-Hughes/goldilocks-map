@@ -620,6 +620,21 @@ const RasterGridLayer = L.GridLayer.extend({
     if (this._map) this.redraw();
   },
 
+  repaintVisibleTiles(this: any) {
+    if (!this._map || !this._tiles) return;
+    const tileSize = this.getTileSize();
+    for (const tile of Object.values(this._tiles) as Array<{ el: HTMLElement; coords: any }>) {
+      if (!(tile.el instanceof HTMLCanvasElement)) continue;
+      const context = tile.el.getContext("2d");
+      if (!context) continue;
+      context.clearRect(0, 0, tileSize.x, tileSize.y);
+      const level = chooseLodLevel(tile.coords.z);
+      tile.el.dataset.lod = String(level.level);
+      tile.el.dataset.lodCellSizeM = String(level.cell_size_m);
+      this._drawTile(context, tile.coords, tileSize, level);
+    }
+  },
+
   _tileBounds(this: any, coords: any, tileSize: any) {
     const northWestPoint = L.point(coords.x * tileSize.x, coords.y * tileSize.y);
     const southEastPoint = northWestPoint.add(tileSize);
@@ -919,12 +934,12 @@ mapPanel.onAdd = () => {
     writeStoredBoolean(GRIDLINES_STORAGE_KEY, show);
   });
 
-  let pendingRangeRedraw: number | null = null;
-  function scheduleRangeRedraw() {
-    if (pendingRangeRedraw !== null) return;
-    pendingRangeRedraw = window.requestAnimationFrame(() => {
-      pendingRangeRedraw = null;
-      rasterLayer.redraw();
+  let pendingRangeRepaint: number | null = null;
+  function scheduleRangeRepaint() {
+    if (pendingRangeRepaint !== null) return;
+    pendingRangeRepaint = window.requestAnimationFrame(() => {
+      pendingRangeRepaint = null;
+      rasterLayer.repaintVisibleTiles();
     });
   }
 
@@ -932,7 +947,7 @@ mapPanel.onAdd = () => {
     activeDisplayRange = range;
     if (persist) writeStoredDisplayRange(activeMetric, range);
     refreshDisplayRangeControl();
-    scheduleRangeRedraw();
+    scheduleRangeRepaint();
   }
 
   rangeMin.addEventListener("input", () => {
@@ -963,7 +978,7 @@ mapPanel.onAdd = () => {
     activeDisplayRange = fullDisplayRange(activeMetric);
     clearStoredDisplayRange(activeMetric);
     refreshDisplayRangeControl();
-    scheduleRangeRedraw();
+    scheduleRangeRepaint();
   });
 
   const metricInputs = Array.from(div.querySelectorAll('input[name="climate-metric"]') as NodeListOf<HTMLInputElement>);
