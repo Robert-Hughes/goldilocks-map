@@ -121,6 +121,8 @@ const PANEL_COLLAPSED_STORAGE_KEY = "goldilocks.infoPanelCollapsed";
 const GRIDLINES_STORAGE_KEY = "goldilocks.showGridLines";
 const SELECTED_METRIC_STORAGE_KEY = "goldilocks.selectedMetric";
 const DISPLAY_RANGE_STORAGE_PREFIX = "goldilocks.displayRange.";
+const LAYER_OPACITY_STORAGE_KEY = "goldilocks.layerOpacity";
+const DEFAULT_LAYER_OPACITY = 0.62;
 const LOD_MIN_CELL_PIXELS = 4;
 const LOD_REFERENCE_LAT = 54.5;
 const LOD_REFERENCE_LON = -2.0;
@@ -191,6 +193,17 @@ function writeStoredString(key: string, value: string) {
   } catch {
     // Controls still work without persistence.
   }
+}
+
+function readStoredLayerOpacity(): number {
+  const stored = readStoredString(LAYER_OPACITY_STORAGE_KEY);
+  if (stored === null) return DEFAULT_LAYER_OPACITY;
+  const value = Number(stored);
+  return Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : DEFAULT_LAYER_OPACITY;
+}
+
+function writeStoredLayerOpacity(value: number) {
+  writeStoredString(LAYER_OPACITY_STORAGE_KEY, Math.max(0, Math.min(1, value)).toFixed(2));
 }
 
 function fullDisplayRange(metric: MetricTransport): DisplayRange {
@@ -355,8 +368,9 @@ function paletteBinForValue(value: number): number {
 
 function colorForPaletteBin(bin: number): string {
   const ratio = PALETTE_BIN_COUNT <= 1 ? 0.5 : bin / (PALETTE_BIN_COUNT - 1);
-  const hue = 210 - ratio * 210;
-  return `hsl(${hue.toFixed(0)} 78% 48%)`;
+  const hue = 220 - ratio * 220;
+  const lightness = 48 - 10 * Math.pow(1 - ratio, 2);
+  return `hsl(${hue.toFixed(0)} 78% ${lightness.toFixed(1)}%)`;
 }
 
 function colorForValue(value: number): string {
@@ -417,7 +431,9 @@ const map = L.map("map", {
   // over 200 ms. Our climate canvases render synchronously, so that fade only
   // makes redraws/zoom tile replacement look like a distracting white flash.
   fadeAnimation: false,
+  zoomControl: false,
 });
+L.control.zoom({ position: "bottomright" }).addTo(map);
 const useFileBasemap = window.location.protocol === "file:";
 if (useFileBasemap) {
   L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png", {
@@ -679,12 +695,10 @@ const RasterGridLayer = L.GridLayer.extend({
       }
     }
 
-    context.globalAlpha = 0.62;
     for (const [bin, path] of fillPaths) {
       context.fillStyle = colorForPaletteBin(bin);
       context.fill(path);
     }
-    context.globalAlpha = 1;
     if (gridPath) {
       context.strokeStyle = "rgba(38,50,56,0.72)";
       context.lineWidth = 0.7;
@@ -694,9 +708,11 @@ const RasterGridLayer = L.GridLayer.extend({
 });
 
 const initialGridLinesVisible = readStoredBoolean(GRIDLINES_STORAGE_KEY, false);
+const initialLayerOpacity = readStoredLayerOpacity();
 const rasterLayer = new RasterGridLayer({
   tileSize: 256,
   pane: "overlayPane",
+  opacity: initialLayerOpacity,
   bounds: L.latLngBounds(data.grid.bounds_wgs84),
   noWrap: true,
   updateWhenIdle: false,
@@ -825,6 +841,13 @@ mapPanel.onAdd = () => {
           <span>Show gridlines</span>
         </label>
       </div>
+      <div class="panel-section opacity-control">
+        <div class="opacity-heading">
+          <strong class="panel-section-title">Layer opacity</strong>
+          <output class="opacity-output">${Math.round(initialLayerOpacity * 100)}%</output>
+        </div>
+        <input class="opacity-input" type="range" min="0" max="100" step="1" value="${Math.round(initialLayerOpacity * 100)}" aria-label="Climate layer opacity" aria-valuetext="${Math.round(initialLayerOpacity * 100)}%">
+      </div>
       <div class="panel-section">
         <div class="range-heading">
           <strong class="panel-section-title">Display range</strong>
@@ -866,6 +889,8 @@ mapPanel.onAdd = () => {
   const rangeLegend = div.querySelector(".range-legend") as HTMLElement;
   const rangeUnit = div.querySelector(".range-unit") as HTMLElement;
   const rangeReset = div.querySelector(".range-reset") as HTMLButtonElement;
+  const opacityInput = div.querySelector(".opacity-input") as HTMLInputElement;
+  const opacityOutput = div.querySelector(".opacity-output") as HTMLOutputElement;
 
   function refreshDisplayRangeControl() {
     const full = fullDisplayRange(activeMetric);
@@ -932,6 +957,15 @@ mapPanel.onAdd = () => {
     const show = gridlinesCheckbox.checked;
     rasterLayer.setShowGridLines(show);
     writeStoredBoolean(GRIDLINES_STORAGE_KEY, show);
+  });
+
+  opacityInput.addEventListener("input", () => {
+    const percent = Math.max(0, Math.min(100, Math.round(Number(opacityInput.value))));
+    const opacity = percent / 100;
+    rasterLayer.setOpacity(opacity);
+    opacityOutput.textContent = `${percent}%`;
+    opacityInput.setAttribute("aria-valuetext", `${percent}%`);
+    writeStoredLayerOpacity(opacity);
   });
 
   let pendingRangeRepaint: number | null = null;
