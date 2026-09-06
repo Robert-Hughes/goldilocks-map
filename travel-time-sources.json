@@ -1,0 +1,67 @@
+{
+  "format_version": 1,
+  "os_open_roads": {
+    "product_id": "OpenRoads",
+    "version": "2026-04",
+    "format": "ESRI® Shapefile",
+    "area": "GB",
+    "file_name": "oproad_essh_gb.zip",
+    "md5": "8c6e66a255f79e3e31845307cefee298",
+    "product_url": "https://www.ordnancesurvey.co.uk/products/os-open-roads",
+    "downloads_api": "https://api.os.uk/downloads/v1/products/OpenRoads/downloads"
+  },
+  "os_open_built_up_areas": {
+    "product_id": "BuiltUpAreas",
+    "version": "2026-04",
+    "format": "GeoPackage",
+    "area": "GB",
+    "file_name": "OS_Open_Built_Up_Areas_GeoPackage.zip",
+    "md5": "d3620702aa841625b3b557c676e295a5",
+    "product_url": "https://www.ordnancesurvey.co.uk/products/os-open-built-up-areas",
+    "downloads_api": "https://api.os.uk/downloads/v1/products/BuiltUpAreas/downloads"
+  },
+  "dft_local_a": {
+    "dataset_page": "https://www.gov.uk/government/statistical-data-sets/average-speed-delay-and-reliability-of-travel-times-cgn",
+    "release_note": "Files published on the CGN page as at 2026-08-06; road-level values are calendar-year 2025 and the latest rolling national context is year-ending March 2026.",
+    "files": {
+      "england": {
+        "name": "cgn0503.ods",
+        "url": "https://assets.publishing.service.gov.uk/media/6a5df5359e2827ee5f6d0892/cgn0503.ods",
+        "sha256": "128b7a5329589af2047856362e83cc7c2ddf03f1fde30491387b1971266ae6a5"
+      },
+      "scotland": {
+        "name": "cgn0507.ods",
+        "url": "https://assets.publishing.service.gov.uk/media/6a72ecbd8a340ed57ba476fc/cgn0507.ods",
+        "sha256": "ef3311967d90b901003dfa754b156ca4a6c075367ae7cb3bb307a41307f18260"
+      },
+      "wales": {
+        "name": "cgn0509.ods",
+        "url": "https://assets.publishing.service.gov.uk/media/6a72ecd1011ff6453dece522/cgn0509.ods",
+        "sha256": "a0cf07807c58b8cee5d1950e2fc76a86c2fafcd12d3b3775e80d1ac7d695df33"
+      }
+    }
+  },
+  "ons_lad": {
+    "release": "December 2025",
+    "dataset": "Local Authority Districts (December 2025) Boundaries UK BGC",
+    "feature_service": "https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/Local_Authority_Districts_DEC_2025_Boundaries_UK_BGC/FeatureServer/0/query",
+    "homepage": "https://geoportal.statistics.gov.uk/",
+    "out_crs": "EPSG:27700"
+  },
+  "national_highways": {
+    "dataset": "Travel Time Reporting Tool",
+    "reporting_period": "Apr 2024 - Mar 2025 ",
+    "feature_service": "https://services-eu1.arcgis.com/mZXeBXkkZpekxjXT/arcgis/rest/services/TTRT_V_2_5_6/FeatureServer/0/query",
+    "homepage": "https://nationalhighways.co.uk/roads-and-travel/road-projects/travel-time-reporting-tool/",
+    "aggregations": [
+      "Annual",
+      "Normal Saturday",
+      "Normal Sunday",
+      "PM Peak"
+    ]
+  },
+  "licence": {
+    "name": "Open Government Licence v3.0",
+    "url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/"
+  }
+}

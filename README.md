@@ -1,6 +1,6 @@
 # Goldilocks Map
 
-Goldilocks Map is an experimental single-file UK location-suitability explorer built from multiple gridded public datasets. Metrics are grouped into first-class categories (currently **Heat**, **Cold**, **Pollution**, **Terrain** and **Woodland**) and can be switched without reloading the page.
+Goldilocks Map is an experimental single-file UK location-suitability explorer built from multiple gridded public datasets. Metrics are grouped into first-class categories (currently **Heat**, **Cold**, **Pollution**, **Terrain**, **Woodland** and **Travel**) and can be switched without reloading the page.
 
 ## Metrics
 
@@ -45,6 +45,17 @@ OS Terrain 50 is a bare-earth digital terrain model intended for broad-scale ter
 
 Current woodland deliberately excludes NFI classes `Felled`, `Ground prep`, `Failed` and `Windblow`; the goal is current woodland land rather than the wider forestry land-use footprint. The percentage measures NFI woodland-polygon area, not fractional canopy density within each polygon. Ancient woodland uses revised Natural England inventory coverage in preference to the legacy inventory where available, all four current NRW 2021 categories in Wales, and NatureScot antiquity classes 1a/2a in Scotland. It measures recognised ancient-woodland site extent rather than current canopy, so it is not necessarily a subset of the current-woodland layer. Overlapping ancient-woodland polygons are geometrically unioned within each 1 km tile before area is measured. The NFI source generally maps woodland of at least 0.5 ha (with some Assumed woodland and Low density areas from 0.1 ha), so very small woods and individual tree features are not comprehensively represented. Both metrics use the full 100 ha canonical tile as the denominator, are quantised to 0.1 percentage points, and use a fixed 0–100% white-to-dark-green palette. Northern Ireland is nodata.
 
+**Travel**
+
+- `travel_york_weekend`: representative historic weekend driving time to York;
+- `travel_york_peak`: representative weekday PM-peak driving time to York;
+- `travel_cambridge_weekend`: representative historic weekend driving time to Cambridge;
+- `travel_cambridge_peak`: representative weekday PM-peak driving time to Cambridge.
+
+Travel is precomputed offline rather than routed in the browser. The topology is the generalised OS Open Roads 2026-04 GB network. Matched England Strategic Road Network links use National Highways historic link speeds: weekend is the mean traversal time from the `Normal Saturday` and `Normal Sunday` aggregations, while peak uses `PM Peak`. Non-trunk A roads use DfT's 2025 flow-weighted speed by local authority and road number where available; unmatched A roads use the latest DfT country urban/rural averages with OS Open Built Up Areas. The peak local-A model applies the latest country weekday-evening-peak/all-day ratio. B/minor/local roads retain transparent road-function/form fallbacks because more elaborate guessed context degraded the validation set.
+
+Each canonical cell centre inherits the travel time of its nearest Open Roads graph node; no additional driveway/access-leg penalty is added. Cells more than 20 km from the GB-only source graph (principally Northern Ireland) and cells on disconnected road components that cannot reach York/Cambridge are nodata. These are comparative suitability estimates, not live traffic, turn-by-turn routes or guaranteed journey times. The investigation, 128-route external validation and rejected alternatives are documented in [`docs/travel-time-investigation.md`](docs/travel-time-investigation.md).
+
 An air-frost day is assigned when the minimum air temperature falls below freezing during the observation period; it does not mean the whole day remains below freezing. A day whose maximum temperature remains below freezing is instead an ice day.
 
 Stable historical observations come from CEDA HadUK-Grid v1.3.2.ceda for 2016–2025. Published provisional 2026 months are also included. For annual-count metrics, each calendar month is averaged across the years available for that month and the twelve monthly means are summed. This allows published 2026 months to contribute without treating unpublished months as zero. The winter Tmin percentile uses complete DJF winters only; with the current archive these are winters 2016–17 through 2025–26.
@@ -86,13 +97,14 @@ python process_climate_metrics.py
 python process_pollution_metrics.py
 python process_terrain_metrics.py
 python process_woodland_metrics.py
+python process_travel_metrics.py
 python assemble_metrics.py
 python build.py
 ```
 
 `goldilocks_raster.py` provides the common canonical-grid, quantisation, nodata-aware LOD and gzip-blob machinery. Each dataset processor writes a self-contained dataset manifest with categories, metrics and source provenance. `assemble_metrics.py` validates that those fragments use the same canonical 1 km BNG raster geometry, merges their categories/sources and copies the metric blobs into `data/derived/goldilocks-metrics/`.
 
-`process_climate_metrics.py` streams the monthly NetCDF/HDF5 files; summer percentile input is staged in a temporary memory-mapped file so the full multi-year daily cube is never held in RAM. `process_pollution_metrics.py` aligns the 2022–2024 Defra PCM CSV grids to the canonical Goldilocks/HadUK 1 km grid and derives the three-year arithmetic means. `process_terrain_metrics.py` reads the nested OS Terrain 50 ASCII tiles directly from the national zip, reduces each aligned 20 × 20 block of 50 m pixel-centre heights to 1 km relief (`max - min`), and leaves canonical cells outside Great Britain as nodata. `process_woodland_metrics.py` uses Fiona/Shapely to intersect pinned NFI/AWI polygons exactly with the canonical grid, including overlap-unioning for the stitched ancient-woodland layer.
+`process_climate_metrics.py` streams the monthly NetCDF/HDF5 files; summer percentile input is staged in a temporary memory-mapped file so the full multi-year daily cube is never held in RAM. `process_pollution_metrics.py` aligns the 2022–2024 Defra PCM CSV grids to the canonical Goldilocks/HadUK 1 km grid and derives the three-year arithmetic means. `process_terrain_metrics.py` reads the nested OS Terrain 50 ASCII tiles directly from the national zip, reduces each aligned 20 × 20 block of 50 m pixel-centre heights to 1 km relief (`max - min`), and leaves canonical cells outside Great Britain as nodata. `process_woodland_metrics.py` uses Fiona/Shapely to intersect pinned NFI/AWI polygons exactly with the canonical grid, including overlap-unioning for the stitched ancient-woodland layer. `process_travel_metrics.py` builds the pinned OS Open Roads GB graph, joins National Highways and DfT observed speed data, performs four reverse shortest-path searches and samples the resulting node-time fields to the canonical 1 km grid; expensive source-to-graph classifications and cell snaps are cached under ignored `data/source/travel-time/cache/`.
 
 `build.py` validates the assembled blobs and source references, bundles/minifies the TypeScript frontend (including `proj4` and `fflate`), base64-embeds the compressed blobs and metadata, and writes the self-contained application to `dist/goldilocks.html`.
 
@@ -197,6 +209,23 @@ python download_woodland_sources.py
 
 The vector inputs are stored under `data/source/woodland/` and remain git-ignored. The NFI download is the largest input (about 675 MB compressed). `process_woodland_metrics.py` computes exact polygon/canonical-cell intersections in British National Grid coordinates. Ancient-woodland polygon fragments are unioned per 1 km cell before area is measured so overlapping source polygons cannot double-count cover.
 
+## Travel source download
+
+`download_travel_sources.py` recreates the pinned open-data input set for the York/Cambridge driving-time model: OS Open Roads 2026-04, OS Open Built Up Areas 2026-04, DfT CGN local-A-road speed workbooks, ONS December 2025 LAD boundaries, and National Highways Travel Time Reporting Tool link observations for Annual, Normal Saturday, Normal Sunday and PM Peak. Source versions, URLs and fixed-file checksums are tracked in `travel-time-sources.json`; the generated discovery metadata records hashes/counts for the downloaded dynamic query results.
+
+```sh
+# Validate the pinned OS release metadata and show intended source requests.
+python download_travel_sources.py --dry-run
+
+# Download/verify/extract the source set.
+python download_travel_sources.py
+
+# Build the four Travel rasters.
+python process_travel_metrics.py
+```
+
+Raw sources and reproducible intermediate caches remain under git-ignored `data/source/travel-time/`. The two OS archives are the large inputs (Open Roads is about 606 MB compressed; Open Built Up Areas about 44 MB). The generated Travel fragment is only about 1.1 MB of compressed metric blobs. See [`docs/travel-time-investigation.md`](docs/travel-time-investigation.md) for the model rationale, validation results, rejected alternatives and limitations.
+
 ## Browser architecture
 
 The data layer is a custom Leaflet `GridLayer` whose tiles are 256 x 256 canvas elements generated locally from the selected metric's embedded raster pyramid. Every metric is transported as a gzip-compressed little-endian `uint16` blob; only the initially selected metric is decompressed at startup, and other metrics are decoded lazily the first time their radio button is selected. Decoded metrics remain cached as typed-array views over one contiguous buffer.
@@ -207,7 +236,7 @@ Canvas geometry is batched per tile. Metric values are mapped to a 64-step visua
 
 For each Leaflet tile zoom, the renderer chooses the finest metric LOD whose nominal cells are at least about four screen pixels across. The reference pixel distance is projected only once at a fixed representative UK location (54.5°N, 2°W), so LOD choice depends only on zoom and thereafter requires only power-of-two scaling. Each tile still performs a small fixed set of inverse WGS84 -> BNG transforms to identify its candidate row/column range. Leaflet manages tile buffering, panning, clipping, recycling, and zoom transforms. Leaflet's default 200 ms tile fade animation is disabled because metric canvases render synchronously; replacement tiles therefore appear immediately instead of fading through the basemap during redraws and zoom changes.
 
-Clicking always resolves against active-metric LOD0, so popups retain the exact quantised 1 km value rather than a coarse averaged value. The selected-cell outline is a separate lightweight Leaflet vector overlay, so changing the selection does not regenerate any metric canvas tiles. The collapsible left-side panel groups metric radio buttons by the categories declared in the processed manifest (currently `heat`, `cold`, `pollution`, `terrain` and `woodland`), followed by gridline visibility, saved-location-pin visibility, data-layer opacity, a per-metric dual-ended display-range slider with integrated colour samples, description and provenance. Layer opacity defaults to 62% to preserve the original map appearance and is applied by Leaflet to the existing tile layer without repainting raster canvases. Narrowing the display range clips only the colour mapping; underlying raster and popup values remain unchanged. Display-range scrubbing repaints the existing cached metric canvases in place rather than invoking Leaflet `GridLayer.redraw()`, avoiding tile removal/recreation and the resulting basemap flicker. Display ranges, layer opacity, panel state, gridline visibility, location-pin visibility and selected metric are stored independently in `localStorage`, and each range can be reset to that metric's configured full display range (normally its observed minimum/maximum; woodland is fixed at 0–100%). Metric identifiers are category-prefixed (for example `heat_days_tmax_gt_25`, `cold_air_frost_days`, `terrain_relief` and `woodland_cover`) so the same grouping remains explicit in code and generated data; legacy unprefixed Heat metric selections are migrated automatically. Gridlines default to hidden and location pins default to visible when no preference has yet been saved. Leaflet's zoom control is positioned at bottom-right so the main information panel can occupy the top-left corner cleanly.
+Clicking always resolves against active-metric LOD0, so popups retain the exact quantised 1 km value rather than a coarse averaged value. The selected-cell outline is a separate lightweight Leaflet vector overlay, so changing the selection does not regenerate any metric canvas tiles. The collapsible left-side panel groups metric radio buttons by the categories declared in the processed manifest (currently `heat`, `cold`, `pollution`, `terrain`, `woodland` and `travel`), followed by gridline visibility, saved-location-pin visibility, data-layer opacity, a per-metric dual-ended display-range slider with integrated colour samples, description and provenance. Layer opacity defaults to 62% to preserve the original map appearance and is applied by Leaflet to the existing tile layer without repainting raster canvases. Narrowing the display range clips only the colour mapping; underlying raster and popup values remain unchanged. Display-range scrubbing repaints the existing cached metric canvases in place rather than invoking Leaflet `GridLayer.redraw()`, avoiding tile removal/recreation and the resulting basemap flicker. Display ranges, layer opacity, panel state, gridline visibility, location-pin visibility and selected metric are stored independently in `localStorage`, and each range can be reset to that metric's configured full display range (normally its observed minimum/maximum; woodland is fixed at 0–100%). Metric identifiers are category-prefixed (for example `heat_days_tmax_gt_25`, `cold_air_frost_days`, `terrain_relief`, `woodland_cover` and `travel_york_weekend`) so the same grouping remains explicit in code and generated data; legacy unprefixed Heat metric selections are migrated automatically. Gridlines default to hidden and location pins default to visible when no preference has yet been saved. Leaflet's zoom control is positioned at bottom-right so the main information panel can occupy the top-left corner cleanly.
 
 Saved locations are a separate browser-only layer. Each location has a stable ID, name, WGS84 latitude/longitude and free-text notes, and the ordered list is stored under a versioned `localStorage` key. A collapsible top-right panel supports editing, up/down reordering, deletion and panning to a location. Export and import are separate expandable sections: export copies versioned JSON directly to the clipboard, while import accepts pasted JSON and replaces the complete list only after confirmation. Location names are rendered directly on the map as Leaflet label markers, and the top-left display controls can hide/show those markers without changing the saved list. Right-clicking the map (or long-pressing on touch devices through Leaflet's tap-hold handler) offers `Add location here`; right-clicking/long-pressing a saved marker offers `View / edit location`, which opens the corresponding panel editor. Location data is intentionally independent of metric decoding; there is currently no metric-at-location summary or comparison view.
 
@@ -228,6 +257,12 @@ Direct `file://` opening still renders the embedded Goldilocks data layer, but i
 - `process_terrain_metrics.py` — derives 1 km Terrain relief from the 50 m DTM grid
 - `download_woodland_sources.py` — downloads and validates the pinned NFI, national AWI and ONS helper boundary inputs
 - `process_woodland_metrics.py` — derives current and ancient woodland percentage cover on the canonical grid
+- `travel-time-sources.json` — pinned versions, URLs and hashes for the Travel source set
+- `download_travel_sources.py` — downloads/verifies/extracts the pinned open Travel inputs
+- `travel_time_routing.py` — compact Open Roads graph parsing, matching, CSR and reverse-Dijkstra helpers
+- `process_travel_metrics.py` — derives York/Cambridge weekend and weekday-PM-peak driving-time rasters
+- `docs/travel-time-investigation.md` — experiment history, validation, final model and limitations
+- `experiments/travel-time/` — reusable external-validation origin set and Google comparison harness
 - `assemble_metrics.py` — validates and combines dataset fragments into the common Goldilocks metric bundle
 - `build.py` — validates/embeds the assembled metric bundle, bundles the frontend and embeds third-party software notices
 - `publish_metrics_snapshot.py` — copies the validated assembled bundle into the tracked public snapshot used by Pages
@@ -240,7 +275,7 @@ Direct `file://` opening still renders the embedded Goldilocks data layer, but i
 - `src/locations.ts` — saved-location persistence, labels, context actions, editing and JSON import/export
 - `src/storage.ts` — small resilient helpers for persisted UI preferences
 - `src/types.ts` — shared frontend data-model types
-- `data/source/` — cached raw source data (HadUK NetCDF + Defra PCM CSV + OS Terrain 50 archive + woodland vectors; git-ignored and never published)
+- `data/source/` — cached raw source data (HadUK NetCDF + Defra PCM CSV + OS Terrain 50 + woodland vectors + Travel road/speed inputs; git-ignored and never published)
 - `data/derived/` — local generated metric bundles (git-ignored)
 - `published-data/goldilocks-metrics/` — tracked, publishable snapshot of the derived metric bundle used by GitHub Pages
 - `dist/goldilocks.html` — generated application artifact (git-ignored)
@@ -249,10 +284,10 @@ Direct `file://` opening still renders the embedded Goldilocks data layer, but i
 
 ## Data licence and provenance
 
-The current source datasets include Met Office HadUK-Grid, Defra UK-AIR Pollution Climate Mapping, Ordnance Survey OS Terrain 50, Forestry Commission NFI and national ancient-woodland inventories. The source-specific reuse and attribution terms are documented in `DATA-LICENCE.md`; the main sources are available under the [Open Government Licence v3.0](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/). Goldilocks metrics are derived products and are not official products of the source agencies. The OS Terrain 50-derived metric carries the required acknowledgement: `Contains OS data © Crown copyright and database right 2026.`
+The current source datasets include Met Office HadUK-Grid, Defra UK-AIR Pollution Climate Mapping, Ordnance Survey OS Terrain 50/Open Roads/Open Built Up Areas, Forestry Commission NFI and national ancient-woodland inventories, DfT road-congestion statistics, National Highways historic travel-time observations and ONS administrative boundaries. The source-specific reuse and attribution terms are documented in `DATA-LICENCE.md`; the main sources are available under the [Open Government Licence v3.0](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/). Goldilocks metrics are derived products and are not official products of the source agencies. OS-derived metrics carry the applicable Crown copyright/database-right acknowledgements recorded in the generated manifest and `DATA-LICENCE.md`.
 
 Stable 2016–2025 observations are taken from the citable CEDA HadUK-Grid v1.3.2.ceda release:
 
 Met Office; Hollis, D.; Carlisle, E.; Kendon, M.; Packman, S.; Doherty, A. (2026): *HadUK-Grid Gridded Climate Observations on a 1km grid over the UK, v1.3.2.ceda (1836-2025).* NERC EDS Centre for Environmental Data Analysis, 23 June 2026. [doi:10.5285/789b3065d74a4c948ab05d33556c86d0](https://doi.org/10.5285/789b3065d74a4c948ab05d33556c86d0).
 
-Available 2026 climate months are provisional Met Office HadUK-Grid data and may be amended before a later annual CEDA release. Pollution metrics use Defra PCM 2022–2024 annual background grids. Terrain relief uses the pinned OS Terrain 50 2026-07 Great Britain grid. Woodland metrics use pinned Forestry Commission and national ancient-woodland vector datasets. See [`DATA-LICENCE.md`](DATA-LICENCE.md) for full licence, attribution and source-specific provenance notes.
+Available 2026 climate months are provisional Met Office HadUK-Grid data and may be amended before a later annual CEDA release. Pollution metrics use Defra PCM 2022–2024 annual background grids. Terrain relief uses the pinned OS Terrain 50 2026-07 Great Britain grid. Woodland metrics use pinned Forestry Commission and national ancient-woodland vector datasets. Travel metrics use pinned OS Open Roads/Open Built Up Areas, DfT local-A-road statistics, National Highways historic SRN speeds and ONS LAD boundaries; see [`docs/travel-time-investigation.md`](docs/travel-time-investigation.md) for the full model investigation. See [`DATA-LICENCE.md`](DATA-LICENCE.md) for full licence, attribution and source-specific provenance notes.

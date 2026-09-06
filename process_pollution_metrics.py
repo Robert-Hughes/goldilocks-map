@@ -262,8 +262,7 @@ def main() -> int:
             "licence_name": OGL_NAME,
             "licence_url": OGL_URL,
             "attribution": (
-                "Source: Department for Environment, Food and Rural Affairs (Defra) via uk-air.defra.gov.uk, "
-                "licensed under the Open Government Licence v3.0."
+                "© Crown 2026 copyright Defra via uk-air.defra.gov.uk, licenced under the Open Government Licence (OGL)."
             ),
             "derived_product_notice": (
                 f"Goldilocks Map Pollution metrics are {years_label} arithmetic means derived from annual Defra PCM grids; "

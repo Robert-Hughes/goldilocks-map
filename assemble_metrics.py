@@ -16,6 +16,7 @@ DEFAULT_DATASET_MANIFESTS = (
     ROOT / "data" / "derived" / "pollution-metrics" / "manifest.json",
     ROOT / "data" / "derived" / "terrain-metrics" / "manifest.json",
     ROOT / "data" / "derived" / "woodland-metrics" / "manifest.json",
+    ROOT / "data" / "derived" / "travel-metrics" / "manifest.json",
 )
 DEFAULT_OUTPUT_DIR = ROOT / "data" / "derived" / "goldilocks-metrics"
 

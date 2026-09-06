@@ -1,7 +1,7 @@
 {
   "format_version": 3,
   "kind": "goldilocks-bundle",
-  "generated_at_unix": 1788630921,
+  "generated_at_unix": 1788703912,
   "preview_partial_sources": false,
   "grid": {
     "crs": "EPSG:27700",
@@ -62,6 +62,11 @@
       "id": "woodland",
       "label": "Woodland",
       "order": 4
+    },
+    {
+      "id": "travel",
+      "label": "Travel",
+      "order": 5
     }
   ],
   "metrics": [
@@ -1515,7 +1520,17 @@
         ]
       },
       "valid_cell_count": 244475,
-      "palette_reverse": false,
+      "palette": [
+        "#1548ac",
+        "#1796b7",
+        "#18c096",
+        "#19c84c",
+        "#38cf1a",
+        "#8ed31a",
+        "#d7c71b",
+        "#d9721b",
+        "#da1b1b"
+      ],
       "levels": [
         {
           "level": 0,
@@ -1672,7 +1687,17 @@
         ]
       },
       "valid_cell_count": 244475,
-      "palette_reverse": false,
+      "palette": [
+        "#1548ac",
+        "#1796b7",
+        "#18c096",
+        "#19c84c",
+        "#38cf1a",
+        "#8ed31a",
+        "#d7c71b",
+        "#d9721b",
+        "#da1b1b"
+      ],
       "levels": [
         {
           "level": 0,
@@ -1829,7 +1854,17 @@
         ]
       },
       "valid_cell_count": 244475,
-      "palette_reverse": false,
+      "palette": [
+        "#1548ac",
+        "#1796b7",
+        "#18c096",
+        "#19c84c",
+        "#38cf1a",
+        "#8ed31a",
+        "#d7c71b",
+        "#d9721b",
+        "#da1b1b"
+      ],
       "levels": [
         {
           "level": 0,
@@ -1986,7 +2021,17 @@
         ]
       },
       "valid_cell_count": 244475,
-      "palette_reverse": false,
+      "palette": [
+        "#1548ac",
+        "#1796b7",
+        "#18c096",
+        "#19c84c",
+        "#38cf1a",
+        "#8ed31a",
+        "#d7c71b",
+        "#d9721b",
+        "#da1b1b"
+      ],
       "levels": [
         {
           "level": 0,
@@ -2803,6 +2848,1042 @@
       "display_range": {
         "min": 0.0,
         "max": 100.0
+      }
+    },
+    {
+      "id": "travel_york_weekend",
+      "category_id": "travel",
+      "label": "York \u2014 weekend",
+      "units": "min",
+      "period": "OS Open Roads 2026-04; DfT local A-road data through March 2026; National Highways Apr 2024 - Mar 2025",
+      "definition": "Modelled driving time in minutes from the nearest OS Open Roads graph node to each canonical 1 km cell centre to York. England Strategic Road Network links use the mean historic link traversal time from National Highways Normal Saturday and Normal Sunday observations. Local A roads use DfT road-by-local-authority observed average speeds where available; other road costs use the documented Goldilocks fallbacks. This is a typical historic weekend estimate, not live traffic and not turn-by-turn navigation.",
+      "source_id": "goldilocks-travel-time-model",
+      "source_variable": "driving_time_to_york_weekend",
+      "scale": 1.0,
+      "offset": 0.0,
+      "decimals": 0,
+      "nodata": 65535,
+      "encoded_min": 1,
+      "encoded_max": 628,
+      "summary": {
+        "min": 1.0,
+        "max": 628.0
+      },
+      "coverage": {
+        "routing_topology": "OS Open Roads GB generalised link/node network",
+        "cell_snap": {
+          "canonical_valid_cells": 245069,
+          "max_source_snap_m": 20000.0,
+          "source_covered_cells": 230166,
+          "excluded_cells": 14903,
+          "median_nearest_node_m": 315.20697021484375,
+          "p95_nearest_node_m": 2301.22119140625,
+          "p99_nearest_node_m": 4441.0576171875,
+          "max_nearest_node_m": 15812.4013671875,
+          "coverage_rule": "A canonical cell is covered only when its centre is within 20 km of an OS Open Roads graph node. The threshold follows the clean observed gap between GB road-covered cells (<10 km in this build) and cells outside the GB-only source network (>20 km, principally Northern Ireland).",
+          "access_penalty": "none; the nearest graph-node travel time is assigned to the 1 km cell centre"
+        },
+        "local_a_cost_model": {
+          "road_level": "DfT 2025 flow-weighted average speed by local authority and road number, used directly where available",
+          "fallback": "latest DfT rolling country urban/rural A-road speeds with OS Open Built Up Areas",
+          "weekday_peak_adjustment": "country rolling-year weekday evening-peak/all-day speed ratio",
+          "counts": {
+            "road_level_observed": 176530,
+            "country_context_fallback": 84642,
+            "unlocated_fallback": 261
+          }
+        },
+        "national_highways": {
+          "Normal Saturday": {
+            "matched_edges": 19524,
+            "trunk_edges": 37579,
+            "matched_length_km": 6146.645,
+            "median_match_distance_m": 9.749749519767573,
+            "p95_match_distance_m": 78.88171611329037,
+            "candidate_speed_count": {
+              "1": 6291,
+              "2": 11384,
+              "3": 840,
+              "4": 972,
+              "5": 17,
+              "6": 17,
+              "7": 2,
+              "8": 1
+            }
+          },
+          "Normal Sunday": {
+            "matched_edges": 19524,
+            "trunk_edges": 37579,
+            "matched_length_km": 6146.645,
+            "median_match_distance_m": 9.749749519767573,
+            "p95_match_distance_m": 78.88171611329037,
+            "candidate_speed_count": {
+              "1": 6291,
+              "2": 11384,
+              "3": 840,
+              "4": 972,
+              "5": 17,
+              "6": 17,
+              "7": 2,
+              "8": 1
+            }
+          },
+          "weekend_combined": {
+            "matched_edges": 19524,
+            "method": "Mean link traversal time across Normal Saturday and Normal Sunday where available; one observed weekend day is used if only one matches."
+          },
+          "PM Peak": {
+            "matched_edges": 19524,
+            "trunk_edges": 37579,
+            "matched_length_km": 6146.645,
+            "median_match_distance_m": 9.749749519767573,
+            "p95_match_distance_m": 78.88171611329037,
+            "candidate_speed_count": {
+              "1": 6291,
+              "2": 11384,
+              "3": 840,
+              "4": 972,
+              "5": 17,
+              "6": 17,
+              "7": 2,
+              "8": 1
+            }
+          }
+        },
+        "targets": {
+          "york": {
+            "label": "York",
+            "lat": 53.9591,
+            "lon": -1.0815,
+            "bng": [
+              460364.8828924767,
+              451836.22681512486
+            ],
+            "node": 877585,
+            "snap_m": 7.31264562709766,
+            "weekend": {
+              "settled_nodes": 3312410,
+              "dijkstra_seconds": 14.410529510998458
+            },
+            "peak": {
+              "settled_nodes": 3312410,
+              "dijkstra_seconds": 14.610991230001673
+            }
+          },
+          "cambridge": {
+            "label": "Cambridge",
+            "lat": 52.2053,
+            "lon": 0.1218,
+            "bng": [
+              545088.4082591818,
+              258462.95550660958
+            ],
+            "node": 2787431,
+            "snap_m": 3.4085495906500274,
+            "weekend": {
+              "settled_nodes": 3312410,
+              "dijkstra_seconds": 17.186040098000376
+            },
+            "peak": {
+              "settled_nodes": 3312410,
+              "dijkstra_seconds": 22.371616712000105
+            }
+          }
+        },
+        "scenario": "weekend: mean Normal Saturday/Sunday SRN traversal time"
+      },
+      "valid_cell_count": 219881,
+      "palette": [
+        "#1a9850",
+        "#91cf60",
+        "#d9ef8b",
+        "#fee08b",
+        "#fc8d59",
+        "#d73027"
+      ],
+      "levels": [
+        {
+          "level": 0,
+          "width": 900,
+          "height": 1450,
+          "cell_size_m": 1000,
+          "value_offset": 0,
+          "value_count": 1305000
+        },
+        {
+          "level": 1,
+          "width": 450,
+          "height": 725,
+          "cell_size_m": 2000,
+          "value_offset": 1305000,
+          "value_count": 326250
+        },
+        {
+          "level": 2,
+          "width": 225,
+          "height": 363,
+          "cell_size_m": 4000,
+          "value_offset": 1631250,
+          "value_count": 81675
+        },
+        {
+          "level": 3,
+          "width": 113,
+          "height": 182,
+          "cell_size_m": 8000,
+          "value_offset": 1712925,
+          "value_count": 20566
+        },
+        {
+          "level": 4,
+          "width": 57,
+          "height": 91,
+          "cell_size_m": 16000,
+          "value_offset": 1733491,
+          "value_count": 5187
+        },
+        {
+          "level": 5,
+          "width": 29,
+          "height": 46,
+          "cell_size_m": 32000,
+          "value_offset": 1738678,
+          "value_count": 1334
+        },
+        {
+          "level": 6,
+          "width": 15,
+          "height": 23,
+          "cell_size_m": 64000,
+          "value_offset": 1740012,
+          "value_count": 345
+        },
+        {
+          "level": 7,
+          "width": 8,
+          "height": 12,
+          "cell_size_m": 128000,
+          "value_offset": 1740357,
+          "value_count": 96
+        },
+        {
+          "level": 8,
+          "width": 4,
+          "height": 6,
+          "cell_size_m": 256000,
+          "value_offset": 1740453,
+          "value_count": 24
+        },
+        {
+          "level": 9,
+          "width": 2,
+          "height": 3,
+          "cell_size_m": 512000,
+          "value_offset": 1740477,
+          "value_count": 6
+        },
+        {
+          "level": 10,
+          "width": 1,
+          "height": 2,
+          "cell_size_m": 1024000,
+          "value_offset": 1740483,
+          "value_count": 2
+        },
+        {
+          "level": 11,
+          "width": 1,
+          "height": 1,
+          "cell_size_m": 2048000,
+          "value_offset": 1740485,
+          "value_count": 1
+        }
+      ],
+      "blob_file": "travel_york_weekend.u16.gz",
+      "blob_encoding": "gzip+uint16le",
+      "raw_bytes": 3480972,
+      "compressed_bytes": 278429,
+      "sha256_raw": "ebf084e2323aefbbe51131ab632c99643c8eba0ec28e922298f033b2b17777be",
+      "display_range": {
+        "min": 0.0,
+        "max": 360.0
+      }
+    },
+    {
+      "id": "travel_york_peak",
+      "category_id": "travel",
+      "label": "York \u2014 weekday PM peak",
+      "units": "min",
+      "period": "OS Open Roads 2026-04; DfT local A-road data through March 2026; National Highways Apr 2024 - Mar 2025",
+      "definition": "Modelled weekday evening-peak driving time in minutes from the nearest OS Open Roads graph node to each canonical 1 km cell centre to York. England Strategic Road Network links use National Highways PM Peak historic observations. Local A-road observed annual speeds are adjusted by the latest DfT country-level weekday-evening-peak/all-day speed ratio; unmatched local A roads use correspondingly adjusted DfT urban/rural speeds. Other road classes retain the transparent Goldilocks function/form fallbacks. This is a representative historic peak estimate, not live traffic and not turn-by-turn navigation.",
+      "source_id": "goldilocks-travel-time-model",
+      "source_variable": "driving_time_to_york_weekday_pm_peak",
+      "scale": 1.0,
+      "offset": 0.0,
+      "decimals": 0,
+      "nodata": 65535,
+      "encoded_min": 1,
+      "encoded_max": 634,
+      "summary": {
+        "min": 1.0,
+        "max": 634.0
+      },
+      "coverage": {
+        "routing_topology": "OS Open Roads GB generalised link/node network",
+        "cell_snap": {
+          "canonical_valid_cells": 245069,
+          "max_source_snap_m": 20000.0,
+          "source_covered_cells": 230166,
+          "excluded_cells": 14903,
+          "median_nearest_node_m": 315.20697021484375,
+          "p95_nearest_node_m": 2301.22119140625,
+          "p99_nearest_node_m": 4441.0576171875,
+          "max_nearest_node_m": 15812.4013671875,
+          "coverage_rule": "A canonical cell is covered only when its centre is within 20 km of an OS Open Roads graph node. The threshold follows the clean observed gap between GB road-covered cells (<10 km in this build) and cells outside the GB-only source network (>20 km, principally Northern Ireland).",
+          "access_penalty": "none; the nearest graph-node travel time is assigned to the 1 km cell centre"
+        },
+        "local_a_cost_model": {
+          "road_level": "DfT 2025 flow-weighted average speed by local authority and road number, used directly where available",
+          "fallback": "latest DfT rolling country urban/rural A-road speeds with OS Open Built Up Areas",
+          "weekday_peak_adjustment": "country rolling-year weekday evening-peak/all-day speed ratio",
+          "counts": {
+            "road_level_observed": 176530,
+            "country_context_fallback": 84642,
+            "unlocated_fallback": 261
+          }
+        },
+        "national_highways": {
+          "Normal Saturday": {
+            "matched_edges": 19524,
+            "trunk_edges": 37579,
+            "matched_length_km": 6146.645,
+            "median_match_distance_m": 9.749749519767573,
+            "p95_match_distance_m": 78.88171611329037,
+            "candidate_speed_count": {
+              "1": 6291,
+              "2": 11384,
+              "3": 840,
+              "4": 972,
+              "5": 17,
+              "6": 17,
+              "7": 2,
+              "8": 1
+            }
+          },
+          "Normal Sunday": {
+            "matched_edges": 19524,
+            "trunk_edges": 37579,
+            "matched_length_km": 6146.645,
+            "median_match_distance_m": 9.749749519767573,
+            "p95_match_distance_m": 78.88171611329037,
+            "candidate_speed_count": {
+              "1": 6291,
+              "2": 11384,
+              "3": 840,
+              "4": 972,
+              "5": 17,
+              "6": 17,
+              "7": 2,
+              "8": 1
+            }
+          },
+          "weekend_combined": {
+            "matched_edges": 19524,
+            "method": "Mean link traversal time across Normal Saturday and Normal Sunday where available; one observed weekend day is used if only one matches."
+          },
+          "PM Peak": {
+            "matched_edges": 19524,
+            "trunk_edges": 37579,
+            "matched_length_km": 6146.645,
+            "median_match_distance_m": 9.749749519767573,
+            "p95_match_distance_m": 78.88171611329037,
+            "candidate_speed_count": {
+              "1": 6291,
+              "2": 11384,
+              "3": 840,
+              "4": 972,
+              "5": 17,
+              "6": 17,
+              "7": 2,
+              "8": 1
+            }
+          }
+        },
+        "targets": {
+          "york": {
+            "label": "York",
+            "lat": 53.9591,
+            "lon": -1.0815,
+            "bng": [
+              460364.8828924767,
+              451836.22681512486
+            ],
+            "node": 877585,
+            "snap_m": 7.31264562709766,
+            "weekend": {
+              "settled_nodes": 3312410,
+              "dijkstra_seconds": 14.410529510998458
+            },
+            "peak": {
+              "settled_nodes": 3312410,
+              "dijkstra_seconds": 14.610991230001673
+            }
+          },
+          "cambridge": {
+            "label": "Cambridge",
+            "lat": 52.2053,
+            "lon": 0.1218,
+            "bng": [
+              545088.4082591818,
+              258462.95550660958
+            ],
+            "node": 2787431,
+            "snap_m": 3.4085495906500274,
+            "weekend": {
+              "settled_nodes": 3312410,
+              "dijkstra_seconds": 17.186040098000376
+            },
+            "peak": {
+              "settled_nodes": 3312410,
+              "dijkstra_seconds": 22.371616712000105
+            }
+          }
+        },
+        "scenario": "weekday PM peak"
+      },
+      "valid_cell_count": 219881,
+      "palette": [
+        "#1a9850",
+        "#91cf60",
+        "#d9ef8b",
+        "#fee08b",
+        "#fc8d59",
+        "#d73027"
+      ],
+      "levels": [
+        {
+          "level": 0,
+          "width": 900,
+          "height": 1450,
+          "cell_size_m": 1000,
+          "value_offset": 0,
+          "value_count": 1305000
+        },
+        {
+          "level": 1,
+          "width": 450,
+          "height": 725,
+          "cell_size_m": 2000,
+          "value_offset": 1305000,
+          "value_count": 326250
+        },
+        {
+          "level": 2,
+          "width": 225,
+          "height": 363,
+          "cell_size_m": 4000,
+          "value_offset": 1631250,
+          "value_count": 81675
+        },
+        {
+          "level": 3,
+          "width": 113,
+          "height": 182,
+          "cell_size_m": 8000,
+          "value_offset": 1712925,
+          "value_count": 20566
+        },
+        {
+          "level": 4,
+          "width": 57,
+          "height": 91,
+          "cell_size_m": 16000,
+          "value_offset": 1733491,
+          "value_count": 5187
+        },
+        {
+          "level": 5,
+          "width": 29,
+          "height": 46,
+          "cell_size_m": 32000,
+          "value_offset": 1738678,
+          "value_count": 1334
+        },
+        {
+          "level": 6,
+          "width": 15,
+          "height": 23,
+          "cell_size_m": 64000,
+          "value_offset": 1740012,
+          "value_count": 345
+        },
+        {
+          "level": 7,
+          "width": 8,
+          "height": 12,
+          "cell_size_m": 128000,
+          "value_offset": 1740357,
+          "value_count": 96
+        },
+        {
+          "level": 8,
+          "width": 4,
+          "height": 6,
+          "cell_size_m": 256000,
+          "value_offset": 1740453,
+          "value_count": 24
+        },
+        {
+          "level": 9,
+          "width": 2,
+          "height": 3,
+          "cell_size_m": 512000,
+          "value_offset": 1740477,
+          "value_count": 6
+        },
+        {
+          "level": 10,
+          "width": 1,
+          "height": 2,
+          "cell_size_m": 1024000,
+          "value_offset": 1740483,
+          "value_count": 2
+        },
+        {
+          "level": 11,
+          "width": 1,
+          "height": 1,
+          "cell_size_m": 2048000,
+          "value_offset": 1740485,
+          "value_count": 1
+        }
+      ],
+      "blob_file": "travel_york_peak.u16.gz",
+      "blob_encoding": "gzip+uint16le",
+      "raw_bytes": 3480972,
+      "compressed_bytes": 280285,
+      "sha256_raw": "f62b70e4f8a54fab729cf16a046d622e79ce908f655982c9b8119e219a62841a",
+      "display_range": {
+        "min": 0.0,
+        "max": 360.0
+      }
+    },
+    {
+      "id": "travel_cambridge_weekend",
+      "category_id": "travel",
+      "label": "Cambridge \u2014 weekend",
+      "units": "min",
+      "period": "OS Open Roads 2026-04; DfT local A-road data through March 2026; National Highways Apr 2024 - Mar 2025",
+      "definition": "Modelled driving time in minutes from the nearest OS Open Roads graph node to each canonical 1 km cell centre to Cambridge. England Strategic Road Network links use the mean historic link traversal time from National Highways Normal Saturday and Normal Sunday observations. Local A roads use DfT road-by-local-authority observed average speeds where available; other road costs use the documented Goldilocks fallbacks. This is a typical historic weekend estimate, not live traffic and not turn-by-turn navigation.",
+      "source_id": "goldilocks-travel-time-model",
+      "source_variable": "driving_time_to_cambridge_weekend",
+      "scale": 1.0,
+      "offset": 0.0,
+      "decimals": 0,
+      "nodata": 65535,
+      "encoded_min": 1,
+      "encoded_max": 761,
+      "summary": {
+        "min": 1.0,
+        "max": 761.0
+      },
+      "coverage": {
+        "routing_topology": "OS Open Roads GB generalised link/node network",
+        "cell_snap": {
+          "canonical_valid_cells": 245069,
+          "max_source_snap_m": 20000.0,
+          "source_covered_cells": 230166,
+          "excluded_cells": 14903,
+          "median_nearest_node_m": 315.20697021484375,
+          "p95_nearest_node_m": 2301.22119140625,
+          "p99_nearest_node_m": 4441.0576171875,
+          "max_nearest_node_m": 15812.4013671875,
+          "coverage_rule": "A canonical cell is covered only when its centre is within 20 km of an OS Open Roads graph node. The threshold follows the clean observed gap between GB road-covered cells (<10 km in this build) and cells outside the GB-only source network (>20 km, principally Northern Ireland).",
+          "access_penalty": "none; the nearest graph-node travel time is assigned to the 1 km cell centre"
+        },
+        "local_a_cost_model": {
+          "road_level": "DfT 2025 flow-weighted average speed by local authority and road number, used directly where available",
+          "fallback": "latest DfT rolling country urban/rural A-road speeds with OS Open Built Up Areas",
+          "weekday_peak_adjustment": "country rolling-year weekday evening-peak/all-day speed ratio",
+          "counts": {
+            "road_level_observed": 176530,
+            "country_context_fallback": 84642,
+            "unlocated_fallback": 261
+          }
+        },
+        "national_highways": {
+          "Normal Saturday": {
+            "matched_edges": 19524,
+            "trunk_edges": 37579,
+            "matched_length_km": 6146.645,
+            "median_match_distance_m": 9.749749519767573,
+            "p95_match_distance_m": 78.88171611329037,
+            "candidate_speed_count": {
+              "1": 6291,
+              "2": 11384,
+              "3": 840,
+              "4": 972,
+              "5": 17,
+              "6": 17,
+              "7": 2,
+              "8": 1
+            }
+          },
+          "Normal Sunday": {
+            "matched_edges": 19524,
+            "trunk_edges": 37579,
+            "matched_length_km": 6146.645,
+            "median_match_distance_m": 9.749749519767573,
+            "p95_match_distance_m": 78.88171611329037,
+            "candidate_speed_count": {
+              "1": 6291,
+              "2": 11384,
+              "3": 840,
+              "4": 972,
+              "5": 17,
+              "6": 17,
+              "7": 2,
+              "8": 1
+            }
+          },
+          "weekend_combined": {
+            "matched_edges": 19524,
+            "method": "Mean link traversal time across Normal Saturday and Normal Sunday where available; one observed weekend day is used if only one matches."
+          },
+          "PM Peak": {
+            "matched_edges": 19524,
+            "trunk_edges": 37579,
+            "matched_length_km": 6146.645,
+            "median_match_distance_m": 9.749749519767573,
+            "p95_match_distance_m": 78.88171611329037,
+            "candidate_speed_count": {
+              "1": 6291,
+              "2": 11384,
+              "3": 840,
+              "4": 972,
+              "5": 17,
+              "6": 17,
+              "7": 2,
+              "8": 1
+            }
+          }
+        },
+        "targets": {
+          "york": {
+            "label": "York",
+            "lat": 53.9591,
+            "lon": -1.0815,
+            "bng": [
+              460364.8828924767,
+              451836.22681512486
+            ],
+            "node": 877585,
+            "snap_m": 7.31264562709766,
+            "weekend": {
+              "settled_nodes": 3312410,
+              "dijkstra_seconds": 14.410529510998458
+            },
+            "peak": {
+              "settled_nodes": 3312410,
+              "dijkstra_seconds": 14.610991230001673
+            }
+          },
+          "cambridge": {
+            "label": "Cambridge",
+            "lat": 52.2053,
+            "lon": 0.1218,
+            "bng": [
+              545088.4082591818,
+              258462.95550660958
+            ],
+            "node": 2787431,
+            "snap_m": 3.4085495906500274,
+            "weekend": {
+              "settled_nodes": 3312410,
+              "dijkstra_seconds": 17.186040098000376
+            },
+            "peak": {
+              "settled_nodes": 3312410,
+              "dijkstra_seconds": 22.371616712000105
+            }
+          }
+        },
+        "scenario": "weekend: mean Normal Saturday/Sunday SRN traversal time"
+      },
+      "valid_cell_count": 219881,
+      "palette": [
+        "#1a9850",
+        "#91cf60",
+        "#d9ef8b",
+        "#fee08b",
+        "#fc8d59",
+        "#d73027"
+      ],
+      "levels": [
+        {
+          "level": 0,
+          "width": 900,
+          "height": 1450,
+          "cell_size_m": 1000,
+          "value_offset": 0,
+          "value_count": 1305000
+        },
+        {
+          "level": 1,
+          "width": 450,
+          "height": 725,
+          "cell_size_m": 2000,
+          "value_offset": 1305000,
+          "value_count": 326250
+        },
+        {
+          "level": 2,
+          "width": 225,
+          "height": 363,
+          "cell_size_m": 4000,
+          "value_offset": 1631250,
+          "value_count": 81675
+        },
+        {
+          "level": 3,
+          "width": 113,
+          "height": 182,
+          "cell_size_m": 8000,
+          "value_offset": 1712925,
+          "value_count": 20566
+        },
+        {
+          "level": 4,
+          "width": 57,
+          "height": 91,
+          "cell_size_m": 16000,
+          "value_offset": 1733491,
+          "value_count": 5187
+        },
+        {
+          "level": 5,
+          "width": 29,
+          "height": 46,
+          "cell_size_m": 32000,
+          "value_offset": 1738678,
+          "value_count": 1334
+        },
+        {
+          "level": 6,
+          "width": 15,
+          "height": 23,
+          "cell_size_m": 64000,
+          "value_offset": 1740012,
+          "value_count": 345
+        },
+        {
+          "level": 7,
+          "width": 8,
+          "height": 12,
+          "cell_size_m": 128000,
+          "value_offset": 1740357,
+          "value_count": 96
+        },
+        {
+          "level": 8,
+          "width": 4,
+          "height": 6,
+          "cell_size_m": 256000,
+          "value_offset": 1740453,
+          "value_count": 24
+        },
+        {
+          "level": 9,
+          "width": 2,
+          "height": 3,
+          "cell_size_m": 512000,
+          "value_offset": 1740477,
+          "value_count": 6
+        },
+        {
+          "level": 10,
+          "width": 1,
+          "height": 2,
+          "cell_size_m": 1024000,
+          "value_offset": 1740483,
+          "value_count": 2
+        },
+        {
+          "level": 11,
+          "width": 1,
+          "height": 1,
+          "cell_size_m": 2048000,
+          "value_offset": 1740485,
+          "value_count": 1
+        }
+      ],
+      "blob_file": "travel_cambridge_weekend.u16.gz",
+      "blob_encoding": "gzip+uint16le",
+      "raw_bytes": 3480972,
+      "compressed_bytes": 285597,
+      "sha256_raw": "a356875bfb1659ec525253cc3848bda416ca2120e42998689d06e105fe39bb4d",
+      "display_range": {
+        "min": 0.0,
+        "max": 360.0
+      }
+    },
+    {
+      "id": "travel_cambridge_peak",
+      "category_id": "travel",
+      "label": "Cambridge \u2014 weekday PM peak",
+      "units": "min",
+      "period": "OS Open Roads 2026-04; DfT local A-road data through March 2026; National Highways Apr 2024 - Mar 2025",
+      "definition": "Modelled weekday evening-peak driving time in minutes from the nearest OS Open Roads graph node to each canonical 1 km cell centre to Cambridge. England Strategic Road Network links use National Highways PM Peak historic observations. Local A-road observed annual speeds are adjusted by the latest DfT country-level weekday-evening-peak/all-day speed ratio; unmatched local A roads use correspondingly adjusted DfT urban/rural speeds. Other road classes retain the transparent Goldilocks function/form fallbacks. This is a representative historic peak estimate, not live traffic and not turn-by-turn navigation.",
+      "source_id": "goldilocks-travel-time-model",
+      "source_variable": "driving_time_to_cambridge_weekday_pm_peak",
+      "scale": 1.0,
+      "offset": 0.0,
+      "decimals": 0,
+      "nodata": 65535,
+      "encoded_min": 1,
+      "encoded_max": 773,
+      "summary": {
+        "min": 1.0,
+        "max": 773.0
+      },
+      "coverage": {
+        "routing_topology": "OS Open Roads GB generalised link/node network",
+        "cell_snap": {
+          "canonical_valid_cells": 245069,
+          "max_source_snap_m": 20000.0,
+          "source_covered_cells": 230166,
+          "excluded_cells": 14903,
+          "median_nearest_node_m": 315.20697021484375,
+          "p95_nearest_node_m": 2301.22119140625,
+          "p99_nearest_node_m": 4441.0576171875,
+          "max_nearest_node_m": 15812.4013671875,
+          "coverage_rule": "A canonical cell is covered only when its centre is within 20 km of an OS Open Roads graph node. The threshold follows the clean observed gap between GB road-covered cells (<10 km in this build) and cells outside the GB-only source network (>20 km, principally Northern Ireland).",
+          "access_penalty": "none; the nearest graph-node travel time is assigned to the 1 km cell centre"
+        },
+        "local_a_cost_model": {
+          "road_level": "DfT 2025 flow-weighted average speed by local authority and road number, used directly where available",
+          "fallback": "latest DfT rolling country urban/rural A-road speeds with OS Open Built Up Areas",
+          "weekday_peak_adjustment": "country rolling-year weekday evening-peak/all-day speed ratio",
+          "counts": {
+            "road_level_observed": 176530,
+            "country_context_fallback": 84642,
+            "unlocated_fallback": 261
+          }
+        },
+        "national_highways": {
+          "Normal Saturday": {
+            "matched_edges": 19524,
+            "trunk_edges": 37579,
+            "matched_length_km": 6146.645,
+            "median_match_distance_m": 9.749749519767573,
+            "p95_match_distance_m": 78.88171611329037,
+            "candidate_speed_count": {
+              "1": 6291,
+              "2": 11384,
+              "3": 840,
+              "4": 972,
+              "5": 17,
+              "6": 17,
+              "7": 2,
+              "8": 1
+            }
+          },
+          "Normal Sunday": {
+            "matched_edges": 19524,
+            "trunk_edges": 37579,
+            "matched_length_km": 6146.645,
+            "median_match_distance_m": 9.749749519767573,
+            "p95_match_distance_m": 78.88171611329037,
+            "candidate_speed_count": {
+              "1": 6291,
+              "2": 11384,
+              "3": 840,
+              "4": 972,
+              "5": 17,
+              "6": 17,
+              "7": 2,
+              "8": 1
+            }
+          },
+          "weekend_combined": {
+            "matched_edges": 19524,
+            "method": "Mean link traversal time across Normal Saturday and Normal Sunday where available; one observed weekend day is used if only one matches."
+          },
+          "PM Peak": {
+            "matched_edges": 19524,
+            "trunk_edges": 37579,
+            "matched_length_km": 6146.645,
+            "median_match_distance_m": 9.749749519767573,
+            "p95_match_distance_m": 78.88171611329037,
+            "candidate_speed_count": {
+              "1": 6291,
+              "2": 11384,
+              "3": 840,
+              "4": 972,
+              "5": 17,
+              "6": 17,
+              "7": 2,
+              "8": 1
+            }
+          }
+        },
+        "targets": {
+          "york": {
+            "label": "York",
+            "lat": 53.9591,
+            "lon": -1.0815,
+            "bng": [
+              460364.8828924767,
+              451836.22681512486
+            ],
+            "node": 877585,
+            "snap_m": 7.31264562709766,
+            "weekend": {
+              "settled_nodes": 3312410,
+              "dijkstra_seconds": 14.410529510998458
+            },
+            "peak": {
+              "settled_nodes": 3312410,
+              "dijkstra_seconds": 14.610991230001673
+            }
+          },
+          "cambridge": {
+            "label": "Cambridge",
+            "lat": 52.2053,
+            "lon": 0.1218,
+            "bng": [
+              545088.4082591818,
+              258462.95550660958
+            ],
+            "node": 2787431,
+            "snap_m": 3.4085495906500274,
+            "weekend": {
+              "settled_nodes": 3312410,
+              "dijkstra_seconds": 17.186040098000376
+            },
+            "peak": {
+              "settled_nodes": 3312410,
+              "dijkstra_seconds": 22.371616712000105
+            }
+          }
+        },
+        "scenario": "weekday PM peak"
+      },
+      "valid_cell_count": 219881,
+      "palette": [
+        "#1a9850",
+        "#91cf60",
+        "#d9ef8b",
+        "#fee08b",
+        "#fc8d59",
+        "#d73027"
+      ],
+      "levels": [
+        {
+          "level": 0,
+          "width": 900,
+          "height": 1450,
+          "cell_size_m": 1000,
+          "value_offset": 0,
+          "value_count": 1305000
+        },
+        {
+          "level": 1,
+          "width": 450,
+          "height": 725,
+          "cell_size_m": 2000,
+          "value_offset": 1305000,
+          "value_count": 326250
+        },
+        {
+          "level": 2,
+          "width": 225,
+          "height": 363,
+          "cell_size_m": 4000,
+          "value_offset": 1631250,
+          "value_count": 81675
+        },
+        {
+          "level": 3,
+          "width": 113,
+          "height": 182,
+          "cell_size_m": 8000,
+          "value_offset": 1712925,
+          "value_count": 20566
+        },
+        {
+          "level": 4,
+          "width": 57,
+          "height": 91,
+          "cell_size_m": 16000,
+          "value_offset": 1733491,
+          "value_count": 5187
+        },
+        {
+          "level": 5,
+          "width": 29,
+          "height": 46,
+          "cell_size_m": 32000,
+          "value_offset": 1738678,
+          "value_count": 1334
+        },
+        {
+          "level": 6,
+          "width": 15,
+          "height": 23,
+          "cell_size_m": 64000,
+          "value_offset": 1740012,
+          "value_count": 345
+        },
+        {
+          "level": 7,
+          "width": 8,
+          "height": 12,
+          "cell_size_m": 128000,
+          "value_offset": 1740357,
+          "value_count": 96
+        },
+        {
+          "level": 8,
+          "width": 4,
+          "height": 6,
+          "cell_size_m": 256000,
+          "value_offset": 1740453,
+          "value_count": 24
+        },
+        {
+          "level": 9,
+          "width": 2,
+          "height": 3,
+          "cell_size_m": 512000,
+          "value_offset": 1740477,
+          "value_count": 6
+        },
+        {
+          "level": 10,
+          "width": 1,
+          "height": 2,
+          "cell_size_m": 1024000,
+          "value_offset": 1740483,
+          "value_count": 2
+        },
+        {
+          "level": 11,
+          "width": 1,
+          "height": 1,
+          "cell_size_m": 2048000,
+          "value_offset": 1740485,
+          "value_count": 1
+        }
+      ],
+      "blob_file": "travel_cambridge_peak.u16.gz",
+      "blob_encoding": "gzip+uint16le",
+      "raw_bytes": 3480972,
+      "compressed_bytes": 287290,
+      "sha256_raw": "931a183771cd12c24b567b1cb721bb38642bd20be6b85786ec1ea9313baf6ff9",
+      "display_range": {
+        "min": 0.0,
+        "max": 360.0
       }
     }
   ],
@@ -4382,7 +5463,7 @@
       "homepage_url": "https://uk-air.defra.gov.uk/data/pcm-data",
       "licence_name": "Open Government Licence v3.0",
       "licence_url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
-      "attribution": "Source: Department for Environment, Food and Rural Affairs (Defra) via uk-air.defra.gov.uk, licensed under the Open Government Licence v3.0.",
+      "attribution": "\u00a9 Crown 2026 copyright Defra via uk-air.defra.gov.uk, licenced under the Open Government Licence (OGL).",
       "derived_product_notice": "Goldilocks Map Pollution metrics are 2022\u20132024 arithmetic means derived from annual Defra PCM grids; they are not official Defra products.",
       "note": "PCM values are modelled background concentrations/metrics rather than measurements at each grid-cell centre. Defra updates PCM modelling methods over time, so annual grids should not be treated as a perfectly homogeneous observational time series.",
       "releases": [
@@ -4603,6 +5684,281 @@
           }
         ]
       }
+    },
+    "goldilocks-travel-time-model": {
+      "provider": "Goldilocks Map model using Ordnance Survey, Department for Transport, National Highways and ONS",
+      "dataset": "Derived GB driving-time model",
+      "resolution": "Road-network routing sampled to the canonical Goldilocks 1 km grid",
+      "homepage_url": "https://www.ordnancesurvey.co.uk/products/os-open-roads",
+      "licence_name": "Open Government Licence v3.0",
+      "licence_url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+      "attribution": "Contains OS data \u00a9 Crown copyright and database right 2026. Department for Transport and National Highways data licensed under the Open Government Licence v3.0. Source: Office for National Statistics licensed under the Open Government Licence v.3.0. Contains OS data \u00a9 Crown copyright and database right 2025.",
+      "derived_product_notice": "Goldilocks travel times are modelled estimates produced by this project. They are not routes or travel-time products published by Ordnance Survey, DfT, National Highways, ONS or Google.",
+      "note": "The routing topology is the generalised OS Open Roads GB network and does not include every navigation restriction, turn restriction or ferry connection. England SRN traversal costs use observed National Highways historic speeds. Local A-road costs use DfT road-by-local-authority observed speeds where available; unmatched local A roads use DfT country urban/rural observations with OS Open Built Up Areas. Other road classes use transparent function/form fallbacks. Canonical cells are snapped to their nearest Open Roads graph node without an additional driveway/access-time penalty. Cells more than 20 km from the GB-only Open Roads graph (principally Northern Ireland) and cells whose road component cannot reach the destination are nodata.",
+      "releases": [
+        {
+          "label": "OS Open Roads 2026-04",
+          "status": "published",
+          "url": "https://www.ordnancesurvey.co.uk/products/os-open-roads"
+        },
+        {
+          "label": "OS Open Built Up Areas 2026-04",
+          "status": "published",
+          "url": "https://www.ordnancesurvey.co.uk/products/os-open-built-up-areas"
+        },
+        {
+          "label": "DfT CGN local A-road tables, 6 August 2026 update",
+          "status": "published",
+          "url": "https://www.gov.uk/government/statistical-data-sets/average-speed-delay-and-reliability-of-travel-times-cgn"
+        },
+        {
+          "label": "National Highways TTRT Apr 2024 - Mar 2025",
+          "status": "published",
+          "url": "https://nationalhighways.co.uk/roads-and-travel/road-projects/travel-time-reporting-tool/"
+        },
+        {
+          "label": "ONS LAD December 2025",
+          "status": "published",
+          "url": "https://geoportal.statistics.gov.uk/"
+        }
+      ],
+      "source_files": {
+        "os_open_roads": {
+          "product_id": "OpenRoads",
+          "version": "2026-04",
+          "file": "OpenRoads/2026-04/oproad_essh_gb.zip",
+          "file_name": "oproad_essh_gb.zip",
+          "bytes": 606145264,
+          "md5": "8c6e66a255f79e3e31845307cefee298",
+          "download_url": "https://api.os.uk/downloads/v1/products/OpenRoads/downloads?area=GB&format=ESRI%C2%AE+Shapefile&redirect",
+          "product_url": "https://www.ordnancesurvey.co.uk/products/os-open-roads",
+          "documentation_url": "https://docs.os.uk/os-downloads/products/transport-network-portfolio/os-open-roads/os-open-roads-overview"
+        },
+        "os_open_built_up_areas": {
+          "product_id": "BuiltUpAreas",
+          "version": "2026-04",
+          "file": "BuiltUpAreas/2026-04/OS_Open_Built_Up_Areas_GeoPackage.zip",
+          "file_name": "OS_Open_Built_Up_Areas_GeoPackage.zip",
+          "bytes": 43627925,
+          "md5": "d3620702aa841625b3b557c676e295a5",
+          "download_url": "https://api.os.uk/downloads/v1/products/BuiltUpAreas/downloads?area=GB&format=GeoPackage&redirect",
+          "product_url": "https://www.ordnancesurvey.co.uk/products/os-open-built-up-areas",
+          "documentation_url": "https://docs.os.uk/os-downloads/products/areas-and-zones-portfolio/os-open-built-up-areas"
+        },
+        "dft_local_a": {
+          "england": {
+            "file": "dft-local-a/cgn0503.ods",
+            "url": "https://assets.publishing.service.gov.uk/media/6a5df5359e2827ee5f6d0892/cgn0503.ods",
+            "sha256": "128b7a5329589af2047856362e83cc7c2ddf03f1fde30491387b1971266ae6a5",
+            "bytes": 172712
+          },
+          "scotland": {
+            "file": "dft-local-a/cgn0507.ods",
+            "url": "https://assets.publishing.service.gov.uk/media/6a72ecbd8a340ed57ba476fc/cgn0507.ods",
+            "sha256": "ef3311967d90b901003dfa754b156ca4a6c075367ae7cb3bb307a41307f18260",
+            "bytes": 19789
+          },
+          "wales": {
+            "file": "dft-local-a/cgn0509.ods",
+            "url": "https://assets.publishing.service.gov.uk/media/6a72ecd1011ff6453dece522/cgn0509.ods",
+            "sha256": "a0cf07807c58b8cee5d1950e2fc76a86c2fafcd12d3b3775e80d1ac7d695df33",
+            "bytes": 15808
+          }
+        },
+        "ons_lad": {
+          "release": "December 2025",
+          "dataset": "Local Authority Districts (December 2025) Boundaries UK BGC",
+          "file": "ons-lad/lad_dec_2025_uk_bgc.geojson",
+          "url": "https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/Local_Authority_Districts_DEC_2025_Boundaries_UK_BGC/FeatureServer/0/query?where=1%3D1&outFields=LAD25CD%2CLAD25NM&returnGeometry=true&outSR=27700&f=geojson",
+          "homepage": "https://geoportal.statistics.gov.uk/",
+          "sha256": "d45df00d10dab5f9f6ecab6314e62ec80908d6ad2adb6ee16bf8d645658ca496",
+          "bytes": 14287579
+        },
+        "national_highways": [
+          {
+            "aggregation": "Annual",
+            "file": "national-highways/2024-25/annual.json",
+            "feature_count": 7210,
+            "sha256": "24583ee9f55cfb61111e0b57ebe8a2744fe0fb3287e2f45aa35dd21fb2344da1",
+            "bytes": 9543084
+          },
+          {
+            "aggregation": "Normal Saturday",
+            "file": "national-highways/2024-25/normal_saturday.json",
+            "feature_count": 7210,
+            "sha256": "ba27351fa7f0b4790df5ae8e3f735cd0dbb9940131704ea755d83c3e530bfbc0",
+            "bytes": 8925957
+          },
+          {
+            "aggregation": "Normal Sunday",
+            "file": "national-highways/2024-25/normal_sunday.json",
+            "feature_count": 7210,
+            "sha256": "9212e6a8bb9a05ae7a203aca1202c42e438428371b90da40f6354c289fe9f376",
+            "bytes": 9542643
+          },
+          {
+            "aggregation": "PM Peak",
+            "file": "national-highways/2024-25/pm_peak.json",
+            "feature_count": 7210,
+            "sha256": "dcf093c879f01411694dfa4a98169f9f9fce20e053e4a5b5db1aef820406792f",
+            "bytes": 8926301
+          }
+        ]
+      },
+      "model_stats": {
+        "dft": {
+          "E": {
+            "road_level_records": 2291,
+            "context_row": "2026-03-01T00:00:00",
+            "all_day_mph": 24.3,
+            "urban_mph": 17.4,
+            "rural_mph": 34.4,
+            "weekday_evening_peak_mph": 21.8,
+            "peak_ratio": 0.897119341563786
+          },
+          "S": {
+            "road_level_records": 366,
+            "context_row": "2026-03-01T00:00:00",
+            "all_day_mph": 26.5,
+            "urban_mph": 19.4,
+            "rural_mph": 36.6,
+            "weekday_evening_peak_mph": 24.7,
+            "peak_ratio": 0.9320754716981132
+          },
+          "W": {
+            "road_level_records": 187,
+            "context_row": "2026-03-01T00:00:00",
+            "all_day_mph": 26.7,
+            "urban_mph": 19.6,
+            "rural_mph": 31.7,
+            "weekday_evening_peak_mph": 24.9,
+            "peak_ratio": 0.9325842696629213
+          }
+        },
+        "open_roads_nodes": 3346499,
+        "open_roads_links": 3942748,
+        "trunk_links": 37579,
+        "local_a_cost_counts": {
+          "road_level_observed": 176530,
+          "country_context_fallback": 84642,
+          "unlocated_fallback": 261
+        },
+        "cell_snap": {
+          "canonical_valid_cells": 245069,
+          "max_source_snap_m": 20000.0,
+          "source_covered_cells": 230166,
+          "excluded_cells": 14903,
+          "median_nearest_node_m": 315.20697021484375,
+          "p95_nearest_node_m": 2301.22119140625,
+          "p99_nearest_node_m": 4441.0576171875,
+          "max_nearest_node_m": 15812.4013671875,
+          "coverage_rule": "A canonical cell is covered only when its centre is within 20 km of an OS Open Roads graph node. The threshold follows the clean observed gap between GB road-covered cells (<10 km in this build) and cells outside the GB-only source network (>20 km, principally Northern Ireland).",
+          "access_penalty": "none; the nearest graph-node travel time is assigned to the 1 km cell centre"
+        },
+        "targets": {
+          "york": {
+            "label": "York",
+            "lat": 53.9591,
+            "lon": -1.0815,
+            "bng": [
+              460364.8828924767,
+              451836.22681512486
+            ],
+            "node": 877585,
+            "snap_m": 7.31264562709766,
+            "weekend": {
+              "settled_nodes": 3312410,
+              "dijkstra_seconds": 14.410529510998458
+            },
+            "peak": {
+              "settled_nodes": 3312410,
+              "dijkstra_seconds": 14.610991230001673
+            }
+          },
+          "cambridge": {
+            "label": "Cambridge",
+            "lat": 52.2053,
+            "lon": 0.1218,
+            "bng": [
+              545088.4082591818,
+              258462.95550660958
+            ],
+            "node": 2787431,
+            "snap_m": 3.4085495906500274,
+            "weekend": {
+              "settled_nodes": 3312410,
+              "dijkstra_seconds": 17.186040098000376
+            },
+            "peak": {
+              "settled_nodes": 3312410,
+              "dijkstra_seconds": 22.371616712000105
+            }
+          }
+        },
+        "national_highways": {
+          "Normal Saturday": {
+            "matched_edges": 19524,
+            "trunk_edges": 37579,
+            "matched_length_km": 6146.645,
+            "median_match_distance_m": 9.749749519767573,
+            "p95_match_distance_m": 78.88171611329037,
+            "candidate_speed_count": {
+              "1": 6291,
+              "2": 11384,
+              "3": 840,
+              "4": 972,
+              "5": 17,
+              "6": 17,
+              "7": 2,
+              "8": 1
+            }
+          },
+          "Normal Sunday": {
+            "matched_edges": 19524,
+            "trunk_edges": 37579,
+            "matched_length_km": 6146.645,
+            "median_match_distance_m": 9.749749519767573,
+            "p95_match_distance_m": 78.88171611329037,
+            "candidate_speed_count": {
+              "1": 6291,
+              "2": 11384,
+              "3": 840,
+              "4": 972,
+              "5": 17,
+              "6": 17,
+              "7": 2,
+              "8": 1
+            }
+          },
+          "weekend_combined": {
+            "matched_edges": 19524,
+            "method": "Mean link traversal time across Normal Saturday and Normal Sunday where available; one observed weekend day is used if only one matches."
+          },
+          "PM Peak": {
+            "matched_edges": 19524,
+            "trunk_edges": 37579,
+            "matched_length_km": 6146.645,
+            "median_match_distance_m": 9.749749519767573,
+            "p95_match_distance_m": 78.88171611329037,
+            "candidate_speed_count": {
+              "1": 6291,
+              "2": 11384,
+              "3": 840,
+              "4": 972,
+              "5": 17,
+              "6": 17,
+              "7": 2,
+              "8": 1
+            }
+          }
+        },
+        "reachable_cell_counts": [
+          219881,
+          219881,
+          219881,
+          219881
+        ]
+      }
     }
   },
   "data_pruning": [
@@ -4697,7 +6053,7 @@
     {
       "dataset_id": "pollution",
       "manifest": "data/derived/pollution-metrics/manifest.json",
-      "generated_at_unix": 1788623647
+      "generated_at_unix": 1788703912
     },
     {
       "dataset_id": "terrain",
@@ -4708,6 +6064,11 @@
       "dataset_id": "woodland",
       "manifest": "data/derived/woodland-metrics/manifest.json",
       "generated_at_unix": 1788630604
+    },
+    {
+      "dataset_id": "travel",
+      "manifest": "data/derived/travel-metrics/manifest.json",
+      "generated_at_unix": 1788702895
     }
   ]
 }

@@ -1,0 +1,65 @@
+name,query,region,lat,lon
+Carlisle,"Carlisle, Cumbria, UK",Cumbria,54.8948478,-2.9362311
+Penrith,"Penrith, Cumbria, UK",Cumbria,54.6861365,-2.7569152
+Keswick,"Keswick, Cumbria, UK",Cumbria,54.6009812,-3.1375822
+Cockermouth,"Cockermouth, Cumbria, UK",Cumbria,54.6636532,-3.3657782
+Workington,"Workington, Cumbria, UK",Cumbria,54.6433800,-3.5453529
+Whitehaven,"Whitehaven, Cumbria, UK",Cumbria,54.5474199,-3.5885335
+Kendal,"Kendal, Cumbria, UK",Cumbria,54.3289795,-2.7471830
+Windermere,"Windermere, Cumbria, UK",Cumbria,54.3794828,-2.9061994
+Barnard Castle,"Barnard Castle, County Durham, UK",Pennines-Durham,54.5448091,-1.9246420
+Stanhope,"Stanhope, County Durham, UK",Pennines-Durham,54.7475698,-2.0067955
+Bishop Auckland,"Bishop Auckland, County Durham, UK",Pennines-Durham,54.6640762,-1.6752864
+Darlington,"Darlington, UK",Pennines-Durham,54.5242081,-1.5555812
+Durham,"Durham, UK",Pennines-Durham,54.7770139,-1.5756205
+Richmond,"Richmond, North Yorkshire, UK",Pennines-Durham,54.4030680,-1.7374542
+Reeth,"Reeth, North Yorkshire, UK",Pennines-Durham,54.3892681,-1.9421430
+Hawes,"Hawes, North Yorkshire, UK",Pennines-Durham,54.3041258,-2.1965261
+Leyburn,"Leyburn, North Yorkshire, UK",North-Yorkshire,54.3098083,-1.8295708
+Northallerton,"Northallerton, North Yorkshire, UK",North-Yorkshire,54.3404812,-1.4344936
+Thirsk,"Thirsk, North Yorkshire, UK",North-Yorkshire,54.2327725,-1.3423775
+Ripon,"Ripon, North Yorkshire, UK",North-Yorkshire,54.1362169,-1.5238006
+Harrogate,"Harrogate, North Yorkshire, UK",North-Yorkshire,53.9921491,-1.5391039
+Skipton,"Skipton, North Yorkshire, UK",North-Yorkshire,53.9618497,-2.0160287
+Settle,"Settle, North Yorkshire, UK",North-Yorkshire,54.0690631,-2.2763604
+Grassington,"Grassington, North Yorkshire, UK",North-Yorkshire,54.0722223,-1.9975016
+Helmsley,"Helmsley, North Yorkshire, UK",NY-Moors-Coast,54.2461720,-1.0612597
+Pickering,"Pickering, North Yorkshire, UK",NY-Moors-Coast,54.2456591,-0.7765631
+Malton,"Malton, North Yorkshire, UK",NY-Moors-Coast,54.1392092,-0.7995310
+Scarborough,"Scarborough, North Yorkshire, UK",NY-Moors-Coast,54.2820009,-0.4011868
+Whitby,"Whitby, North Yorkshire, UK",NY-Moors-Coast,54.4866526,-0.6135315
+Filey,"Filey, North Yorkshire, UK",NY-Moors-Coast,54.2096884,-0.2888382
+Bridlington,"Bridlington, East Riding of Yorkshire, UK",NY-Moors-Coast,54.0822420,-0.1908647
+Driffield,"Driffield, East Riding of Yorkshire, UK",NY-Moors-Coast,54.0050199,-0.4391090
+Newcastle,"Newcastle upon Tyne, UK",Northumberland-Tyne,54.9738474,-1.6131572
+Morpeth,"Morpeth, Northumberland, UK",Northumberland-Tyne,55.1675437,-1.6907444
+Rothbury,"Rothbury, Northumberland, UK",Northumberland-Tyne,55.3096320,-1.9117293
+Alnwick,"Alnwick, Northumberland, UK",Northumberland-Tyne,55.4133398,-1.7072354
+Wooler,"Wooler, Northumberland, UK",Northumberland-Tyne,55.5458505,-2.0147556
+Berwick-upon-Tweed,"Berwick-upon-Tweed, Northumberland, UK",Northumberland-Tyne,55.7692442,-2.0026472
+Haltwhistle,"Haltwhistle, Northumberland, UK",Northumberland-Tyne,54.9705304,-2.4582171
+Corbridge,"Corbridge, Northumberland, UK",Northumberland-Tyne,54.9740218,-2.0175509
+Lancaster,"Lancaster, Lancashire, UK",Lancashire-West,54.0488219,-2.8013499
+Clitheroe,"Clitheroe, Lancashire, UK",Lancashire-West,53.8717465,-2.3926783
+Burnley,"Burnley, Lancashire, UK",Lancashire-West,53.7907262,-2.2439196
+Kirkby Lonsdale,"Kirkby Lonsdale, Cumbria, UK",Lancashire-West,54.2018452,-2.5967366
+Ingleton,"Ingleton, North Yorkshire, UK",Lancashire-West,54.1539026,-2.4679284
+Carnforth,"Carnforth, Lancashire, UK",Lancashire-West,54.1282092,-2.7701207
+Garstang,"Garstang, Lancashire, UK",Lancashire-West,53.9015756,-2.7734763
+Preston,"Preston, Lancashire, UK",Lancashire-West,53.7593363,-2.6992717
+Hawick,"Hawick, Scottish Borders, UK",Scottish-Borders,55.4225640,-2.7866951
+Jedburgh,"Jedburgh, Scottish Borders, UK",Scottish-Borders,55.4776435,-2.5553768
+Kelso,"Kelso, Scottish Borders, UK",Scottish-Borders,55.5983788,-2.4338366
+Melrose,"Melrose, Scottish Borders, UK",Scottish-Borders,55.5975944,-2.7199682
+Galashiels,"Galashiels, Scottish Borders, UK",Scottish-Borders,55.6156505,-2.8061618
+Selkirk,"Selkirk, Scottish Borders, UK",Scottish-Borders,55.5470714,-2.8415411
+Peebles,"Peebles, Scottish Borders, UK",Scottish-Borders,55.6517553,-3.1885456
+Eyemouth,"Eyemouth, Scottish Borders, UK",Scottish-Borders,55.8722469,-2.0893924
+Dumfries,"Dumfries, Dumfries and Galloway, UK",Southwest-Scotland,55.0691831,-3.6106856
+Moffat,"Moffat, Dumfries and Galloway, UK",Southwest-Scotland,55.3332407,-3.4443570
+Lockerbie,"Lockerbie, Dumfries and Galloway, UK",Southwest-Scotland,55.1218578,-3.3552370
+Langholm,"Langholm, Dumfries and Galloway, UK",Southwest-Scotland,55.1505895,-2.9983313
+Annan,"Annan, Dumfries and Galloway, UK",Southwest-Scotland,54.9873333,-3.2620207
+Gretna,"Gretna, Dumfries and Galloway, UK",Southwest-Scotland,54.9953097,-3.0669404
+Biggar,"Biggar, South Lanarkshire, UK",Southwest-Scotland,55.6244917,-3.5215795
+Lanark,"Lanark, South Lanarkshire, UK",Southwest-Scotland,55.6736271,-3.7780361
