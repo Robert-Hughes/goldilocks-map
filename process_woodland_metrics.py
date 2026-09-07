@@ -31,20 +31,25 @@ WALES_FILE = "ancient_wales.gpkg"
 SCOTLAND_FILE = "ancient_scotland.gpkg.zip"
 ONS_LAD_FILE = "ons_lad_dec_2025_bgc.shp.zip"
 
-CURRENT_WOODLAND_CLASSES = {
-    "Assumed woodland",
+ESTABLISHED_WOODLAND_CLASSES = {
     "Broadleaved",
     "Conifer",
     "Coppice",
     "Coppice with standards",
-    "Low density",
     "Mixed mainly broadleaved",
     "Mixed mainly conifer",
+}
+EXCLUDED_WOODLAND_CLASSES = {
+    "Assumed woodland",
+    "Failed",
+    "Felled",
+    "Ground prep",
+    "Low density",
     "Shrub",
+    "Windblow",
     "Young trees",
 }
-EXCLUDED_WOODLAND_CLASSES = {"Failed", "Felled", "Ground prep", "Windblow"}
-EXPECTED_NFI_WOODLAND_CLASSES = CURRENT_WOODLAND_CLASSES | EXCLUDED_WOODLAND_CLASSES
+EXPECTED_NFI_WOODLAND_CLASSES = ESTABLISHED_WOODLAND_CLASSES | EXCLUDED_WOODLAND_CLASSES
 SCOTLAND_ANCIENT_CODES = {"1a", "2a"}
 
 
@@ -234,7 +239,7 @@ def validate_area_grid(name: str, area_grid: np.ndarray, gb_mask: np.ndarray) ->
     np.minimum(area_grid, CELL_AREA_M2, out=area_grid)
 
 
-def derive_current_woodland(grid, gb_mask: np.ndarray) -> tuple[np.ndarray, dict]:
+def derive_established_woodland(grid, gb_mask: np.ndarray) -> tuple[np.ndarray, dict]:
     path = source_path(NFI_FILE)
     uri = zip_uri(path)
     layer = fiona.listlayers(uri)[0]
@@ -254,7 +259,7 @@ def derive_current_woodland(grid, gb_mask: np.ndarray) -> tuple[np.ndarray, dict
                 continue
             forest_type = props.get("IFT_IOA")
             classes[str(forest_type)] += 1
-            if forest_type not in CURRENT_WOODLAND_CLASSES:
+            if forest_type not in ESTABLISHED_WOODLAND_CLASSES:
                 continue
             geom = checked_geometry(feature, label=f"NFI feature {props.get('FID')}")
             if geom is None:
@@ -263,18 +268,18 @@ def derive_current_woodland(grid, gb_mask: np.ndarray) -> tuple[np.ndarray, dict
             source_area += float(geom.area)
             raster_area += add_geometry_area(area_grid, geom, grid, gb_mask)
             if included_features % 100000 == 0:
-                print(f"NFI current woodland: {included_features:,} included polygons", flush=True)
+                print(f"NFI established woodland: {included_features:,} included polygons", flush=True)
 
     unknown = set(classes) - EXPECTED_NFI_WOODLAND_CLASSES
     if unknown:
         raise RuntimeError(f"NFI contains unexpected woodland classes: {sorted(unknown)}")
-    validate_area_grid("NFI current woodland", area_grid, gb_mask)
+    validate_area_grid("NFI established woodland", area_grid, gb_mask)
     values = np.full(area_grid.shape, np.nan, dtype=np.float32)
     values[gb_mask] = (area_grid[gb_mask] / 10_000.0).astype(np.float32)
     coverage = {
         "source_features": feature_count,
         "included_features": included_features,
-        "included_ift_ioa": sorted(CURRENT_WOODLAND_CLASSES),
+        "included_ift_ioa": sorted(ESTABLISHED_WOODLAND_CLASSES),
         "excluded_ift_ioa": sorted(EXCLUDED_WOODLAND_CLASSES),
         "woodland_class_counts": dict(sorted(classes.items())),
         "source_included_area_ha": source_area / 10_000.0,
@@ -282,7 +287,7 @@ def derive_current_woodland(grid, gb_mask: np.ndarray) -> tuple[np.ndarray, dict
         "canonical_valid_cells": int(np.count_nonzero(gb_mask)),
         "method": (
             "Exact polygon intersection area divided by the full 1,000,000 m² canonical cell area. "
-            "Only NFI polygons interpreted as current wooded cover are included."
+            "Only NFI Broadleaved, Conifer, Coppice, Coppice with standards, Mixed mainly broadleaved and Mixed mainly conifer polygons are included; Assumed woodland, Young trees, Low density and Shrub are excluded along with felled/failed/preparation/windblow classes."
         ),
     }
     return values, coverage
@@ -519,7 +524,7 @@ def source_record(discovery: dict, source_id: str) -> dict:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Derive 1 km current woodland and ancient woodland cover metrics from pinned GB vector sources."
+        description="Derive 1 km established woodland and ancient woodland cover metrics from pinned GB vector sources."
     )
     parser.add_argument("--discovery", type=Path, default=DEFAULT_DISCOVERY)
     parser.add_argument("--grid-manifest", type=Path, default=default_grid_manifest())
@@ -542,27 +547,28 @@ def main() -> int:
         f"{np.count_nonzero(gb_mask):,} GB cells from Terrain 50 coverage"
     )
 
-    woodland_values, woodland_coverage = derive_current_woodland(grid, gb_mask)
+    woodland_values, woodland_coverage = derive_established_woodland(grid, gb_mask)
     ancient_values, ancient_coverage = derive_ancient_woodland(grid, gb_mask)
 
     metrics = [
         MetricResult(
             id="woodland_cover",
             category_id="woodland",
-            label="Current woodland cover",
+            label="Established woodland extent",
             units="%",
             period="NFI GB 2024",
             definition=(
-                "Percentage of the full canonical 1 km tile inside National Forest Inventory polygons representing current "
-                "woodland land. Felled, ground-preparation, failed and windblown classes are excluded. This is woodland "
-                "polygon area, not fractional tree-canopy density within each polygon."
+                "Percentage of the full canonical 1 km tile inside National Forest Inventory polygons representing established woodland. "
+                "Only Broadleaved, Conifer, Coppice, Coppice with standards, Mixed mainly broadleaved and Mixed mainly conifer are included. "
+                "Assumed woodland, Young trees, Low density and Shrub are deliberately excluded, along with felled, failed, ground-preparation and windblown classes. "
+                "This is woodland-polygon extent, not fractional tree-canopy density within each polygon."
             ),
             values=woodland_values,
             scale=0.1,
             offset=0.0,
             decimals=1,
             source_id="forestry-commission-nfi-gb-2024",
-            source_variable="NFI CATEGORY=Woodland; filtered IFT_IOA",
+            source_variable="NFI CATEGORY=Woodland; strict established-woodland IFT_IOA filter",
             coverage=woodland_coverage,
             palette=WOODLAND_PALETTE,
             display_range=(0.0, 100.0),
@@ -577,7 +583,7 @@ def main() -> int:
                 "Percentage of the full canonical 1 km tile covered by recognised ancient woodland inventory sites. England "
                 "uses revised inventory coverage in preference to legacy inventory; Wales includes ASNW, RAWS, PAWS and "
                 "AWSU; Scotland includes Ancient Woodland categories 1a and 2a only. This is inventory-site extent rather "
-                "than current canopy cover, so it is not necessarily a subset of the current woodland metric."
+                "than current canopy cover, so it is not necessarily a subset of the established woodland metric."
             ),
             values=ancient_values,
             scale=0.1,
@@ -601,13 +607,13 @@ def main() -> int:
             "licence_url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
             "attribution": "© Forestry Commission copyright. Contains Ordnance Survey data © Crown copyright and database right 2025.",
             "derived_product_notice": (
-                "Goldilocks current woodland cover is a filtered area summary derived from NFI GB 2024; "
+                "Goldilocks established woodland extent is a strict filtered area summary derived from NFI GB 2024; "
                 "it is not a Forestry Commission product."
             ),
             "note": (
-                "Goldilocks includes NFI interpreted forest types that represent current tree/shrub cover and excludes "
-                "Felled, Ground prep, Failed and Windblow. The NFI woodland map generally maps woodland of at least 0.5 ha; "
-                "Assumed woodland and Low density areas may be mapped from 0.1 ha. Northern Ireland is outside NFI GB coverage."
+                "Goldilocks includes only NFI Broadleaved, Conifer, Coppice, Coppice with standards, Mixed mainly broadleaved and Mixed mainly conifer. "
+                "It deliberately excludes Assumed woodland, Young trees, Low density and Shrub as well as Felled, Ground prep, Failed and Windblow, because the house-search requirement is established wooded land rather than planned, immature, sparse or scrub cover. "
+                "The resulting percentage is woodland-polygon extent rather than literal canopy density. Northern Ireland is outside NFI GB coverage."
             ),
             "releases": [
                 {

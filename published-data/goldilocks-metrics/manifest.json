@@ -1,7 +1,7 @@
 {
   "format_version": 3,
   "kind": "goldilocks-bundle",
-  "generated_at_unix": 1788799824,
+  "generated_at_unix": 1788801087,
   "preview_partial_sources": false,
   "grid": {
     "crs": "EPSG:27700",
@@ -2967,12 +2967,12 @@
     {
       "id": "woodland_cover",
       "category_id": "woodland",
-      "label": "Current woodland cover",
+      "label": "Established woodland extent",
       "units": "%",
       "period": "NFI GB 2024",
-      "definition": "Percentage of the full canonical 1 km tile inside National Forest Inventory polygons representing current woodland land. Felled, ground-preparation, failed and windblown classes are excluded. This is woodland polygon area, not fractional tree-canopy density within each polygon.",
+      "definition": "Percentage of the full canonical 1 km tile inside National Forest Inventory polygons representing established woodland. Only Broadleaved, Conifer, Coppice, Coppice with standards, Mixed mainly broadleaved and Mixed mainly conifer are included. Assumed woodland, Young trees, Low density and Shrub are deliberately excluded, along with felled, failed, ground-preparation and windblown classes. This is woodland-polygon extent, not fractional tree-canopy density within each polygon.",
       "source_id": "forestry-commission-nfi-gb-2024",
-      "source_variable": "NFI CATEGORY=Woodland; filtered IFT_IOA",
+      "source_variable": "NFI CATEGORY=Woodland; strict established-woodland IFT_IOA filter",
       "scale": 0.1,
       "offset": 0.0,
       "decimals": 1,
@@ -2985,24 +2985,24 @@
       },
       "coverage": {
         "source_features": 641642,
-        "included_features": 544419,
+        "included_features": 451014,
         "included_ift_ioa": [
-          "Assumed woodland",
           "Broadleaved",
           "Conifer",
           "Coppice",
           "Coppice with standards",
-          "Low density",
           "Mixed mainly broadleaved",
-          "Mixed mainly conifer",
-          "Shrub",
-          "Young trees"
+          "Mixed mainly conifer"
         ],
         "excluded_ift_ioa": [
+          "Assumed woodland",
           "Failed",
           "Felled",
           "Ground prep",
-          "Windblow"
+          "Low density",
+          "Shrub",
+          "Windblow",
+          "Young trees"
         ],
         "woodland_class_counts": {
           "Assumed woodland": 41996,
@@ -3020,10 +3020,10 @@
           "Windblow": 8125,
           "Young trees": 42610
         },
-        "source_included_area_ha": 2539151.338037509,
-        "canonical_intersection_area_ha": 2524203.6935239094,
+        "source_included_area_ha": 2089711.6650843825,
+        "canonical_intersection_area_ha": 2078022.9122194024,
         "canonical_valid_cells": 230166,
-        "method": "Exact polygon intersection area divided by the full 1,000,000 m\u00b2 canonical cell area. Only NFI polygons interpreted as current wooded cover are included."
+        "method": "Exact polygon intersection area divided by the full 1,000,000 m\u00b2 canonical cell area. Only NFI Broadleaved, Conifer, Coppice, Coppice with standards, Mixed mainly broadleaved and Mixed mainly conifer polygons are included; Assumed woodland, Young trees, Low density and Shrub are excluded along with felled/failed/preparation/windblow classes."
       },
       "valid_cell_count": 230166,
       "palette": [
@@ -3131,8 +3131,8 @@
       "blob_file": "woodland_cover.u16.gz",
       "blob_encoding": "gzip+uint16le",
       "raw_bytes": 3480972,
-      "compressed_bytes": 403879,
-      "sha256_raw": "a3a3ced12f1a6914dbb753b17ab86a21885c264fe0c54f8e554fcb31983d473a",
+      "compressed_bytes": 385870,
+      "sha256_raw": "a7db6e876dbedafc2a67587a9f6d0777a01b0d436bca848a47a8808d928b0ef8",
       "display_range": {
         "min": 0.0,
         "max": 100.0
@@ -3144,7 +3144,7 @@
       "label": "Ancient woodland cover",
       "units": "%",
       "period": "GB national ancient woodland inventories",
-      "definition": "Percentage of the full canonical 1 km tile covered by recognised ancient woodland inventory sites. England uses revised inventory coverage in preference to legacy inventory; Wales includes ASNW, RAWS, PAWS and AWSU; Scotland includes Ancient Woodland categories 1a and 2a only. This is inventory-site extent rather than current canopy cover, so it is not necessarily a subset of the current woodland metric.",
+      "definition": "Percentage of the full canonical 1 km tile covered by recognised ancient woodland inventory sites. England uses revised inventory coverage in preference to legacy inventory; Wales includes ASNW, RAWS, PAWS and AWSU; Scotland includes Ancient Woodland categories 1a and 2a only. This is inventory-site extent rather than current canopy cover, so it is not necessarily a subset of the established woodland metric.",
       "source_id": "gb-ancient-woodland-inventories",
       "source_variable": "National ancient woodland inventory polygons",
       "scale": 0.1,
@@ -6282,8 +6282,8 @@
       "licence_name": "Open Government Licence v3.0",
       "licence_url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
       "attribution": "\u00a9 Forestry Commission copyright. Contains Ordnance Survey data \u00a9 Crown copyright and database right 2025.",
-      "derived_product_notice": "Goldilocks current woodland cover is a filtered area summary derived from NFI GB 2024; it is not a Forestry Commission product.",
-      "note": "Goldilocks includes NFI interpreted forest types that represent current tree/shrub cover and excludes Felled, Ground prep, Failed and Windblow. The NFI woodland map generally maps woodland of at least 0.5 ha; Assumed woodland and Low density areas may be mapped from 0.1 ha. Northern Ireland is outside NFI GB coverage.",
+      "derived_product_notice": "Goldilocks established woodland extent is a strict filtered area summary derived from NFI GB 2024; it is not a Forestry Commission product.",
+      "note": "Goldilocks includes only NFI Broadleaved, Conifer, Coppice, Coppice with standards, Mixed mainly broadleaved and Mixed mainly conifer. It deliberately excludes Assumed woodland, Young trees, Low density and Shrub as well as Felled, Ground prep, Failed and Windblow, because the house-search requirement is established wooded land rather than planned, immature, sparse or scrub cover. The resulting percentage is woodland-polygon extent rather than literal canopy density. Northern Ireland is outside NFI GB coverage.",
       "releases": [
         {
           "label": "National Forest Inventory GB 2024",
@@ -6753,7 +6753,7 @@
     {
       "dataset_id": "woodland",
       "manifest": "data/derived/woodland-metrics/manifest.json",
-      "generated_at_unix": 1788630604
+      "generated_at_unix": 1788800998
     },
     {
       "dataset_id": "travel",

@@ -49,10 +49,10 @@ OS Terrain 50 is a bare-earth digital terrain model intended for broad-scale ter
 
 **Woodland**
 
-- `woodland_cover`: percentage of each canonical 1 km tile covered by current woodland in the Forestry Commission National Forest Inventory GB 2024;
+- `woodland_cover`: percentage of each canonical 1 km tile covered by **established woodland extent** in the Forestry Commission National Forest Inventory GB 2024;
 - `woodland_ancient_cover`: percentage covered by recognised ancient-woodland inventory sites across England, Wales and Scotland.
 
-Current woodland deliberately excludes NFI classes `Felled`, `Ground prep`, `Failed` and `Windblow`; the goal is current woodland land rather than the wider forestry land-use footprint. The percentage measures NFI woodland-polygon area, not fractional canopy density within each polygon. Ancient woodland uses revised Natural England inventory coverage in preference to the legacy inventory where available, all four current NRW 2021 categories in Wales, and NatureScot antiquity classes 1a/2a in Scotland. It measures recognised ancient-woodland site extent rather than current canopy, so it is not necessarily a subset of the current-woodland layer. Overlapping ancient-woodland polygons are geometrically unioned within each 1 km tile before area is measured. The NFI source generally maps woodland of at least 0.5 ha (with some Assumed woodland and Low density areas from 0.1 ha), so very small woods and individual tree features are not comprehensively represented. Both metrics use the full 100 ha canonical tile as the denominator, are quantised to 0.1 percentage points, and use a fixed 0–100% white-to-dark-green palette. Northern Ireland is nodata.
+The established-woodland metric uses a deliberately strict NFI filter aimed at the house-search requirement for substantial existing woods: `Broadleaved`, `Conifer`, `Coppice`, `Coppice with standards`, `Mixed mainly broadleaved` and `Mixed mainly conifer` are included. `Assumed woodland`, `Young trees`, `Low density` and `Shrub` are excluded, as are `Felled`, `Ground prep`, `Failed` and `Windblow`. The percentage measures NFI woodland-polygon extent, not fractional canopy density within each polygon. This stricter interpretation was adopted after an `Assumed woodland` polygon around the A66/Stainmore area produced 100% values over open moorland; an independent 2023 10 m LiDAR canopy dataset for the North Pennines showed near-zero canopy in those cells and strongly favoured the strict filter. See [`docs/woodland-investigation.md`](docs/woodland-investigation.md). Ancient woodland uses revised Natural England inventory coverage in preference to the legacy inventory where available, all four current NRW 2021 categories in Wales, and NatureScot antiquity classes 1a/2a in Scotland. It measures recognised ancient-woodland site extent rather than current canopy, so it is not necessarily a subset of the established-woodland layer. Overlapping ancient-woodland polygons are geometrically unioned within each 1 km tile before area is measured. Both metrics use the full 100 ha canonical tile as the denominator, are quantised to 0.1 percentage points, and use a fixed 0–100% white-to-dark-green palette. Northern Ireland is nodata.
 
 **Travel**
 
@@ -265,7 +265,8 @@ Direct `file://` opening still renders the embedded Goldilocks data layer, but i
 - `download_terrain_sources.py` — discovers, pins and MD5-verifies the OS Terrain 50 national ASCII-grid archive
 - `process_terrain_metrics.py` — derives 1 km Terrain relief from the 50 m DTM grid
 - `download_woodland_sources.py` — downloads and validates the pinned NFI, national AWI and ONS helper boundary inputs
-- `process_woodland_metrics.py` — derives current and ancient woodland percentage cover on the canonical grid
+- `process_woodland_metrics.py` — derives strict established-woodland extent and ancient woodland percentage cover on the canonical grid
+- `docs/woodland-investigation.md` — A66/Stainmore mismatch investigation, regional LiDAR validation and future canopy-source candidates
 - `travel-time-sources.json` — pinned versions, URLs and hashes for the Travel source set
 - `download_travel_sources.py` — downloads/verifies/extracts the pinned open Travel inputs
 - `travel_time_routing.py` — compact Open Roads graph parsing, matching, CSR and reverse-Dijkstra helpers
