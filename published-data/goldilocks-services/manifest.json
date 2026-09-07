@@ -1,8 +1,8 @@
 {
-  "format_version": 2,
+  "format_version": 3,
   "kind": "goldilocks-services",
-  "generated_at_unix": 1788816995,
-  "min_zoom": 12,
+  "generated_at_unix": 1788818677,
+  "max_visible_markers": 200,
   "bucket_scale": 4,
   "coordinate_scale": 100000,
   "categories": [
@@ -155,7 +155,7 @@
   },
   "payload_file": "services.json.gz",
   "payload_encoding": "gzip+json",
-  "raw_bytes": 3917455,
-  "compressed_bytes": 1077827,
-  "sha256_raw": "1bbf3a81bab5a8f2bf12ca777e38e76b2b20b414e9c5510a7ea180f3d9472c8a"
+  "raw_bytes": 3834130,
+  "compressed_bytes": 1054433,
+  "sha256_raw": "c366e042a027da55c7b27b7a3b1f340a5bbb64a075f87737c6cf8fbea1a1a4a9"
 }

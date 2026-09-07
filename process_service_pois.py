@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parent
 SOURCE_ROOT = ROOT / "data" / "source" / "services"
 DEFAULT_DISCOVERY = SOURCE_ROOT / "discovery.json"
 DEFAULT_OUTPUT_DIR = ROOT / "data" / "derived" / "services"
-MIN_ZOOM = 12
+MAX_VISIBLE_MARKERS = 200
 BUCKET_SCALE = 4
 COORDINATE_SCALE = 100_000
 DEDUP_DISTANCE_M = 25.0
@@ -179,10 +179,13 @@ def public_source(source:dict)->dict:
     return {k:source[k] for k in keys if source.get(k) is not None}
 
 def build_payload(pois:list[Poi], source_order:list[str])->dict:
-    source_index={source:i for i,source in enumerate(source_order)}; buckets:dict[str,list[list]]=defaultdict(list)
+    source_index={source:i for i,source in enumerate(source_order)}
+    buckets:dict[str,list[list[list]]]={}
     for poi in sorted(pois,key=lambda x:(float(x["lat"]),float(x["lon"]),str(x["category_id"]),str(x["source_ref"]))):
         lat=float(poi["lat"]); lon=float(poi["lon"]); cat=str(poi["category_id"]); ref=str(poi["source_ref"])
-        buckets[f"{math.floor(lat*BUCKET_SCALE)}:{math.floor(lon*BUCKET_SCALE)}"].append([f"{cat}:{poi['source_id']}:{ref}",CATEGORY_INDEX[cat],round(lat*COORDINATE_SCALE),round(lon*COORDINATE_SCALE),str(poi["name"]),source_index[str(poi["source_id"])],ref])
+        key=f"{math.floor(lat*BUCKET_SCALE)}:{math.floor(lon*BUCKET_SCALE)}"
+        bucket=buckets.setdefault(key,[[] for _ in CATEGORIES])
+        bucket[CATEGORY_INDEX[cat]].append([f"{cat}:{poi['source_id']}:{ref}",round(lat*COORDINATE_SCALE),round(lon*COORDINATE_SCALE),str(poi["name"]),source_index[str(poi["source_id"])],ref])
     return {"buckets":dict(sorted(buckets.items()))}
 
 def main()->int:
@@ -213,7 +216,7 @@ def main()->int:
     used_sources=[s for s in SOURCE_PRIORITY if any(x["source_id"]==s for x in deduped)]; payload=build_payload(deduped,used_sources); raw=json.dumps(payload,separators=(",",":"),ensure_ascii=False).encode(); compressed=gzip.compress(raw,compresslevel=9,mtime=0)
     output=args.output_dir.resolve(); output.mkdir(parents=True,exist_ok=True); (output/"services.json.gz").write_bytes(compressed)
     categories=[dict(item,count=int(counts[item["id"]])) for item in CATEGORIES]
-    manifest={"format_version":2,"kind":"goldilocks-services","generated_at_unix":int(time.time()),"min_zoom":MIN_ZOOM,"bucket_scale":BUCKET_SCALE,"coordinate_scale":COORDINATE_SCALE,"categories":categories,"counts":{x["id"]:int(counts[x["id"]]) for x in CATEGORIES},"raw_counts_before_spatial_dedup":{x["id"]:int(raw_counts[x["id"]]) for x in CATEGORIES},"spatial_duplicates_removed":duplicates,"missing_postcode_geocodes":dict(missing),"source_order":used_sources,"sources":{s:public_source(sources[s]) for s in used_sources},"geocoder_source":public_source(sources["os-code-point-open"]),"payload_file":"services.json.gz","payload_encoding":"gzip+json","raw_bytes":len(raw),"compressed_bytes":len(compressed),"sha256_raw":hashlib.sha256(raw).hexdigest()}
+    manifest={"format_version":3,"kind":"goldilocks-services","generated_at_unix":int(time.time()),"max_visible_markers":MAX_VISIBLE_MARKERS,"bucket_scale":BUCKET_SCALE,"coordinate_scale":COORDINATE_SCALE,"categories":categories,"counts":{x["id"]:int(counts[x["id"]]) for x in CATEGORIES},"raw_counts_before_spatial_dedup":{x["id"]:int(raw_counts[x["id"]]) for x in CATEGORIES},"spatial_duplicates_removed":duplicates,"missing_postcode_geocodes":dict(missing),"source_order":used_sources,"sources":{s:public_source(sources[s]) for s in used_sources},"geocoder_source":public_source(sources["os-code-point-open"]),"payload_file":"services.json.gz","payload_encoding":"gzip+json","raw_bytes":len(raw),"compressed_bytes":len(compressed),"sha256_raw":hashlib.sha256(raw).hexdigest()}
     (output/"manifest.json").write_text(json.dumps(manifest,indent=2)+"\n",encoding="utf-8")
     print(f"Service POIs: {len(deduped):,}; removed {duplicates:,} duplicates; missing postcode geocodes {sum(missing.values()):,}")
     print("Counts: "+", ".join(f"{x['id']}={counts[x['id']]:,}" for x in CATEGORIES)); print(f"Payload {len(raw):,} -> {len(compressed):,} bytes gzip"); print(f"Wrote {output/'manifest.json'}")

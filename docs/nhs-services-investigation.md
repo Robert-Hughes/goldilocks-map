@@ -58,10 +58,10 @@ With the 2026-09-07 source refresh, the processed bundle contains 46,671 POIs af
 - General hospitals: 261
 - Community hospitals: 220
 
-There are 61 source records omitted because their postcodes are not present/resolvable in the pinned GB Code-Point source: 4 GP, 47 dental, 3 general-hospital and 7 community-hospital records. The resulting service payload is 3,917,455 bytes as compact JSON and 1,077,827 bytes gzip-compressed.
+There are 61 source records omitted because their postcodes are not present/resolvable in the pinned GB Code-Point source: 4 GP, 47 dental, 3 general-hospital and 7 community-hospital records. The resulting service payload is 3,834,130 bytes as compact JSON and 1,054,433 bytes gzip-compressed.
 
 ## Browser/data design
 
-The service transport is version 2. POIs remain spatially bucketed in 0.25-degree WGS84 buckets and are decompressed lazily only when a selected service filter is needed at zoom 12 or closer. Each tuple records service category, coordinate, display name and source identity/reference. All seven service types are ordinary independent toggles persisted in `localStorage`.
+The service transport is version 3. POIs remain spatially bucketed in 0.25-degree WGS84 buckets, with each bucket split into category-specific arrays. This permits the browser to count a sparse selection without scanning unrelated service types. There is no fixed zoom threshold: the browser shows selected services whenever no more than 200 fall inside the viewport, and otherwise renders none with a prompt to zoom in or select fewer categories. Fully enclosed bucket/category arrays are counted from their lengths, only edge buckets require coordinate tests, and counting stops immediately after the 201st match. Each tuple records coordinate, display name and source identity/reference; its category is supplied by the containing array. All seven service types are ordinary independent toggles persisted in `localStorage`.
 
 Acceptance status is deliberately absent from the current transport and browser model. If approved machine-readable NHS access becomes available later, it can be reconsidered as a future feature rather than imposing unused states on the present UI.

@@ -92,8 +92,8 @@ export type ServiceSource = {
 };
 
 export type ServiceTransport = {
-  format_version: 2;
-  min_zoom: number;
+  format_version: 3;
+  max_visible_markers: number;
   bucket_scale: number;
   coordinate_scale: number;
   categories: ServiceCategory[];

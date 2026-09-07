@@ -22,7 +22,7 @@ def main() -> int:
     manifest_path = args.manifest.resolve()
     destination = args.destination.resolve()
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    if manifest.get("format_version") != 2 or manifest.get("kind") != "goldilocks-services":
+    if manifest.get("format_version") != 3 or manifest.get("kind") != "goldilocks-services":
         raise SystemExit("Unsupported service POI bundle")
     payload_name = manifest.get("payload_file")
     if not isinstance(payload_name, str) or Path(payload_name).name != payload_name:

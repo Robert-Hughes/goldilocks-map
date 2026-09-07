@@ -88,7 +88,7 @@ def load_metric_bundle(manifest_path: Path) -> dict:
 def load_service_bundle(manifest_path: Path) -> dict:
     manifest_path = manifest_path.resolve()
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    if manifest.get("format_version") != 2 or manifest.get("kind") != "goldilocks-services":
+    if manifest.get("format_version") != 3 or manifest.get("kind") != "goldilocks-services":
         raise RuntimeError(
             f"Unsupported Goldilocks service bundle: version={manifest.get('format_version')!r}, kind={manifest.get('kind')!r}"
         )
@@ -116,8 +116,8 @@ def load_service_bundle(manifest_path: Path) -> dict:
         raise RuntimeError(f"Service payload {payload_path.name} failed raw SHA-256 validation")
     json.loads(raw.decode("utf-8"))
     return {
-        "format_version": 2,
-        "min_zoom": int(manifest["min_zoom"]),
+        "format_version": 3,
+        "max_visible_markers": int(manifest["max_visible_markers"]),
         "bucket_scale": int(manifest["bucket_scale"]),
         "coordinate_scale": int(manifest["coordinate_scale"]),
         "categories": categories,

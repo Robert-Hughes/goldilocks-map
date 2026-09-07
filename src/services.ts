@@ -7,7 +7,6 @@ declare const L: any;
 
 type ServiceTuple = [
   id: string,
-  categoryIndex: number,
   latEncoded: number,
   lonEncoded: number,
   name: string,
@@ -15,7 +14,15 @@ type ServiceTuple = [
   sourceRef: string,
 ];
 
-type ServicePayload = { buckets: Record<string, ServiceTuple[]> };
+type ServiceBucket = ServiceTuple[][];
+type ServicePayload = { buckets: Record<string, ServiceBucket> };
+type ServiceBucketEntry = {
+  south: number;
+  north: number;
+  west: number;
+  east: number;
+  bucket: ServiceBucket;
+};
 
 const SERVICE_STORAGE_PREFIX = "goldilocks.serviceVisible.";
 const OSM_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
@@ -97,19 +104,23 @@ function servicePopup(
 
 export class ServicesController {
   readonly categories: ServiceCategory[];
-  readonly minZoom: number;
+  readonly maxVisibleMarkers: number;
 
   private payload: ServicePayload | null = null;
+  private bucketEntries: ServiceBucketEntry[] | null = null;
   private readonly enabled = new Map<string, boolean>();
   private readonly layerGroups = new Map<string, any>();
   private readonly visibleMarkers = new Map<string, Map<string, any>>();
   private readonly statusListeners = new Set<(text: string) => void>();
   private refreshScheduled = false;
+  private overMarkerLimit = false;
 
   constructor(private readonly map: any, readonly transport: ServiceTransport) {
-    if (transport.format_version !== 2 || transport.payload_encoding !== "gzip+json") throw new Error("Unsupported Goldilocks service POI transport");
+    if (transport.format_version !== 3 || transport.payload_encoding !== "gzip+json" || transport.max_visible_markers < 1) {
+      throw new Error("Unsupported Goldilocks service POI transport");
+    }
     this.categories = [...transport.categories].sort((left, right) => left.order - right.order);
-    this.minZoom = transport.min_zoom;
+    this.maxVisibleMarkers = transport.max_visible_markers;
     for (const category of this.categories) {
       const layer = L.layerGroup();
       this.layerGroups.set(category.id, layer);
@@ -154,9 +165,26 @@ export class ServicesController {
   private ensurePayload(): ServicePayload {
     if (this.payload) return this.payload;
     const raw = gunzipSync(decodeBase64(this.transport.blob_base64));
-    if (raw.byteLength !== this.transport.raw_bytes) throw new Error(`Service POI payload decoded to ${raw.byteLength} bytes; expected ${this.transport.raw_bytes}`);
+    if (raw.byteLength !== this.transport.raw_bytes) {
+      throw new Error(`Service POI payload decoded to ${raw.byteLength} bytes; expected ${this.transport.raw_bytes}`);
+    }
     const parsed = JSON.parse(new TextDecoder().decode(raw)) as ServicePayload;
     if (!parsed?.buckets || typeof parsed.buckets !== "object") throw new Error("Service POI payload is malformed");
+    const scale = this.transport.bucket_scale;
+    this.bucketEntries = Object.entries(parsed.buckets).map(([key, bucket]) => {
+      const parts = key.split(":");
+      if (parts.length !== 2) throw new Error(`Malformed service bucket key: ${key}`);
+      const y = Number(parts[0]);
+      const x = Number(parts[1]);
+      if (!Number.isInteger(y) || !Number.isInteger(x)) throw new Error(`Malformed service bucket key: ${key}`);
+      return {
+        south: y / scale,
+        north: (y + 1) / scale,
+        west: x / scale,
+        east: (x + 1) / scale,
+        bucket,
+      };
+    });
     this.payload = parsed;
     return parsed;
   }
@@ -164,49 +192,96 @@ export class ServicesController {
   private scheduleRefresh() {
     if (this.refreshScheduled) return;
     this.refreshScheduled = true;
-    window.requestAnimationFrame(() => { this.refreshScheduled = false; this.refreshVisibleMarkers(); });
+    window.requestAnimationFrame(() => {
+      this.refreshScheduled = false;
+      this.refreshVisibleMarkers();
+    });
   }
 
   private refreshVisibleMarkers() {
-    const activeCategories = this.categories.filter((category) => this.isEnabled(category.id));
-    if (!activeCategories.length || this.map.getZoom() < this.minZoom) {
+    const activeCategories = this.categories
+      .map((category, index) => ({ category, index }))
+      .filter(({ category }) => this.isEnabled(category.id));
+    if (!activeCategories.length) {
+      this.overMarkerLimit = false;
       for (const category of this.categories) this.clearCategory(category.id);
       this.emitStatus();
       return;
     }
-    const payload = this.ensurePayload();
-    const categoryByIndex = new Map(this.categories.map((category, index) => [index, category]));
-    const activeIds = new Set(activeCategories.map((category) => category.id));
+
+    this.ensurePayload();
+    const bucketEntries = this.bucketEntries ?? [];
     const desired = new Map<string, Map<string, ServiceTuple>>();
-    for (const category of activeCategories) desired.set(category.id, new Map());
-    const bounds = this.map.getBounds().pad(0.12);
-    const scale = this.transport.bucket_scale;
-    for (let y = Math.floor(bounds.getSouth() * scale); y <= Math.floor(bounds.getNorth() * scale); y += 1) {
-      for (let x = Math.floor(bounds.getWest() * scale); x <= Math.floor(bounds.getEast() * scale); x += 1) {
-        for (const tuple of payload.buckets[`${y}:${x}`] ?? []) {
-          const category = categoryByIndex.get(tuple[1]);
-          if (!category || !activeIds.has(category.id)) continue;
-          const lat = tuple[2] / this.transport.coordinate_scale;
-          const lon = tuple[3] / this.transport.coordinate_scale;
-          if (bounds.contains([lat, lon])) desired.get(category.id)?.set(tuple[0], tuple);
+    for (const { category } of activeCategories) desired.set(category.id, new Map());
+
+    const bounds = this.map.getBounds();
+    const south = bounds.getSouth();
+    const north = bounds.getNorth();
+    const west = bounds.getWest();
+    const east = bounds.getEast();
+    let visibleCount = 0;
+    let overLimit = false;
+
+    bucketLoop:
+    for (const entry of bucketEntries) {
+      if (entry.north < south || entry.south > north || entry.east < west || entry.west > east) continue;
+      const fullyInside = entry.south >= south && entry.north <= north && entry.west >= west && entry.east <= east;
+      for (const { category, index } of activeCategories) {
+        const tuples = entry.bucket[index] ?? [];
+        if (!tuples.length) continue;
+        const wanted = desired.get(category.id)!;
+        if (fullyInside) {
+          visibleCount += tuples.length;
+          if (visibleCount > this.maxVisibleMarkers) {
+            overLimit = true;
+            break bucketLoop;
+          }
+          for (const tuple of tuples) wanted.set(tuple[0], tuple);
+          continue;
+        }
+        for (const tuple of tuples) {
+          const lat = tuple[1] / this.transport.coordinate_scale;
+          const lon = tuple[2] / this.transport.coordinate_scale;
+          if (!bounds.contains([lat, lon])) continue;
+          visibleCount += 1;
+          if (visibleCount > this.maxVisibleMarkers) {
+            overLimit = true;
+            break bucketLoop;
+          }
+          wanted.set(tuple[0], tuple);
         }
       }
     }
-    for (const category of activeCategories) {
+
+    this.overMarkerLimit = overLimit;
+    if (overLimit) {
+      for (const category of this.categories) this.clearCategory(category.id);
+      this.emitStatus();
+      return;
+    }
+
+    for (const { category } of activeCategories) {
       const markers = this.visibleMarkers.get(category.id)!;
       const wanted = desired.get(category.id)!;
       const layer = this.layerGroups.get(category.id);
-      for (const [id, marker] of markers) if (!wanted.has(id)) { layer.removeLayer(marker); markers.delete(id); }
+      for (const [id, marker] of markers) {
+        if (wanted.has(id)) continue;
+        layer.removeLayer(marker);
+        markers.delete(id);
+      }
       for (const [id, tuple] of wanted) {
         if (markers.has(id)) continue;
-        const sourceId = this.transport.source_order[tuple[5]];
+        const sourceId = this.transport.source_order[tuple[4]];
         const source = this.transport.sources[sourceId];
         if (!source) continue;
-        const marker = L.marker([tuple[2] / this.transport.coordinate_scale, tuple[3] / this.transport.coordinate_scale], {
+        const marker = L.marker([tuple[1] / this.transport.coordinate_scale, tuple[2] / this.transport.coordinate_scale], {
           icon: L.divIcon({ className: "goldilocks-service-marker-icon", html: markerHtml(category.id), iconSize: [26, 26], iconAnchor: [13, 13] }),
-          bubblingMouseEvents: false, keyboard: true, riseOnHover: true, title: tuple[4],
+          bubblingMouseEvents: false,
+          keyboard: true,
+          riseOnHover: true,
+          title: tuple[3],
         });
-        marker.bindPopup(servicePopup(tuple[4], category, source, sourceId, tuple[6]));
+        marker.bindPopup(servicePopup(tuple[3], category, source, sourceId, tuple[5]));
         marker.addTo(layer);
         markers.set(id, marker);
       }
@@ -215,18 +290,25 @@ export class ServicesController {
   }
 
   private clearCategory(categoryId: string) {
-    const layer = this.layerGroups.get(categoryId); const markers = this.visibleMarkers.get(categoryId);
+    const layer = this.layerGroups.get(categoryId);
+    const markers = this.visibleMarkers.get(categoryId);
     if (!layer || !markers?.size) return;
-    layer.clearLayers(); markers.clear();
+    layer.clearLayers();
+    markers.clear();
   }
 
   private visibleMarkerCount(): number {
-    return this.categories.reduce((count, category) => count + (this.isEnabled(category.id) ? this.visibleMarkers.get(category.id)?.size ?? 0 : 0), 0);
+    return this.categories.reduce(
+      (count, category) => count + (this.isEnabled(category.id) ? this.visibleMarkers.get(category.id)?.size ?? 0 : 0),
+      0,
+    );
   }
 
   private statusText(): string {
     if (!this.categories.some((category) => this.isEnabled(category.id))) return "";
-    if (this.map.getZoom() < this.minZoom) return `Zoom in to level ${this.minZoom}+ to show services.`;
+    if (this.overMarkerLimit) {
+      return `More than ${this.maxVisibleMarkers.toLocaleString()} selected services are in view. Zoom in or select fewer services.`;
+    }
     const visible = this.visibleMarkerCount();
     return visible ? `Showing ${visible.toLocaleString()} service location${visible === 1 ? "" : "s"} in view.` : "No selected services in this view.";
   }
