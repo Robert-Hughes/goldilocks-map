@@ -2,6 +2,7 @@ import { addInfoPanel, readMapPanelPreferences } from "./info-panel";
 import { LocationsController } from "./locations";
 import { MetricState } from "./metrics";
 import { RasterView } from "./raster";
+import { ServicesController } from "./services";
 import type { GoldilocksData } from "./types";
 
 declare const L: any;
@@ -14,8 +15,8 @@ dataElement.textContent = "";
 const thirdPartyNoticesTemplate = document.getElementById("goldilocks-third-party-notices") as HTMLTemplateElement | null;
 const thirdPartyNotices = thirdPartyNoticesTemplate?.content.textContent?.trim() ?? "";
 
-if (data.format_version !== 4 || !data.metrics?.length || !data.categories?.length) {
-  throw new Error("This frontend requires Goldilocks categorized multi-source metric data format v4");
+if (data.format_version !== 5 || !data.metrics?.length || !data.categories?.length || !data.services) {
+  throw new Error("This frontend requires Goldilocks metric/service data format v5");
 }
 const categoryById = new Map(data.categories.map((category) => [category.id, category]));
 if (categoryById.size !== data.categories.length) throw new Error("Metric category IDs must be unique");
@@ -75,6 +76,7 @@ const raster = new RasterView(map, data, metrics, {
   showGridLines: preferences.gridLinesVisible,
   opacity: preferences.layerOpacity,
 });
+const services = new ServicesController(map, data.services);
 const locations = new LocationsController(map, preferences.locationsVisible);
 map.fitBounds(L.latLngBounds(data.grid.bounds_wgs84), { padding: [18, 18] });
 
@@ -88,4 +90,4 @@ map.on("click", (event: any) => {
     .openOn(map);
 });
 
-addInfoPanel(map, data, metrics, raster, locations, thirdPartyNotices, preferences);
+addInfoPanel(map, data, metrics, raster, services, locations, thirdPartyNotices, preferences);

@@ -62,8 +62,43 @@ export type DataSource = {
   releases?: Array<{ label: string; status?: string; url?: string }>;
 };
 
+export type ServiceCategory = {
+  id: "supermarket" | "post_office" | "pharmacy";
+  label: string;
+  order: number;
+  count: number;
+};
+
+export type ServiceSource = {
+  id: string;
+  provider: string;
+  distributor?: string;
+  dataset: string;
+  extract_date?: string;
+  homepage_url?: string;
+  download_url?: string;
+  licence_name: string;
+  licence_url: string;
+  attribution: string;
+  note?: string;
+};
+
+export type ServiceTransport = {
+  format_version: 1;
+  min_zoom: number;
+  bucket_scale: number;
+  coordinate_scale: number;
+  categories: ServiceCategory[];
+  source: ServiceSource;
+  payload_encoding: "gzip+json";
+  raw_bytes: number;
+  compressed_bytes: number;
+  sha256_raw: string;
+  blob_base64: string;
+};
+
 export type GoldilocksData = {
-  format_version: 4;
+  format_version: 5;
   grid: {
     crs: string;
     proj4: string;
@@ -86,6 +121,7 @@ export type GoldilocksData = {
   default_metric_id: string;
   preview_partial_sources: boolean;
   sources: Record<string, DataSource>;
+  services: ServiceTransport;
   data_pruning: Array<{
     id: string;
     source_id?: string;

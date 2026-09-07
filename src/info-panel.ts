@@ -2,6 +2,7 @@ import type { LocationsController } from "./locations";
 import { MetricState } from "./metrics";
 import { NARROW_PANEL_MEDIA_QUERY, syncNarrowPanelCorner } from "./panel-layout";
 import { RasterView } from "./raster";
+import type { ServicesController } from "./services";
 import { readStoredBoolean, readStoredString, writeStoredBoolean, writeStoredString } from "./storage";
 import type { DataSource, GoldilocksData } from "./types";
 
@@ -42,6 +43,7 @@ export function addInfoPanel(
   data: GoldilocksData,
   metrics: MetricState,
   raster: RasterView,
+  services: ServicesController,
   locations: LocationsController,
   thirdPartyNotices: string,
   preferences: MapPanelPreferences,
@@ -81,6 +83,14 @@ export function addInfoPanel(
           </fieldset>`;
       }).join("");
 
+
+    const serviceRows = services.categories.map((category) => `
+      <label class="service-option">
+        <input type="checkbox" data-service-category="${category.id}" ${services.isEnabled(category.id) ? "checked" : ""}>
+        ${services.legendIconHtml(category.id)}
+        <span>${category.label}</span>
+      </label>`).join("");
+
     div.innerHTML = `
       <div class="map-panel-header">
         <div class="map-panel-heading">
@@ -94,6 +104,13 @@ export function addInfoPanel(
         <div class="panel-section">
           <strong class="panel-section-title">Measure</strong>
           <div class="metric-list">${metricGroups}</div>
+        </div>
+
+        <div class="panel-section services-control">
+          <strong class="panel-section-title">Services</strong>
+          <div class="service-list">${serviceRows}</div>
+          <div class="service-status" aria-live="polite"></div>
+          <div class="service-source">${services.sourceSummary()}</div>
         </div>
         <div class="panel-section">
           <label class="panel-option">
@@ -161,6 +178,7 @@ export function addInfoPanel(
     const rangeReset = div.querySelector(".range-reset") as HTMLButtonElement;
     const opacityInput = div.querySelector(".opacity-input") as HTMLInputElement;
     const opacityOutput = div.querySelector(".opacity-output") as HTMLOutputElement;
+    const serviceStatus = div.querySelector(".service-status") as HTMLElement;
     const legalNotices = div.querySelector(".legal-notices") as HTMLDetailsElement;
     const legalNoticesPre = div.querySelector(".legal-notices pre") as HTMLPreElement;
     legalNoticesPre.textContent = thirdPartyNotices;
@@ -284,6 +302,20 @@ export function addInfoPanel(
       const show = locationsCheckbox.checked;
       locations.setVisible(show);
       writeStoredBoolean(LOCATIONS_VISIBLE_STORAGE_KEY, show);
+    });
+
+
+    const serviceInputs = Array.from(div.querySelectorAll('input[data-service-category]') as NodeListOf<HTMLInputElement>);
+    for (const input of serviceInputs) {
+      input.addEventListener("change", () => {
+        const categoryId = input.dataset.serviceCategory;
+        if (!categoryId) return;
+        services.setEnabled(categoryId, input.checked);
+      });
+    }
+    services.onStatusChange((text) => {
+      serviceStatus.textContent = text;
+      serviceStatus.hidden = !text;
     });
 
     opacityInput.addEventListener("input", () => {

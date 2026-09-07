@@ -1,12 +1,12 @@
 # Data licence and attribution
 
-Goldilocks Map contains derived raster metrics from multiple UK public datasets. The current build uses Met Office HadUK-Grid climate observations, Defra UK-AIR Pollution Climate Mapping (PCM), Ordnance Survey OS Terrain 50, Forestry Commission National Forest Inventory (NFI), the national Ancient Woodland Inventories for England, Wales and Scotland, and a derived driving-time model based on OS Open Roads, OS Open Built Up Areas, Department for Transport (DfT) local-A-road statistics, National Highways historic travel-time observations and ONS administrative boundaries.
+Goldilocks Map contains derived raster metrics from multiple UK public datasets plus a compact point-of-interest database derived from OpenStreetMap. The current build uses Met Office HadUK-Grid climate observations, Defra UK-AIR Pollution Climate Mapping (PCM), Ordnance Survey OS Terrain 50, Forestry Commission National Forest Inventory (NFI), the national Ancient Woodland Inventories for England, Wales and Scotland, a derived driving-time model based on OS Open Roads, OS Open Built Up Areas, Department for Transport (DfT) local-A-road statistics, National Highways historic travel-time observations and ONS administrative boundaries, and selected OpenStreetMap service POIs distributed via Geofabrik.
 
 ## Licence
 
-HadUK-Grid, Defra PCM, OS Terrain 50, OS Open Roads, OS Open Built Up Areas, Forestry Commission NFI, Natural England AWI, Natural Resources Wales AWI, DfT local-road statistics, National Highways travel-time data and ONS helper boundaries are open-data inputs whose source-specific terms and acknowledgements are recorded below. The NatureScot AWI metadata describes that dataset as available under the OS Open Data licence and specifies its own acknowledgement. Do not replace the source-specific acknowledgements with a single generic attribution.
+HadUK-Grid, Defra PCM, OS Terrain 50, OS Open Roads, OS Open Built Up Areas, Forestry Commission NFI, Natural England AWI, Natural Resources Wales AWI, DfT local-road statistics, National Highways travel-time data and ONS helper boundaries are open-data inputs whose source-specific terms and acknowledgements are recorded below. The NatureScot AWI metadata describes that dataset as available under the OS Open Data licence and specifies its own acknowledgement. OpenStreetMap service POIs are subject to the Open Database License (ODbL) 1.0. Do not replace the source-specific acknowledgements with a single generic attribution.
 
-Goldilocks Map publishes derived raster summaries, not copies of the source vector/raster archives. The derived metrics are not official products of the Met Office, Defra, Ordnance Survey, Forestry Commission, Natural England, Natural Resources Wales, NatureScot, DfT, National Highways or ONS.
+Goldilocks Map publishes derived raster summaries plus the processed OpenStreetMap service subset needed by the browser; it does not publish the raw source archives. The derived metrics are not official products of the Met Office, Defra, Ordnance Survey, Forestry Commission, Natural England, Natural Resources Wales, NatureScot, DfT, National Highways or ONS.
 
 ## Met Office HadUK-Grid
 
@@ -40,7 +40,7 @@ The required OS OpenData acknowledgement for this release is:
 
 ## Forestry Commission National Forest Inventory GB 2024
 
-The `woodland_cover` metric is derived from the National Forest Inventory GB 2024 woodland map. Goldilocks includes NFI interpreted forest types representing current wooded/tree or shrub cover and excludes `Felled`, `Ground prep`, `Failed` and `Windblow`. The metric is exact polygon area within each 1 km canonical cell divided by the full 100 ha cell area; it is woodland-land extent, not fractional canopy density within NFI polygons.
+The `woodland_cover` metric is derived from the National Forest Inventory GB 2024 woodland map using a strict established-woodland filter: `Broadleaved`, `Conifer`, `Coppice`, `Coppice with standards`, `Mixed mainly broadleaved` and `Mixed mainly conifer` are included; `Assumed woodland`, `Young trees`, `Low density`, `Shrub`, `Felled`, `Ground prep`, `Failed` and `Windblow` are excluded. The metric is exact polygon area within each 1 km canonical cell divided by the full 100 ha cell area; it is established-woodland polygon extent, not fractional canopy density within NFI polygons.
 
 The source item states that use is subject to the Open Government Licence and requires:
 
@@ -86,6 +86,16 @@ ONS December 2025 Local Authority District boundaries are used solely as a proce
 
 The travel-time rasters inherit important limitations from the model. OS Open Roads is a generalised network rather than a navigation-grade road graph; detailed turn/one-way/access restrictions and ferry connectivity are not comprehensively represented. Observed National Highways costs cover the English SRN, while non-SRN and Scottish/Welsh trunk roads rely more heavily on DfT observations or transparent road-class fallbacks. The metrics represent historic typical regimes rather than current incidents, closures or live traffic. Goldilocks assigns each covered 1 km cell the travel time of its nearest usable Open Roads graph node without an additional driveway/access-time penalty. Northern Ireland is nodata because OS Open Roads covers Great Britain.
 
+## OpenStreetMap service POIs
+
+The Services controls use a pinned **OpenStreetMap Great Britain** extract dated **2026-09-06**, distributed by [Geofabrik](https://download.geofabrik.de/). Goldilocks extracts only `shop=supermarket`, `amenity=post_office` and `amenity=pharmacy`. Node POIs are retained directly; qualifying mapped areas are reduced to a representative interior point. Same-name node/area representations within 25 m are de-duplicated with the node preferred.
+
+OpenStreetMap data is © OpenStreetMap contributors and available under the [Open Database License (ODbL) 1.0](https://opendatacommons.org/licenses/odbl/1-0/). The required attribution is shown in the Leaflet attribution control whenever the embedded service database is available:
+
+> © OpenStreetMap contributors
+
+The processed Goldilocks service POI database in `published-data/goldilocks-services/` is itself distributed under the ODbL 1.0. The raw Geofabrik `.osm.pbf` is a build input only and is not committed. The processed subset retains names, category, representative WGS84 coordinates and source OSM element references so the published database remains traceable to OpenStreetMap.
+
 ## What Goldilocks publishes
 
-Raw HadUK-Grid NetCDF files, Defra PCM CSV files, OS source archives, NFI/AWI vector downloads, DfT workbooks, National Highways link observations and ONS helper boundaries are build inputs under `data/source/` and are not committed by this project. The tracked public snapshot contains only Goldilocks-derived, quantised metric rasters and the metadata needed to interpret them. Metric definitions, averaging choices, quality-control masking, routing/traversal-time modelling, quantisation, LOD construction and presentation are Goldilocks Map processing choices rather than official source-agency products.
+Raw HadUK-Grid NetCDF files, Defra PCM CSV files, OS source archives, NFI/AWI vector downloads, DfT workbooks, National Highways link observations, ONS helper boundaries and the Geofabrik OSM PBF are build inputs under `data/source/` and are not committed by this project. The tracked public snapshots contain Goldilocks-derived quantised metric rasters plus the compact ODbL service POI subset and the metadata needed to interpret them. Metric definitions, averaging choices, quality-control masking, routing/traversal-time modelling, service extraction/de-duplication, quantisation, LOD construction and presentation are Goldilocks Map processing choices rather than official source-agency products.

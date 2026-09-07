@@ -1,0 +1,63 @@
+{
+  "format_version": 1,
+  "kind": "goldilocks-services",
+  "generated_at_unix": 1788811138,
+  "min_zoom": 12,
+  "bucket_scale": 4,
+  "coordinate_scale": 100000,
+  "categories": [
+    {
+      "id": "supermarket",
+      "label": "Supermarkets",
+      "order": 0,
+      "count": 10057
+    },
+    {
+      "id": "post_office",
+      "label": "Post offices",
+      "order": 1,
+      "count": 8952
+    },
+    {
+      "id": "pharmacy",
+      "label": "Pharmacies",
+      "order": 2,
+      "count": 9081
+    }
+  ],
+  "counts": {
+    "supermarket": 10057,
+    "post_office": 8952,
+    "pharmacy": 9081
+  },
+  "raw_counts_before_spatial_dedup": {
+    "supermarket": 10066,
+    "post_office": 8957,
+    "pharmacy": 9093
+  },
+  "spatial_duplicates_removed": 26,
+  "source": {
+    "id": "openstreetmap-geofabrik-gb-2026-09-06",
+    "provider": "OpenStreetMap contributors",
+    "distributor": "Geofabrik GmbH",
+    "dataset": "OpenStreetMap Great Britain extract",
+    "extract_date": "2026-09-06",
+    "homepage_url": "https://www.openstreetmap.org/",
+    "download_url": "https://download.geofabrik.de/europe/great-britain-260906.osm.pbf",
+    "licence_name": "Open Database License (ODbL) 1.0",
+    "licence_url": "https://opendatacommons.org/licenses/odbl/1-0/",
+    "attribution": "© OpenStreetMap contributors",
+    "note": "Goldilocks extracts shop=supermarket, amenity=post_office and amenity=pharmacy from the pinned Great Britain OSM extract. Area features use a representative point. Separately mapped same-name node/area POIs within 25 m are de-duplicated, preferring the node."
+  },
+  "source_file": {
+    "file": "great-britain-260906.osm.pbf",
+    "url": "https://download.geofabrik.de/europe/great-britain-260906.osm.pbf",
+    "bytes": 2169620686,
+    "md5": "a63b85616bfb5e4998fcf4ba5c2dcae3"
+  },
+  "payload_file": "services.json.gz",
+  "payload_encoding": "gzip+json",
+  "raw_bytes": 2195260,
+  "compressed_bytes": 633327,
+  "sha256_raw": "618c52b8831f85bb9d020439c7ad1830590b0572277fad3aff2f13661a4e71aa"
+}

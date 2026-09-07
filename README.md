@@ -1,6 +1,6 @@
 # Goldilocks Map
 
-Goldilocks Map is an experimental single-file UK location-suitability explorer built from multiple gridded public datasets. Metrics are grouped into first-class categories (currently **Heat**, **Heat — 2026**, **Cold**, **Pollution**, **Terrain**, **Woodland** and **Travel**) and can be switched without reloading the page.
+Goldilocks Map is an experimental single-file UK location-suitability explorer built from multiple gridded public datasets plus embedded point-based service data. Raster metrics are grouped into first-class categories (currently **Heat**, **Heat — 2026**, **Cold**, **Pollution**, **Terrain**, **Woodland** and **Travel**), with a separate **Services** control for selected OpenStreetMap POIs.
 
 ## Metrics
 
@@ -65,6 +65,15 @@ Travel is precomputed offline rather than routed in the browser. The topology is
 
 Each canonical cell centre inherits the travel time of its nearest Open Roads graph node; no additional driveway/access-leg penalty is added. Cells more than 20 km from the GB-only source graph (principally Northern Ireland) and cells on disconnected road components that cannot reach York/Cambridge are nodata. These are comparative suitability estimates, not live traffic, turn-by-turn routes or guaranteed journey times. The investigation, 128-route external validation and rejected alternatives are documented in [`docs/travel-time-investigation.md`](docs/travel-time-investigation.md).
 
+
+## Services
+
+Goldilocks also embeds a separate point-based service layer derived offline from a pinned OpenStreetMap Great Britain extract. The initial service categories are **Supermarkets** (`shop=supermarket`), **Post offices** (`amenity=post_office`) and **Pharmacies** (`amenity=pharmacy`). Each category has its own toggle and a distinct marker shape/colour. Service markers are only instantiated for the current viewport at zoom level 12 or closer, so the national POI set does not create thousands of Leaflet DOM markers at startup.
+
+Node POIs and area POIs are both supported; mapped areas are reduced to a representative interior point. Same-name node/area duplicates within 25 m are collapsed with the node preferred. The processed POIs are bucketed into 0.25° WGS84 cells, gzip-compressed and embedded in the single HTML alongside the raster bundle. Service visibility choices are stored in `localStorage`. Clicking a marker shows its name, service type and a link to the source OpenStreetMap element.
+
+The first version intentionally uses OSM consistently across Great Britain. Healthcare POIs can later be enriched or replaced with official NHS datasets without changing the browser rendering architecture.
+
 An air-frost day is assigned when the minimum air temperature falls below freezing during the observation period; it does not mean the whole day remains below freezing. A day whose maximum temperature remains below freezing is instead an ice day.
 
 Stable historical observations come from CEDA HadUK-Grid v1.3.2.ceda for 2016–2025. Published provisional 2026 months are also included. For the multi-year annual-count metrics, each calendar month is averaged across the years available for that month and the twelve monthly means are summed. This allows published 2026 months to contribute without treating unpublished months as zero. The separate **Heat — 2026** category instead reports observed 2026-to-date counts plus a complete-summer percentile, so it exposes the exceptional current year without pretending the partial calendar year is a full annual climatology. The winter Tmin percentile uses complete DJF winters only; with the current archive these are winters 2016–17 through 2025–26.
@@ -85,12 +94,12 @@ The derived manifest records the pruning rule, audit rationale and exact cells s
 
 ## Build
 
-Prerequisites: Python 3.11+, Node.js/npm, and internet access for source/dependency downloads.
+Prerequisites: Python 3.11+, Node.js/npm, internet access for source/dependency downloads, and GDAL/`ogr2ogr` with the OSM driver when regenerating the service POI bundle.
 
 On GhostBSD/FreeBSD, using the packaged scientific/geospatial stack avoids lengthy local compilation:
 
 ```sh
-sudo pkg install py312-numpy py312-h5py py312-pyproj py312-fiona py312-shapely
+sudo pkg install py312-numpy py312-h5py py312-pyproj py312-fiona py312-shapely gdal
 python3 -m venv --system-site-packages .venv
 . .venv/bin/activate
 python -m pip install -e . --no-deps
@@ -108,12 +117,16 @@ python process_terrain_metrics.py
 python process_woodland_metrics.py
 python process_travel_metrics.py
 python assemble_metrics.py
+python process_service_pois.py
 python build.py
 ```
 
 `goldilocks_raster.py` provides the common canonical-grid, quantisation, nodata-aware LOD and gzip-blob machinery. Each dataset processor writes a self-contained dataset manifest with categories, metrics and source provenance. `assemble_metrics.py` validates that those fragments use the same canonical 1 km BNG raster geometry, merges their categories/sources and copies the metric blobs into `data/derived/goldilocks-metrics/`.
 
 `process_climate_metrics.py` streams the monthly NetCDF/HDF5 files; summer percentile input is staged in a temporary memory-mapped file so the full multi-year daily cube is never held in RAM. `process_pollution_metrics.py` aligns the 2022–2024 Defra PCM CSV grids to the canonical Goldilocks/HadUK 1 km grid and derives the three-year arithmetic means. `process_terrain_metrics.py` reads the nested OS Terrain 50 ASCII tiles directly from the national zip, reduces each aligned 20 × 20 block of 50 m pixel-centre heights to 1 km relief (`max - min`), and leaves canonical cells outside Great Britain as nodata. `process_woodland_metrics.py` uses Fiona/Shapely to intersect pinned NFI/AWI polygons exactly with the canonical grid, including overlap-unioning for the stitched ancient-woodland layer. `process_travel_metrics.py` builds the pinned OS Open Roads GB graph, joins National Highways and DfT observed speed data, performs four reverse shortest-path searches and samples the resulting node-time fields to the canonical 1 km grid; expensive source-to-graph classifications and cell snaps are cached under ignored `data/source/travel-time/cache/`.
+
+
+`process_service_pois.py` uses GDAL's OSM driver to stream the pinned Great Britain `.osm.pbf`, extracts only supermarket/post-office/pharmacy node and area features, de-duplicates coincident node/area representations, spatially buckets the result and writes a separate compressed service bundle under `data/derived/services/`.
 
 `build.py` validates the assembled blobs and source references, bundles/minifies the TypeScript frontend (including `proj4` and `fflate`), base64-embeds the compressed blobs and metadata, and writes the self-contained application to `dist/goldilocks.html`.
 
@@ -129,19 +142,20 @@ python build.py --metrics-manifest data/derived/goldilocks-metrics-preview/manif
 
 The public repository is intended to be named `goldilocks-map`, giving a default project-site URL of `https://<account>.github.io/goldilocks-map/`.
 
-The raw CEDA/Met Office NetCDF archive, Defra PCM CSV inputs, OS Terrain 50 archive and woodland vector sources are never required by GitHub Actions and remain git-ignored. After regenerating local metrics, explicitly refresh the small publishable snapshot with:
+The raw CEDA/Met Office NetCDF archive, Defra PCM CSV inputs, OS Terrain 50 archive, woodland vectors and the ~2 GB OSM PBF are never required by GitHub Actions and remain git-ignored. After regenerating local data, explicitly refresh both small publishable snapshots with:
 
 ```sh
 python publish_metrics_snapshot.py
+python publish_services_snapshot.py
 ```
 
-This copies only the assembled manifest and the metric blobs referenced by it into `published-data/goldilocks-metrics/`. Commit that snapshot along with the source changes. The Pages workflow then installs the JavaScript build dependencies, runs:
+This copies only the assembled raster manifest/blobs into `published-data/goldilocks-metrics/` and the processed compressed POI bundle into `published-data/goldilocks-services/`. Commit those snapshots along with the source changes. The Pages workflow then installs the JavaScript build dependencies and runs:
 
 ```sh
-python3 build.py --metrics-manifest published-data/goldilocks-metrics/manifest.json
+python3 build.py --metrics-manifest published-data/goldilocks-metrics/manifest.json --services-manifest published-data/goldilocks-services/manifest.json
 ```
 
-and publishes the generated `goldilocks.html` as the artifact-root `index.html`. No CEDA account token or other repository secret is required for deployment.
+and publishes the generated `goldilocks.html` as the artifact-root `index.html`. No CEDA account token, raw OSM extract or other repository secret is required for deployment.
 
 The workflow in `.github/workflows/pages.yml` follows GitHub's custom Pages build/deploy model. In repository **Settings → Pages**, select **GitHub Actions** as the publishing source. The deployment environment is `github-pages`.
 
@@ -235,6 +249,23 @@ python process_travel_metrics.py
 
 Raw sources and reproducible intermediate caches remain under git-ignored `data/source/travel-time/`. The two OS archives are the large inputs (Open Roads is about 606 MB compressed; Open Built Up Areas about 44 MB). The generated Travel fragment is only about 1.1 MB of compressed metric blobs. See [`docs/travel-time-investigation.md`](docs/travel-time-investigation.md) for the model rationale, validation results, rejected alternatives and limitations.
 
+## Service POI source download
+
+`download_service_sources.py` downloads a pinned Geofabrik OpenStreetMap Great Britain PBF extract dated **2026-09-06** and verifies the published MD5 before accepting it. The raw PBF is about 2.02 GiB and remains under git-ignored `data/source/services/`.
+
+```sh
+# Show the pinned source without downloading it.
+python download_service_sources.py --dry-run
+
+# Download/resume the pinned PBF and verify it.
+python download_service_sources.py --verify
+
+# Extract and compress the three service categories.
+python process_service_pois.py
+```
+
+`process_service_pois.py` requires `ogr2ogr` with GDAL's OSM driver. It caches the small node/area extraction under `data/source/services/cache/` so later processing and packaging do not need to rescan the 2 GB PBF unless the pinned source changes. The derived `data/derived/services/manifest.json` plus `services.json.gz` are the local build inputs; `publish_services_snapshot.py` copies only those processed files into the tracked public snapshot.
+
 ## Browser architecture
 
 The data layer is a custom Leaflet `GridLayer` whose tiles are 256 x 256 canvas elements generated locally from the selected metric's embedded raster pyramid. Every metric is transported as a gzip-compressed little-endian `uint16` blob; only the initially selected metric is decompressed at startup, and other metrics are decoded lazily the first time their radio button is selected. Decoded metrics remain cached as typed-array views over one contiguous buffer.
@@ -244,6 +275,8 @@ At page startup, the browser decodes the first metric as the canonical land-geom
 Canvas geometry is batched per tile. Metric values are mapped to a 64-step visual palette interpolated from the colour stops declared in each metric's metadata and cell polygons sharing a palette bin are accumulated into one `Path2D`, placing a fixed upper bound on fill calls even for percentile metrics with hundreds of distinct encoded values. When gridlines are enabled, all valid-cell outlines are accumulated into one additional `Path2D` and drawn with a single `stroke()` call; when disabled, that grid path is not built at all.
 
 For each Leaflet tile zoom, the renderer chooses the finest metric LOD whose nominal cells are at least about four screen pixels across. The reference pixel distance is projected only once at a fixed representative UK location (54.5°N, 2°W), so LOD choice depends only on zoom and thereafter requires only power-of-two scaling. Each tile still performs a small fixed set of inverse WGS84 -> BNG transforms to identify its candidate row/column range. Leaflet manages tile buffering, panning, clipping, recycling, and zoom transforms. Leaflet's default 200 ms tile fade animation is disabled because metric canvases render synchronously; replacement tiles therefore appear immediately instead of fading through the basemap during redraws and zoom changes.
+
+Services are handled by a separate `ServicesController`, not by the raster renderer. The gzip service payload is decoded only when at least one service category is enabled and the map is at the service display threshold. The controller looks only in spatial buckets intersecting the padded current viewport and diffs the required marker set on pan/zoom, so POIs elsewhere in Great Britain never become Leaflet marker DOM elements. The three categories use CSS/SVG `DivIcon` markers whose colour, outline shape and symbol differ.
 
 Clicking always resolves against active-metric LOD0, so popups retain the exact quantised 1 km value rather than a coarse averaged value. The selected-cell outline is a separate lightweight Leaflet vector overlay, so changing the selection does not regenerate any metric canvas tiles. The collapsible left-side panel groups metric radio buttons by the categories declared in the processed manifest (currently `heat`, `heat_2026`, `cold`, `pollution`, `terrain`, `woodland` and `travel`), followed by gridline visibility, saved-location-pin visibility, data-layer opacity, a per-metric dual-ended display-range slider with integrated colour samples, description and provenance. Layer opacity defaults to 62% to preserve the original map appearance and is applied by Leaflet to the existing tile layer without repainting raster canvases. Narrowing the display range clips only the colour mapping; underlying raster and popup values remain unchanged. Display-range scrubbing repaints the existing cached metric canvases in place rather than invoking Leaflet `GridLayer.redraw()`, avoiding tile removal/recreation and the resulting basemap flicker. Display ranges, layer opacity, panel state, gridline visibility, location-pin visibility and selected metric are stored independently in `localStorage`, and each range can be reset to that metric's configured full display range (normally its observed minimum/maximum; woodland is fixed at 0–100%). Metric identifiers are category-prefixed (for example `heat_days_tmax_gt_25`, `cold_air_frost_days`, `terrain_relief`, `woodland_cover` and `travel_york_weekend`) so the same grouping remains explicit in code and generated data; legacy unprefixed Heat metric selections are migrated automatically. Gridlines default to hidden and location pins default to visible when no preference has yet been saved. Leaflet's zoom control is positioned at bottom-right so the main information panel can occupy the top-left corner cleanly.
 
@@ -273,31 +306,36 @@ Direct `file://` opening still renders the embedded Goldilocks data layer, but i
 - `process_travel_metrics.py` — derives York/Cambridge weekend and weekday-PM-peak driving-time rasters
 - `docs/travel-time-investigation.md` — experiment history, validation, final model and limitations
 - `experiments/travel-time/` — reusable external-validation origin set and Google comparison harness
+- `download_service_sources.py` — downloads/resumes and verifies the pinned Geofabrik OSM Great Britain PBF
+- `process_service_pois.py` — extracts, de-duplicates, buckets and compresses supermarket/post-office/pharmacy POIs
+- `publish_services_snapshot.py` — copies the validated processed service bundle into the tracked public snapshot
 - `assemble_metrics.py` — validates and combines dataset fragments into the common Goldilocks metric bundle
-- `build.py` — validates/embeds the assembled metric bundle, bundles the frontend and embeds third-party software notices
-- `publish_metrics_snapshot.py` — copies the validated assembled bundle into the tracked public snapshot used by Pages
-- `.github/workflows/pages.yml` — builds the static artifact from the public snapshot and deploys it to GitHub Pages
-- `templates/goldilocks.html` — single-page HTML shell
+- `build.py` — validates/embeds the raster and service bundles, bundles the frontend and embeds third-party software notices
+- `publish_metrics_snapshot.py` — copies the validated assembled raster bundle into the tracked public snapshot used by Pages
+- `.github/workflows/pages.yml` — builds the static artifact from the public snapshots and deploys it to GitHub Pages
+- `templates/goldilocks.html` — single-page HTML shell and control/marker styling
 - `src/app.ts` — browser startup/orchestration and base-map wiring
 - `src/metrics.ts` — lazy metric decoding, display ranges and palette handling
 - `src/raster.ts` — projected custom Leaflet raster layer, cell hit-testing and selection outline
-- `src/info-panel.ts` — top-left metric/data controls and provenance panel
+- `src/services.ts` — lazy service-payload decoding, viewport buckets, toggles and Leaflet POI markers
+- `src/info-panel.ts` — top-left metric/service/data controls and provenance panel
 - `src/locations.ts` — saved-location persistence, labels, context actions, editing and JSON import/export
 - `src/storage.ts` — small resilient helpers for persisted UI preferences
 - `src/types.ts` — shared frontend data-model types
-- `data/source/` — cached raw source data (HadUK NetCDF + Defra PCM CSV + OS Terrain 50 + woodland vectors + Travel road/speed inputs; git-ignored and never published)
-- `data/derived/` — local generated metric bundles (git-ignored)
-- `published-data/goldilocks-metrics/` — tracked, publishable snapshot of the derived metric bundle used by GitHub Pages
+- `data/source/` — cached raw source data (HadUK NetCDF + Defra PCM CSV + OS Terrain 50 + woodland vectors + Travel inputs + OSM PBF; git-ignored and never published)
+- `data/derived/` — local generated metric and service bundles (git-ignored)
+- `published-data/goldilocks-metrics/` — tracked, publishable snapshot of the derived raster bundle used by GitHub Pages
+- `published-data/goldilocks-services/` — tracked, publishable ODbL snapshot of the processed service POI bundle used by GitHub Pages
 - `dist/goldilocks.html` — generated application artifact (git-ignored)
 - `DATA-LICENCE.md` — source-data licences, attribution and provenance notes
 - `THIRD-PARTY-NOTICES.txt` — licences for JavaScript incorporated into the generated HTML
 
 ## Data licence and provenance
 
-The current source datasets include Met Office HadUK-Grid, Defra UK-AIR Pollution Climate Mapping, Ordnance Survey OS Terrain 50/Open Roads/Open Built Up Areas, Forestry Commission NFI and national ancient-woodland inventories, DfT road-congestion statistics, National Highways historic travel-time observations and ONS administrative boundaries. The source-specific reuse and attribution terms are documented in `DATA-LICENCE.md`; the main sources are available under the [Open Government Licence v3.0](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/). Goldilocks metrics are derived products and are not official products of the source agencies. OS-derived metrics carry the applicable Crown copyright/database-right acknowledgements recorded in the generated manifest and `DATA-LICENCE.md`.
+The current source datasets include Met Office HadUK-Grid, Defra UK-AIR Pollution Climate Mapping, Ordnance Survey OS Terrain 50/Open Roads/Open Built Up Areas, Forestry Commission NFI and national ancient-woodland inventories, DfT road-congestion statistics, National Highways historic travel-time observations, ONS administrative boundaries and OpenStreetMap service POIs distributed via Geofabrik. The source-specific reuse and attribution terms are documented in `DATA-LICENCE.md`; most government sources are available under the [Open Government Licence v3.0](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/), while the processed OSM service database is distributed under the ODbL 1.0. Goldilocks raster metrics are derived products and are not official products of the source agencies. OS-derived metrics carry the applicable Crown copyright/database-right acknowledgements recorded in the generated manifest and `DATA-LICENCE.md`.
 
 Stable 2016–2025 observations are taken from the citable CEDA HadUK-Grid v1.3.2.ceda release:
 
 Met Office; Hollis, D.; Carlisle, E.; Kendon, M.; Packman, S.; Doherty, A. (2026): *HadUK-Grid Gridded Climate Observations on a 1km grid over the UK, v1.3.2.ceda (1836-2025).* NERC EDS Centre for Environmental Data Analysis, 23 June 2026. [doi:10.5285/789b3065d74a4c948ab05d33556c86d0](https://doi.org/10.5285/789b3065d74a4c948ab05d33556c86d0).
 
-Available 2026 climate months are provisional Met Office HadUK-Grid data and may be amended before a later annual CEDA release. Pollution metrics use Defra PCM 2022–2024 annual background grids. Terrain relief uses the pinned OS Terrain 50 2026-07 Great Britain grid. Woodland metrics use pinned Forestry Commission and national ancient-woodland vector datasets. Travel metrics use pinned OS Open Roads/Open Built Up Areas, DfT local-A-road statistics, National Highways historic SRN speeds and ONS LAD boundaries; see [`docs/travel-time-investigation.md`](docs/travel-time-investigation.md) for the full model investigation. See [`DATA-LICENCE.md`](DATA-LICENCE.md) for full licence, attribution and source-specific provenance notes.
+Available 2026 climate months are provisional Met Office HadUK-Grid data and may be amended before a later annual CEDA release. Pollution metrics use Defra PCM 2022–2024 annual background grids. Terrain relief uses the pinned OS Terrain 50 2026-07 Great Britain grid. Woodland metrics use pinned Forestry Commission and national ancient-woodland vector datasets. Travel metrics use pinned OS Open Roads/Open Built Up Areas, DfT local-A-road statistics, National Highways historic SRN speeds and ONS LAD boundaries; see [`docs/travel-time-investigation.md`](docs/travel-time-investigation.md) for the full model investigation. Service POIs use the pinned 2026-09-06 OpenStreetMap Great Britain extract. See [`DATA-LICENCE.md`](DATA-LICENCE.md) for full licence, attribution and source-specific provenance notes.
