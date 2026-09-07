@@ -88,7 +88,7 @@ def load_metric_bundle(manifest_path: Path) -> dict:
 def load_service_bundle(manifest_path: Path) -> dict:
     manifest_path = manifest_path.resolve()
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    if manifest.get("format_version") != 1 or manifest.get("kind") != "goldilocks-services":
+    if manifest.get("format_version") != 2 or manifest.get("kind") != "goldilocks-services":
         raise RuntimeError(
             f"Unsupported Goldilocks service bundle: version={manifest.get('format_version')!r}, kind={manifest.get('kind')!r}"
         )
@@ -98,6 +98,10 @@ def load_service_bundle(manifest_path: Path) -> dict:
     category_ids = [item.get("id") for item in categories if isinstance(item, dict)]
     if len(category_ids) != len(categories) or len(set(category_ids)) != len(category_ids) or any(not item for item in category_ids):
         raise RuntimeError(f"Service manifest has invalid/duplicate categories: {manifest_path}")
+    sources = manifest.get("sources")
+    source_order = manifest.get("source_order")
+    if not isinstance(sources, dict) or not isinstance(source_order, list) or any(source_id not in sources for source_id in source_order):
+        raise RuntimeError(f"Service manifest has invalid sources: {manifest_path}")
     payload_name = manifest.get("payload_file")
     if not isinstance(payload_name, str) or Path(payload_name).name != payload_name:
         raise RuntimeError(f"Service manifest has invalid payload filename: {payload_name!r}")
@@ -112,12 +116,13 @@ def load_service_bundle(manifest_path: Path) -> dict:
         raise RuntimeError(f"Service payload {payload_path.name} failed raw SHA-256 validation")
     json.loads(raw.decode("utf-8"))
     return {
-        "format_version": 1,
+        "format_version": 2,
         "min_zoom": int(manifest["min_zoom"]),
         "bucket_scale": int(manifest["bucket_scale"]),
         "coordinate_scale": int(manifest["coordinate_scale"]),
         "categories": categories,
-        "source": manifest["source"],
+        "source_order": source_order,
+        "sources": sources,
         "payload_encoding": manifest["payload_encoding"],
         "raw_bytes": int(manifest["raw_bytes"]),
         "compressed_bytes": len(compressed),

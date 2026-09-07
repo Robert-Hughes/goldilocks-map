@@ -68,11 +68,11 @@ Each canonical cell centre inherits the travel time of its nearest Open Roads gr
 
 ## Services
 
-Goldilocks also embeds a separate point-based service layer derived offline from a pinned OpenStreetMap Great Britain extract. The initial service categories are **Supermarkets** (`shop=supermarket`), **Post offices** (`amenity=post_office`) and **Pharmacies** (`amenity=pharmacy`). Each category has its own toggle and a distinct marker shape/colour. Service markers are only instantiated for the current viewport at zoom level 12 or closer, so the national POI set does not create thousands of Leaflet DOM markers at startup.
+Goldilocks embeds a separate point-based service layer derived offline from public OSM/NHS datasets. **Supermarkets**, **Post offices** and **Pharmacies** come from the pinned OpenStreetMap Great Britain extract. **GPs** and **NHS dentists** come from current NHS England Organisation Data Service reports plus Public Health Scotland practice distributions. **General hospitals** include ERIC `General acute hospital` and `Mixed service hospital` sites; **Community hospitals** include ERIC `Community hospital (with inpatient beds)` sites. The ERIC hospital classification currently covers England only.
 
-Node POIs and area POIs are both supported; mapped areas are reduced to a representative interior point. Same-name node/area duplicates within 25 m are collapsed with the node preferred. The processed POIs are bucketed into 0.25° WGS84 cells, gzip-compressed and embedded in the single HTML alongside the raster bundle. Service visibility choices are stored in `localStorage`. Clicking a marker shows its name, service type and a link to the source OpenStreetMap element.
+GPs and NHS dentists are currently simple presence/absence layers: Goldilocks does not distinguish whether a practice is accepting new patients. Current acceptance data is not available from the open ODS/PHS distributions used here, and the investigated NHS Directory of Healthcare Services API requires separately approved/onboarded access. Rather than expose permanently unusable acceptance filters, that enhancement is deferred. Goldilocks does not scrape nhs.uk HTML pages.
 
-The first version intentionally uses OSM consistently across Great Britain. Healthcare POIs can later be enriched or replaced with official NHS datasets without changing the browser rendering architecture.
+NHS/ERIC records are geocoded offline from their postcodes with pinned OS Code-Point Open 2026-08. OSM mapped areas are reduced to representative points and same-name near-coincident duplicates are collapsed. The combined 46,671 POIs are bucketed into 0.25° WGS84 cells, gzip-compressed and embedded in the single HTML; only selected POIs in the current viewport are instantiated as Leaflet markers at zoom level 12 or closer. Service filters persist in `localStorage`. Marker popups show the service type and an official source link. See [`docs/nhs-services-investigation.md`](docs/nhs-services-investigation.md) for source/API decisions and current coverage limitations.
 
 An air-frost day is assigned when the minimum air temperature falls below freezing during the observation period; it does not mean the whole day remains below freezing. A day whose maximum temperature remains below freezing is instead an ice day.
 
@@ -251,20 +251,20 @@ Raw sources and reproducible intermediate caches remain under git-ignored `data/
 
 ## Service POI source download
 
-`download_service_sources.py` downloads a pinned Geofabrik OpenStreetMap Great Britain PBF extract dated **2026-09-06** and verifies the published MD5 before accepting it. The raw PBF is about 2.02 GiB and remains under git-ignored `data/source/services/`.
+`download_service_sources.py` prepares the complete offline Services source set. It retains the pinned Geofabrik OpenStreetMap Great Britain PBF dated **2026-09-06**, pins OS Code-Point Open **2026-08**, Public Health Scotland GP **July 2026** and dental **March 2026** distributions, pins ERIC **2024/25**, and refreshes the current NHS England ODS GP/dental reports. The large OSM PBF and all NHS/OS source files remain git-ignored under `data/source/services/`.
 
 ```sh
-# Show the pinned source without downloading it.
+# Show the selected sources without downloading them.
 python download_service_sources.py --dry-run
 
-# Download/resume the pinned PBF and verify it.
+# Download/update all open-data sources; --verify additionally re-hashes the 2 GiB OSM PBF.
 python download_service_sources.py --verify
 
-# Extract and compress the three service categories.
+# Build the combined OSM/NHS service database.
 python process_service_pois.py
 ```
 
-`process_service_pois.py` requires `ogr2ogr` with GDAL's OSM driver. It caches the small node/area extraction under `data/source/services/cache/` so later processing and packaging do not need to rescan the 2 GB PBF unless the pinned source changes. The derived `data/derived/services/manifest.json` plus `services.json.gz` are the local build inputs; `publish_services_snapshot.py` copies only those processed files into the tracked public snapshot.
+No NHS HTML is scraped. `process_service_pois.py` requires `ogr2ogr` with GDAL's OSM driver and uses `pyproj` for Code-Point Open postcode coordinates. It caches the OSM node/area extraction so subsequent NHS refreshes do not rescan the 2 GiB PBF. The derived `data/derived/services/manifest.json` plus `services.json.gz` are the local build inputs; `publish_services_snapshot.py` copies only those processed files into the tracked public snapshot.
 
 ## Browser architecture
 
@@ -276,7 +276,7 @@ Canvas geometry is batched per tile. Metric values are mapped to a 64-step visua
 
 For each Leaflet tile zoom, the renderer chooses the finest metric LOD whose nominal cells are at least about four screen pixels across. The reference pixel distance is projected only once at a fixed representative UK location (54.5°N, 2°W), so LOD choice depends only on zoom and thereafter requires only power-of-two scaling. Each tile still performs a small fixed set of inverse WGS84 -> BNG transforms to identify its candidate row/column range. Leaflet manages tile buffering, panning, clipping, recycling, and zoom transforms. Leaflet's default 200 ms tile fade animation is disabled because metric canvases render synchronously; replacement tiles therefore appear immediately instead of fading through the basemap during redraws and zoom changes.
 
-Services are handled by a separate `ServicesController`, not by the raster renderer. The gzip service payload is decoded only when at least one service category is enabled and the map is at the service display threshold. The controller looks only in spatial buckets intersecting the padded current viewport and diffs the required marker set on pan/zoom, so POIs elsewhere in Great Britain never become Leaflet marker DOM elements. The three categories use CSS/SVG `DivIcon` markers whose colour, outline shape and symbol differ.
+Services are handled by a separate `ServicesController`, not by the raster renderer. The gzip service payload is decoded only when at least one service filter is enabled and the map is at the service display threshold. The controller looks only in spatial buckets intersecting the padded current viewport and diffs the required marker set on pan/zoom, so POIs elsewhere in Great Britain never become Leaflet marker DOM elements. Each service type has a distinct CSS/SVG `DivIcon`, and every service type is independently toggleable.
 
 Clicking always resolves against active-metric LOD0, so popups retain the exact quantised 1 km value rather than a coarse averaged value. The selected-cell outline is a separate lightweight Leaflet vector overlay, so changing the selection does not regenerate any metric canvas tiles. The collapsible left-side panel groups metric radio buttons by the categories declared in the processed manifest (currently `heat`, `heat_2026`, `cold`, `pollution`, `terrain`, `woodland` and `travel`), followed by gridline visibility, saved-location-pin visibility, data-layer opacity, a per-metric dual-ended display-range slider with integrated colour samples, description and provenance. Layer opacity defaults to 62% to preserve the original map appearance and is applied by Leaflet to the existing tile layer without repainting raster canvases. Narrowing the display range clips only the colour mapping; underlying raster and popup values remain unchanged. Display-range scrubbing repaints the existing cached metric canvases in place rather than invoking Leaflet `GridLayer.redraw()`, avoiding tile removal/recreation and the resulting basemap flicker. Display ranges, layer opacity, panel state, gridline visibility, location-pin visibility and selected metric are stored independently in `localStorage`, and each range can be reset to that metric's configured full display range (normally its observed minimum/maximum; woodland is fixed at 0–100%). Metric identifiers are category-prefixed (for example `heat_days_tmax_gt_25`, `cold_air_frost_days`, `terrain_relief`, `woodland_cover` and `travel_york_weekend`) so the same grouping remains explicit in code and generated data; legacy unprefixed Heat metric selections are migrated automatically. Gridlines default to hidden and location pins default to visible when no preference has yet been saved. Leaflet's zoom control is positioned at bottom-right so the main information panel can occupy the top-left corner cleanly.
 
@@ -306,9 +306,10 @@ Direct `file://` opening still renders the embedded Goldilocks data layer, but i
 - `process_travel_metrics.py` — derives York/Cambridge weekend and weekday-PM-peak driving-time rasters
 - `docs/travel-time-investigation.md` — experiment history, validation, final model and limitations
 - `experiments/travel-time/` — reusable external-validation origin set and Google comparison harness
-- `download_service_sources.py` — downloads/resumes and verifies the pinned Geofabrik OSM Great Britain PBF
-- `process_service_pois.py` — extracts, de-duplicates, buckets and compresses supermarket/post-office/pharmacy POIs
+- `download_service_sources.py` — prepares the pinned/dynamic OSM, NHS/PHS, ERIC and Code-Point Open service sources
+- `process_service_pois.py` — filters, postcode-geocodes, de-duplicates, buckets and compresses the combined service POIs
 - `publish_services_snapshot.py` — copies the validated processed service bundle into the tracked public snapshot
+- `docs/nhs-services-investigation.md` — NHS source/API decisions, ERIC hospital classification and current coverage limitations
 - `assemble_metrics.py` — validates and combines dataset fragments into the common Goldilocks metric bundle
 - `build.py` — validates/embeds the raster and service bundles, bundles the frontend and embeds third-party software notices
 - `publish_metrics_snapshot.py` — copies the validated assembled raster bundle into the tracked public snapshot used by Pages
@@ -322,20 +323,20 @@ Direct `file://` opening still renders the embedded Goldilocks data layer, but i
 - `src/locations.ts` — saved-location persistence, labels, context actions, editing and JSON import/export
 - `src/storage.ts` — small resilient helpers for persisted UI preferences
 - `src/types.ts` — shared frontend data-model types
-- `data/source/` — cached raw source data (HadUK NetCDF + Defra PCM CSV + OS Terrain 50 + woodland vectors + Travel inputs + OSM PBF; git-ignored and never published)
+- `data/source/` — cached raw source data (HadUK NetCDF + Defra PCM CSV + OS Terrain 50 + woodland vectors + Travel inputs + OSM/NHS/PHS/ERIC/Code-Point service inputs; git-ignored and never published)
 - `data/derived/` — local generated metric and service bundles (git-ignored)
 - `published-data/goldilocks-metrics/` — tracked, publishable snapshot of the derived raster bundle used by GitHub Pages
-- `published-data/goldilocks-services/` — tracked, publishable ODbL snapshot of the processed service POI bundle used by GitHub Pages
+- `published-data/goldilocks-services/` — tracked, publishable snapshot of the compact processed service database used by GitHub Pages
 - `dist/goldilocks.html` — generated application artifact (git-ignored)
 - `DATA-LICENCE.md` — source-data licences, attribution and provenance notes
 - `THIRD-PARTY-NOTICES.txt` — licences for JavaScript incorporated into the generated HTML
 
 ## Data licence and provenance
 
-The current source datasets include Met Office HadUK-Grid, Defra UK-AIR Pollution Climate Mapping, Ordnance Survey OS Terrain 50/Open Roads/Open Built Up Areas, Forestry Commission NFI and national ancient-woodland inventories, DfT road-congestion statistics, National Highways historic travel-time observations, ONS administrative boundaries and OpenStreetMap service POIs distributed via Geofabrik. The source-specific reuse and attribution terms are documented in `DATA-LICENCE.md`; most government sources are available under the [Open Government Licence v3.0](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/), while the processed OSM service database is distributed under the ODbL 1.0. Goldilocks raster metrics are derived products and are not official products of the source agencies. OS-derived metrics carry the applicable Crown copyright/database-right acknowledgements recorded in the generated manifest and `DATA-LICENCE.md`.
+The current source datasets include Met Office HadUK-Grid, Defra UK-AIR Pollution Climate Mapping, Ordnance Survey OS Terrain 50/Open Roads/Open Built Up Areas/Code-Point Open, Forestry Commission NFI and national ancient-woodland inventories, DfT road-congestion statistics, National Highways historic travel-time observations, ONS administrative boundaries, OpenStreetMap service POIs, NHS England ODS/ERIC and Public Health Scotland practice data. Source-specific reuse and attribution terms are documented in `DATA-LICENCE.md`; NHS API data has separate onboarding/connection terms and is not present in the current public service snapshot.
 
 Stable 2016–2025 observations are taken from the citable CEDA HadUK-Grid v1.3.2.ceda release:
 
 Met Office; Hollis, D.; Carlisle, E.; Kendon, M.; Packman, S.; Doherty, A. (2026): *HadUK-Grid Gridded Climate Observations on a 1km grid over the UK, v1.3.2.ceda (1836-2025).* NERC EDS Centre for Environmental Data Analysis, 23 June 2026. [doi:10.5285/789b3065d74a4c948ab05d33556c86d0](https://doi.org/10.5285/789b3065d74a4c948ab05d33556c86d0).
 
-Available 2026 climate months are provisional Met Office HadUK-Grid data and may be amended before a later annual CEDA release. Pollution metrics use Defra PCM 2022–2024 annual background grids. Terrain relief uses the pinned OS Terrain 50 2026-07 Great Britain grid. Woodland metrics use pinned Forestry Commission and national ancient-woodland vector datasets. Travel metrics use pinned OS Open Roads/Open Built Up Areas, DfT local-A-road statistics, National Highways historic SRN speeds and ONS LAD boundaries; see [`docs/travel-time-investigation.md`](docs/travel-time-investigation.md) for the full model investigation. Service POIs use the pinned 2026-09-06 OpenStreetMap Great Britain extract. See [`DATA-LICENCE.md`](DATA-LICENCE.md) for full licence, attribution and source-specific provenance notes.
+Available 2026 climate months are provisional Met Office HadUK-Grid data and may be amended before a later annual CEDA release. Pollution metrics use Defra PCM 2022–2024 annual background grids. Terrain relief uses the pinned OS Terrain 50 2026-07 Great Britain grid. Woodland metrics use pinned Forestry Commission and national ancient-woodland vector datasets. Travel metrics use pinned OS Open Roads/Open Built Up Areas, DfT local-A-road statistics, National Highways historic SRN speeds and ONS LAD boundaries; see [`docs/travel-time-investigation.md`](docs/travel-time-investigation.md). Service POIs use OSM 2026-09-06 plus ODS/PHS primary-care data, ERIC 2024/25 hospitals and Code-Point Open 2026-08; see [`docs/nhs-services-investigation.md`](docs/nhs-services-investigation.md). See [`DATA-LICENCE.md`](DATA-LICENCE.md) for full licence, attribution and provenance notes.

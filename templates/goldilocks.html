@@ -36,14 +36,20 @@
     .service-option input { margin: 0; flex: 0 0 auto; }
     .service-status { margin-top: 0.45rem; color: #43545f; font-size: 0.74rem; }
     .goldilocks-service-marker-icon { border: 0 !important; background: transparent !important; }
-    .service-marker { display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; box-sizing: border-box; border: 2px solid #fff; color: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.45); }
+    .service-marker { position: relative; display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; box-sizing: border-box; border: 2px solid #fff; color: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.45); }
     .service-marker svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .service-marker-letters { font: 700 9px/1 system-ui, sans-serif; letter-spacing: -0.02em; }
     .service-marker-supermarket { border-radius: 5px; background: #2f7d32; }
     .service-marker-post_office { border-radius: 4px; background: #c43b36; transform: rotate(45deg); }
     .service-marker-post_office svg { transform: rotate(-45deg); }
     .service-marker-pharmacy { border-radius: 50%; background: #2f6fb2; }
+    .service-marker-gp { border-radius: 5px; background: #7048a8; }
+    .service-marker-dentist { border-radius: 50% 50% 42% 42%; background: #167c78; }
+    .service-marker-hospital_general { border-radius: 3px; background: #8d2636; }
+    .service-marker-hospital_community { border-radius: 8px; background: #b2681d; }
     .service-marker-legend { width: 18px; height: 18px; border-width: 1px; box-shadow: none; flex: 0 0 auto; }
     .service-marker-legend svg { width: 12px; height: 12px; }
+    .service-marker-legend .service-marker-letters { font-size: 7px; }
     .service-popup-source { margin-top: 0.25rem; color: #596771; font-size: 0.78rem; }
     .preview-warning { margin-top: 0.65rem; padding: 0.45rem 0.5rem; border: 1px solid #d4a72c; border-radius: 4px; background: #fff8db; color: #5e4b00; }
     .file-basemap-warning { max-width: min(360px, calc(100vw - 90px)); padding: 0.45rem 0.55rem; border: 1px solid #d4a72c; border-radius: 4px; background: rgba(255,248,219,0.96); color: #5e4b00; box-shadow: 0 1px 4px rgba(0,0,0,0.18); font-size: 0.78rem; }

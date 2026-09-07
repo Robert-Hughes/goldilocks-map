@@ -4,7 +4,7 @@ import { NARROW_PANEL_MEDIA_QUERY, syncNarrowPanelCorner } from "./panel-layout"
 import { RasterView } from "./raster";
 import type { ServicesController } from "./services";
 import { readStoredBoolean, readStoredString, writeStoredBoolean, writeStoredString } from "./storage";
-import type { DataSource, GoldilocksData } from "./types";
+import type { DataSource, GoldilocksData, ServiceCategoryId } from "./types";
 
 declare const L: any;
 
@@ -301,11 +301,10 @@ export function addInfoPanel(
       writeStoredBoolean(LOCATIONS_VISIBLE_STORAGE_KEY, show);
     });
 
-
     const serviceInputs = Array.from(div.querySelectorAll('input[data-service-category]') as NodeListOf<HTMLInputElement>);
     for (const input of serviceInputs) {
       input.addEventListener("change", () => {
-        const categoryId = input.dataset.serviceCategory;
+        const categoryId = input.dataset.serviceCategory as ServiceCategoryId | undefined;
         if (!categoryId) return;
         services.setEnabled(categoryId, input.checked);
       });

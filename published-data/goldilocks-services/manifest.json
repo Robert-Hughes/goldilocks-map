@@ -1,7 +1,7 @@
 {
-  "format_version": 1,
+  "format_version": 2,
   "kind": "goldilocks-services",
-  "generated_at_unix": 1788811138,
+  "generated_at_unix": 1788816995,
   "min_zoom": 12,
   "bucket_scale": 4,
   "coordinate_scale": 100000,
@@ -23,41 +23,139 @@
       "label": "Pharmacies",
       "order": 2,
       "count": 9081
+    },
+    {
+      "id": "gp",
+      "label": "GPs",
+      "order": 3,
+      "count": 7435
+    },
+    {
+      "id": "dentist",
+      "label": "NHS dentists",
+      "order": 4,
+      "count": 10665
+    },
+    {
+      "id": "hospital_general",
+      "label": "General hospitals",
+      "order": 5,
+      "count": 261
+    },
+    {
+      "id": "hospital_community",
+      "label": "Community hospitals",
+      "order": 6,
+      "count": 220
     }
   ],
   "counts": {
     "supermarket": 10057,
     "post_office": 8952,
-    "pharmacy": 9081
+    "pharmacy": 9081,
+    "gp": 7435,
+    "dentist": 10665,
+    "hospital_general": 261,
+    "hospital_community": 220
   },
   "raw_counts_before_spatial_dedup": {
     "supermarket": 10066,
     "post_office": 8957,
-    "pharmacy": 9093
+    "pharmacy": 9093,
+    "gp": 7435,
+    "dentist": 10735,
+    "hospital_general": 263,
+    "hospital_community": 223
   },
-  "spatial_duplicates_removed": 26,
-  "source": {
-    "id": "openstreetmap-geofabrik-gb-2026-09-06",
-    "provider": "OpenStreetMap contributors",
-    "distributor": "Geofabrik GmbH",
-    "dataset": "OpenStreetMap Great Britain extract",
-    "extract_date": "2026-09-06",
-    "homepage_url": "https://www.openstreetmap.org/",
-    "download_url": "https://download.geofabrik.de/europe/great-britain-260906.osm.pbf",
-    "licence_name": "Open Database License (ODbL) 1.0",
-    "licence_url": "https://opendatacommons.org/licenses/odbl/1-0/",
-    "attribution": "© OpenStreetMap contributors",
-    "note": "Goldilocks extracts shop=supermarket, amenity=post_office and amenity=pharmacy from the pinned Great Britain OSM extract. Area features use a representative point. Separately mapped same-name node/area POIs within 25 m are de-duplicated, preferring the node."
+  "spatial_duplicates_removed": 101,
+  "missing_postcode_geocodes": {
+    "gp": 4,
+    "dentist": 47,
+    "hospital_community": 7,
+    "hospital_general": 3
   },
-  "source_file": {
-    "file": "great-britain-260906.osm.pbf",
-    "url": "https://download.geofabrik.de/europe/great-britain-260906.osm.pbf",
-    "bytes": 2169620686,
-    "md5": "a63b85616bfb5e4998fcf4ba5c2dcae3"
+  "source_order": [
+    "osm",
+    "nhs-ods-gp",
+    "nhs-ods-dental",
+    "phs-gp",
+    "phs-dental",
+    "nhs-eric"
+  ],
+  "sources": {
+    "osm": {
+      "id": "osm",
+      "provider": "OpenStreetMap contributors",
+      "distributor": "Geofabrik GmbH",
+      "dataset": "OpenStreetMap Great Britain extract",
+      "extract_date": "2026-09-06",
+      "homepage_url": "https://www.openstreetmap.org/",
+      "licence_name": "Open Database License (ODbL) 1.0",
+      "licence_url": "https://opendatacommons.org/licenses/odbl/1-0/",
+      "attribution": "\u00a9 OpenStreetMap contributors"
+    },
+    "nhs-ods-gp": {
+      "id": "nhs-ods-gp",
+      "provider": "NHS England Organisation Data Service",
+      "dataset": "General Medical Practices (epraccur)",
+      "homepage_url": "https://digital.nhs.uk/services/organisation-data-service/data-search-and-export/csv-downloads/gp-and-gp-practice-related-data",
+      "licence_name": "Open Government Licence v3.0",
+      "licence_url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+      "attribution": "NHS England Organisation Data Service"
+    },
+    "nhs-ods-dental": {
+      "id": "nhs-ods-dental",
+      "provider": "NHS England Organisation Data Service",
+      "dataset": "General Dental Practices (egdpprac)",
+      "homepage_url": "https://digital.nhs.uk/services/organisation-data-service/data-search-and-export/csv-downloads/miscellaneous",
+      "licence_name": "Open Government Licence v3.0",
+      "licence_url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+      "attribution": "NHS England Organisation Data Service"
+    },
+    "phs-gp": {
+      "id": "phs-gp",
+      "provider": "Public Health Scotland",
+      "dataset": "GP Practice Contact Details and List Sizes",
+      "release": "July 2026",
+      "homepage_url": "https://www.opendata.nhs.scot/dataset/gp-practice-contact-details-and-list-sizes",
+      "licence_name": "Open Government Licence v3.0",
+      "licence_url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+      "attribution": "Public Health Scotland"
+    },
+    "phs-dental": {
+      "id": "phs-dental",
+      "provider": "Public Health Scotland",
+      "dataset": "Dental Practices and Patient Registrations",
+      "release": "March 2026",
+      "homepage_url": "https://www.opendata.nhs.scot/dataset/dental-practices-and-patient-registrations",
+      "licence_name": "Open Government Licence v3.0",
+      "licence_url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+      "attribution": "Public Health Scotland"
+    },
+    "nhs-eric": {
+      "id": "nhs-eric",
+      "provider": "NHS England",
+      "dataset": "Estates Returns Information Collection (ERIC) site data",
+      "release": "2024/25",
+      "homepage_url": "https://digital.nhs.uk/data-and-information/publications/statistical/estates-returns-information-collection/summary-page-and-dataset-for-eric-2024-25",
+      "licence_name": "Open Government Licence v3.0",
+      "licence_url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+      "attribution": "NHS England"
+    }
+  },
+  "geocoder_source": {
+    "id": "os-code-point-open",
+    "provider": "Ordnance Survey",
+    "dataset": "Code-Point Open",
+    "release": "2026-08",
+    "homepage_url": "https://www.ordnancesurvey.co.uk/products/code-point-open",
+    "licence_name": "Open Government Licence v3.0",
+    "licence_url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+    "attribution": "Contains OS data \u00a9 Crown copyright and database right 2026."
   },
   "payload_file": "services.json.gz",
   "payload_encoding": "gzip+json",
-  "raw_bytes": 2195260,
-  "compressed_bytes": 633327,
-  "sha256_raw": "618c52b8831f85bb9d020439c7ad1830590b0572277fad3aff2f13661a4e71aa"
+  "raw_bytes": 3917455,
+  "compressed_bytes": 1077827,
+  "sha256_raw": "1bbf3a81bab5a8f2bf12ca777e38e76b2b20b414e9c5510a7ea180f3d9472c8a"
 }

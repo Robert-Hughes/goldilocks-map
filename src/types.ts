@@ -62,8 +62,17 @@ export type DataSource = {
   releases?: Array<{ label: string; status?: string; url?: string }>;
 };
 
+export type ServiceCategoryId =
+  | "supermarket"
+  | "post_office"
+  | "pharmacy"
+  | "gp"
+  | "dentist"
+  | "hospital_general"
+  | "hospital_community";
+
 export type ServiceCategory = {
-  id: "supermarket" | "post_office" | "pharmacy";
+  id: ServiceCategoryId;
   label: string;
   order: number;
   count: number;
@@ -74,22 +83,22 @@ export type ServiceSource = {
   provider: string;
   distributor?: string;
   dataset: string;
+  release?: string;
   extract_date?: string;
   homepage_url?: string;
-  download_url?: string;
   licence_name: string;
   licence_url: string;
   attribution: string;
-  note?: string;
 };
 
 export type ServiceTransport = {
-  format_version: 1;
+  format_version: 2;
   min_zoom: number;
   bucket_scale: number;
   coordinate_scale: number;
   categories: ServiceCategory[];
-  source: ServiceSource;
+  source_order: string[];
+  sources: Record<string, ServiceSource>;
   payload_encoding: "gzip+json";
   raw_bytes: number;
   compressed_bytes: number;

@@ -1,12 +1,12 @@
 # Data licence and attribution
 
-Goldilocks Map contains derived raster metrics from multiple UK public datasets plus a compact point-of-interest database derived from OpenStreetMap. The current build uses Met Office HadUK-Grid climate observations, Defra UK-AIR Pollution Climate Mapping (PCM), Ordnance Survey OS Terrain 50, Forestry Commission National Forest Inventory (NFI), the national Ancient Woodland Inventories for England, Wales and Scotland, a derived driving-time model based on OS Open Roads, OS Open Built Up Areas, Department for Transport (DfT) local-A-road statistics, National Highways historic travel-time observations and ONS administrative boundaries, and selected OpenStreetMap service POIs distributed via Geofabrik.
+Goldilocks Map contains derived raster metrics from multiple UK public datasets plus a compact point-of-interest database assembled from OpenStreetMap and official NHS/OS reference data. The current service build combines selected OSM POIs, NHS England Organisation Data Service GP/dental records, Public Health Scotland GP/dental records, NHS England ERIC hospital sites, and OS Code-Point Open postcode coordinates.
 
 ## Licence
 
-HadUK-Grid, Defra PCM, OS Terrain 50, OS Open Roads, OS Open Built Up Areas, Forestry Commission NFI, Natural England AWI, Natural Resources Wales AWI, DfT local-road statistics, National Highways travel-time data and ONS helper boundaries are open-data inputs whose source-specific terms and acknowledgements are recorded below. The NatureScot AWI metadata describes that dataset as available under the OS Open Data licence and specifies its own acknowledgement. OpenStreetMap service POIs are subject to the Open Database License (ODbL) 1.0. Do not replace the source-specific acknowledgements with a single generic attribution.
+HadUK-Grid, Defra PCM, OS OpenData products, Forestry Commission NFI, Natural England AWI, Natural Resources Wales AWI, DfT local-road statistics, National Highways travel-time data, ONS helper boundaries and the NHS/PHS reference datasets used here are open-data inputs whose source-specific terms and acknowledgements are recorded below. OpenStreetMap service POIs are subject to the Open Database License (ODbL) 1.0. Do not replace source-specific acknowledgements with a single generic attribution. NHS API data, if an authorised acceptance-status snapshot is added later, remains subject to the connection/API terms agreed during onboarding and must not be assumed to inherit the open-data licence of ODS/ERIC.
 
-Goldilocks Map publishes derived raster summaries plus the processed OpenStreetMap service subset needed by the browser; it does not publish the raw source archives. The derived metrics are not official products of the Met Office, Defra, Ordnance Survey, Forestry Commission, Natural England, Natural Resources Wales, NatureScot, DfT, National Highways or ONS.
+Goldilocks Map publishes derived raster summaries plus a compact processed service database needed by the browser; it does not publish the raw source archives. Goldilocks processing choices and classifications are not official products of the source agencies.
 
 ## Met Office HadUK-Grid
 
@@ -88,14 +88,30 @@ The travel-time rasters inherit important limitations from the model. OS Open Ro
 
 ## OpenStreetMap service POIs
 
-The Services controls use a pinned **OpenStreetMap Great Britain** extract dated **2026-09-06**, distributed by [Geofabrik](https://download.geofabrik.de/). Goldilocks extracts only `shop=supermarket`, `amenity=post_office` and `amenity=pharmacy`. Node POIs are retained directly; qualifying mapped areas are reduced to a representative interior point. Same-name node/area representations within 25 m are de-duplicated with the node preferred.
+The Services controls use a pinned **OpenStreetMap Great Britain** extract dated **2026-09-06**, distributed by [Geofabrik](https://download.geofabrik.de/). Goldilocks extracts only `shop=supermarket`, `amenity=post_office` and `amenity=pharmacy`. Node POIs are retained directly; qualifying mapped areas are reduced to a representative interior point. Same-name near-coincident representations are de-duplicated.
 
 OpenStreetMap data is © OpenStreetMap contributors and available under the [Open Database License (ODbL) 1.0](https://opendatacommons.org/licenses/odbl/1-0/). The required attribution is shown in the Leaflet attribution control whenever the embedded service database is available:
 
 > © OpenStreetMap contributors
 
-The processed Goldilocks service POI database in `published-data/goldilocks-services/` is itself distributed under the ODbL 1.0. The raw Geofabrik `.osm.pbf` is a build input only and is not committed. The processed subset retains names, category, representative WGS84 coordinates and source OSM element references so the published database remains traceable to OpenStreetMap.
+The OSM-derived portion of the processed service database remains subject to the ODbL. Source OSM element references are retained for traceability.
+
+## NHS primary-care and hospital service data
+
+GP and NHS-dental organisation presence is assembled from NHS England Organisation Data Service Data Search and Export reports (`epraccur` and `egdpprac`) together with Public Health Scotland's **GP Practice Contact Details and List Sizes** (July 2026) and **Dental Practices and Patient Registrations** (March 2026). These public reference datasets are reused under the Open Government Licence. Goldilocks retains only the practice identity/name/postcode needed for the service map.
+
+The hospital layers use NHS England **Estates Returns Information Collection (ERIC) 2024/25** site data. Goldilocks includes only ERIC `General acute hospital`, `Mixed service hospital` and `Community hospital (with inpatient beds)` site types, combining the first two into the General hospital display category. ERIC is an England secondary-care estate collection; the current hospital layer therefore does not claim equivalent Scottish/Welsh coverage.
+
+The current public bundle contains no NHS API-derived acceptance data. If acceptance enrichment is enabled later, use of the NHS Directory of Healthcare Services API is conditional on the approved onboarding/connection terms for that integration; those API terms must be reviewed before publishing or redistributing a refreshed acceptance snapshot.
+
+## OS Code-Point Open
+
+NHS/PHS/ERIC postcodes are converted to map coordinates using pinned **OS Code-Point Open 2026-08** GB CSV data. The source is OS OpenData under the Open Government Licence and requires:
+
+> Contains OS data © Crown copyright and database right 2026.
+
+Goldilocks publishes only the resulting service-point coordinates, not the raw Code-Point archive.
 
 ## What Goldilocks publishes
 
-Raw HadUK-Grid NetCDF files, Defra PCM CSV files, OS source archives, NFI/AWI vector downloads, DfT workbooks, National Highways link observations, ONS helper boundaries and the Geofabrik OSM PBF are build inputs under `data/source/` and are not committed by this project. The tracked public snapshots contain Goldilocks-derived quantised metric rasters plus the compact ODbL service POI subset and the metadata needed to interpret them. Metric definitions, averaging choices, quality-control masking, routing/traversal-time modelling, service extraction/de-duplication, quantisation, LOD construction and presentation are Goldilocks Map processing choices rather than official source-agency products.
+Raw HadUK-Grid NetCDF files, Defra PCM CSV files, OS source archives, NFI/AWI vector downloads, DfT workbooks, National Highways link observations, ONS helper boundaries, the Geofabrik OSM PBF and raw NHS/PHS/ERIC/Code-Point service inputs are build inputs under `data/source/` and are not committed. The tracked public snapshots contain Goldilocks-derived quantised metric rasters and the compact processed service database with source metadata. Metric definitions, averaging choices, quality-control masking, routing/traversal-time modelling, service filtering/de-duplication, postcode geocoding and presentation are Goldilocks Map processing choices rather than official source-agency products.
