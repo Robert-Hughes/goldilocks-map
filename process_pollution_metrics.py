@@ -19,7 +19,7 @@ from goldilocks_raster import (
 ROOT = Path(__file__).resolve().parent
 DEFAULT_OUTPUT_DIR = ROOT / "data" / "derived" / "pollution-metrics"
 DEFAULT_YEARS = (2022, 2023, 2024)
-CATEGORY = {"id": "pollution", "label": "Pollution", "order": 2}
+CATEGORY = {"id": "pollution", "label": "Pollution", "order": 3}
 OGL_NAME = "Open Government Licence v3.0"
 OGL_URL = "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/"
 

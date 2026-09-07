@@ -1,7 +1,7 @@
 {
   "format_version": 3,
   "kind": "goldilocks-bundle",
-  "generated_at_unix": 1788703912,
+  "generated_at_unix": 1788799824,
   "preview_partial_sources": false,
   "grid": {
     "crs": "EPSG:27700",
@@ -44,29 +44,34 @@
       "order": 0
     },
     {
+      "id": "heat_2026",
+      "label": "Heat \u2014 2026",
+      "order": 1
+    },
+    {
       "id": "cold",
       "label": "Cold",
-      "order": 1
+      "order": 2
     },
     {
       "id": "pollution",
       "label": "Pollution",
-      "order": 2
+      "order": 3
     },
     {
       "id": "terrain",
       "label": "Terrain",
-      "order": 3
+      "order": 4
     },
     {
       "id": "woodland",
       "label": "Woodland",
-      "order": 4
+      "order": 5
     },
     {
       "id": "travel",
       "label": "Travel",
-      "order": 5
+      "order": 6
     }
   ],
   "metrics": [
@@ -110,7 +115,17 @@
         "method": "Calendar-month means are summed so incomplete 2026 coverage does not count unpublished months as zero."
       },
       "valid_cell_count": 245069,
-      "palette_reverse": false,
+      "palette": [
+        "#1548ac",
+        "#1796b7",
+        "#18c096",
+        "#19c84c",
+        "#38cf1a",
+        "#8ed31a",
+        "#d7c71b",
+        "#d9721b",
+        "#da1b1b"
+      ],
       "levels": [
         {
           "level": 0,
@@ -255,7 +270,17 @@
         "method": "Calendar-month means are summed so incomplete 2026 coverage does not count unpublished months as zero."
       },
       "valid_cell_count": 245069,
-      "palette_reverse": false,
+      "palette": [
+        "#1548ac",
+        "#1796b7",
+        "#18c096",
+        "#19c84c",
+        "#38cf1a",
+        "#8ed31a",
+        "#d7c71b",
+        "#d9721b",
+        "#da1b1b"
+      ],
       "levels": [
         {
           "level": 0,
@@ -400,7 +425,17 @@
         "method": "Calendar-month means are summed so incomplete 2026 coverage does not count unpublished months as zero."
       },
       "valid_cell_count": 245069,
-      "palette_reverse": false,
+      "palette": [
+        "#1548ac",
+        "#1796b7",
+        "#18c096",
+        "#19c84c",
+        "#38cf1a",
+        "#8ed31a",
+        "#d7c71b",
+        "#d9721b",
+        "#da1b1b"
+      ],
       "levels": [
         {
           "level": 0,
@@ -577,7 +612,17 @@
         ]
       },
       "valid_cell_count": 245069,
-      "palette_reverse": false,
+      "palette": [
+        "#1548ac",
+        "#1796b7",
+        "#18c096",
+        "#19c84c",
+        "#38cf1a",
+        "#8ed31a",
+        "#d7c71b",
+        "#d9721b",
+        "#da1b1b"
+      ],
       "levels": [
         {
           "level": 0,
@@ -754,7 +799,17 @@
         ]
       },
       "valid_cell_count": 245069,
-      "palette_reverse": false,
+      "palette": [
+        "#1548ac",
+        "#1796b7",
+        "#18c096",
+        "#19c84c",
+        "#38cf1a",
+        "#8ed31a",
+        "#d7c71b",
+        "#d9721b",
+        "#da1b1b"
+      ],
       "levels": [
         {
           "level": 0,
@@ -899,7 +954,17 @@
         "method": "Calendar-month means are summed so incomplete 2026 coverage does not count unpublished months as zero."
       },
       "valid_cell_count": 245069,
-      "palette_reverse": false,
+      "palette": [
+        "#1548ac",
+        "#1796b7",
+        "#18c096",
+        "#19c84c",
+        "#38cf1a",
+        "#8ed31a",
+        "#d7c71b",
+        "#d9721b",
+        "#da1b1b"
+      ],
       "levels": [
         {
           "level": 0,
@@ -1044,7 +1109,17 @@
         "method": "Calendar-month means are summed so incomplete 2026 coverage does not count unpublished months as zero."
       },
       "valid_cell_count": 245069,
-      "palette_reverse": false,
+      "palette": [
+        "#1548ac",
+        "#1796b7",
+        "#18c096",
+        "#19c84c",
+        "#38cf1a",
+        "#8ed31a",
+        "#d7c71b",
+        "#d9721b",
+        "#da1b1b"
+      ],
       "levels": [
         {
           "level": 0,
@@ -1150,6 +1225,601 @@
       "sha256_raw": "e868c58e1b2a558e89de5574d925a7a757f7c3f39a5e4a1d5b4353bdaf7c5e1e"
     },
     {
+      "id": "heat_2026_days_tmax_gt_25",
+      "category_id": "heat_2026",
+      "label": "2026 days Tmax > 25\u00b0C",
+      "units": "days",
+      "period": "2026-01 to 2026-08",
+      "definition": "Observed number of days in the available 2026 period with HadUK-Grid daily maximum temperature strictly above 25\u00b0C. This is a year-to-date count, not an annual estimate; unpublished later months are not treated as zero.",
+      "source_id": "hadukgrid",
+      "source_variable": "tasmax",
+      "scale": 1.0,
+      "offset": 0.0,
+      "decimals": 0,
+      "nodata": 65535,
+      "encoded_min": 0,
+      "encoded_max": 77,
+      "summary": {
+        "min": 0.0,
+        "max": 77.0
+      },
+      "coverage": {
+        "source_months": 8,
+        "daily_observations": 243,
+        "months_present": [
+          "2026-01",
+          "2026-02",
+          "2026-03",
+          "2026-04",
+          "2026-05",
+          "2026-06",
+          "2026-07",
+          "2026-08"
+        ],
+        "method": "Observed 2026 count through the latest published month; unpublished later months are not treated as zero and the result is not annualised."
+      },
+      "valid_cell_count": 245069,
+      "palette": [
+        "#1548ac",
+        "#1796b7",
+        "#18c096",
+        "#19c84c",
+        "#38cf1a",
+        "#8ed31a",
+        "#d7c71b",
+        "#d9721b",
+        "#da1b1b"
+      ],
+      "levels": [
+        {
+          "level": 0,
+          "width": 900,
+          "height": 1450,
+          "cell_size_m": 1000,
+          "value_offset": 0,
+          "value_count": 1305000
+        },
+        {
+          "level": 1,
+          "width": 450,
+          "height": 725,
+          "cell_size_m": 2000,
+          "value_offset": 1305000,
+          "value_count": 326250
+        },
+        {
+          "level": 2,
+          "width": 225,
+          "height": 363,
+          "cell_size_m": 4000,
+          "value_offset": 1631250,
+          "value_count": 81675
+        },
+        {
+          "level": 3,
+          "width": 113,
+          "height": 182,
+          "cell_size_m": 8000,
+          "value_offset": 1712925,
+          "value_count": 20566
+        },
+        {
+          "level": 4,
+          "width": 57,
+          "height": 91,
+          "cell_size_m": 16000,
+          "value_offset": 1733491,
+          "value_count": 5187
+        },
+        {
+          "level": 5,
+          "width": 29,
+          "height": 46,
+          "cell_size_m": 32000,
+          "value_offset": 1738678,
+          "value_count": 1334
+        },
+        {
+          "level": 6,
+          "width": 15,
+          "height": 23,
+          "cell_size_m": 64000,
+          "value_offset": 1740012,
+          "value_count": 345
+        },
+        {
+          "level": 7,
+          "width": 8,
+          "height": 12,
+          "cell_size_m": 128000,
+          "value_offset": 1740357,
+          "value_count": 96
+        },
+        {
+          "level": 8,
+          "width": 4,
+          "height": 6,
+          "cell_size_m": 256000,
+          "value_offset": 1740453,
+          "value_count": 24
+        },
+        {
+          "level": 9,
+          "width": 2,
+          "height": 3,
+          "cell_size_m": 512000,
+          "value_offset": 1740477,
+          "value_count": 6
+        },
+        {
+          "level": 10,
+          "width": 1,
+          "height": 2,
+          "cell_size_m": 1024000,
+          "value_offset": 1740483,
+          "value_count": 2
+        },
+        {
+          "level": 11,
+          "width": 1,
+          "height": 1,
+          "cell_size_m": 2048000,
+          "value_offset": 1740485,
+          "value_count": 1
+        }
+      ],
+      "blob_file": "heat_2026_days_tmax_gt_25.u16.gz",
+      "blob_encoding": "gzip+uint16le",
+      "raw_bytes": 3480972,
+      "compressed_bytes": 195848,
+      "sha256_raw": "c1ccac93e729fc79097be8cf66a0aa666b339e06831f5aa3cca0569c9b6e178b"
+    },
+    {
+      "id": "heat_2026_longest_run_tmax_gt_25",
+      "category_id": "heat_2026",
+      "label": "2026 longest run Tmax > 25\u00b0C",
+      "units": "days",
+      "period": "2026-01 to 2026-08",
+      "definition": "Longest observed consecutive run of days in the available 2026 period with HadUK-Grid daily maximum temperature strictly above 25\u00b0C. Runs reset at any gap in the published monthly source record.",
+      "source_id": "hadukgrid",
+      "source_variable": "tasmax",
+      "scale": 1.0,
+      "offset": 0.0,
+      "decimals": 0,
+      "nodata": 65535,
+      "encoded_min": 0,
+      "encoded_max": 36,
+      "summary": {
+        "min": 0.0,
+        "max": 36.0
+      },
+      "coverage": {
+        "source_months": 8,
+        "daily_observations": 243,
+        "months_present": [
+          "2026-01",
+          "2026-02",
+          "2026-03",
+          "2026-04",
+          "2026-05",
+          "2026-06",
+          "2026-07",
+          "2026-08"
+        ],
+        "method": "Observed 2026 count through the latest published month; unpublished later months are not treated as zero and the result is not annualised."
+      },
+      "valid_cell_count": 245069,
+      "palette": [
+        "#1548ac",
+        "#1796b7",
+        "#18c096",
+        "#19c84c",
+        "#38cf1a",
+        "#8ed31a",
+        "#d7c71b",
+        "#d9721b",
+        "#da1b1b"
+      ],
+      "levels": [
+        {
+          "level": 0,
+          "width": 900,
+          "height": 1450,
+          "cell_size_m": 1000,
+          "value_offset": 0,
+          "value_count": 1305000
+        },
+        {
+          "level": 1,
+          "width": 450,
+          "height": 725,
+          "cell_size_m": 2000,
+          "value_offset": 1305000,
+          "value_count": 326250
+        },
+        {
+          "level": 2,
+          "width": 225,
+          "height": 363,
+          "cell_size_m": 4000,
+          "value_offset": 1631250,
+          "value_count": 81675
+        },
+        {
+          "level": 3,
+          "width": 113,
+          "height": 182,
+          "cell_size_m": 8000,
+          "value_offset": 1712925,
+          "value_count": 20566
+        },
+        {
+          "level": 4,
+          "width": 57,
+          "height": 91,
+          "cell_size_m": 16000,
+          "value_offset": 1733491,
+          "value_count": 5187
+        },
+        {
+          "level": 5,
+          "width": 29,
+          "height": 46,
+          "cell_size_m": 32000,
+          "value_offset": 1738678,
+          "value_count": 1334
+        },
+        {
+          "level": 6,
+          "width": 15,
+          "height": 23,
+          "cell_size_m": 64000,
+          "value_offset": 1740012,
+          "value_count": 345
+        },
+        {
+          "level": 7,
+          "width": 8,
+          "height": 12,
+          "cell_size_m": 128000,
+          "value_offset": 1740357,
+          "value_count": 96
+        },
+        {
+          "level": 8,
+          "width": 4,
+          "height": 6,
+          "cell_size_m": 256000,
+          "value_offset": 1740453,
+          "value_count": 24
+        },
+        {
+          "level": 9,
+          "width": 2,
+          "height": 3,
+          "cell_size_m": 512000,
+          "value_offset": 1740477,
+          "value_count": 6
+        },
+        {
+          "level": 10,
+          "width": 1,
+          "height": 2,
+          "cell_size_m": 1024000,
+          "value_offset": 1740483,
+          "value_count": 2
+        },
+        {
+          "level": 11,
+          "width": 1,
+          "height": 1,
+          "cell_size_m": 2048000,
+          "value_offset": 1740485,
+          "value_count": 1
+        }
+      ],
+      "blob_file": "heat_2026_longest_run_tmax_gt_25.u16.gz",
+      "blob_encoding": "gzip+uint16le",
+      "raw_bytes": 3480972,
+      "compressed_bytes": 89978,
+      "sha256_raw": "030d69d91383820336e868e848e37ac74668b98776077649abbe1cdeb18c33bc"
+    },
+    {
+      "id": "heat_2026_summer_tmax_p95",
+      "category_id": "heat_2026",
+      "label": "Summer 2026 Tmax 95th percentile",
+      "units": "\u00b0C",
+      "period": "Summer 2026",
+      "definition": "95th percentile of all June\u2013August 2026 HadUK-Grid daily maximum temperatures.",
+      "source_id": "hadukgrid",
+      "source_variable": "tasmax",
+      "scale": 0.1,
+      "offset": -50.0,
+      "decimals": 1,
+      "nodata": 65535,
+      "encoded_min": 648,
+      "encoded_max": 849,
+      "summary": {
+        "min": 14.799999999999997,
+        "max": 34.900000000000006
+      },
+      "coverage": {
+        "source_months": 3,
+        "daily_observations": 92,
+        "months_present": [
+          "2026-06",
+          "2026-07",
+          "2026-08"
+        ],
+        "method": "Complete meteorological summer (June\u2013August) 2026 only."
+      },
+      "valid_cell_count": 245069,
+      "palette": [
+        "#1548ac",
+        "#1796b7",
+        "#18c096",
+        "#19c84c",
+        "#38cf1a",
+        "#8ed31a",
+        "#d7c71b",
+        "#d9721b",
+        "#da1b1b"
+      ],
+      "levels": [
+        {
+          "level": 0,
+          "width": 900,
+          "height": 1450,
+          "cell_size_m": 1000,
+          "value_offset": 0,
+          "value_count": 1305000
+        },
+        {
+          "level": 1,
+          "width": 450,
+          "height": 725,
+          "cell_size_m": 2000,
+          "value_offset": 1305000,
+          "value_count": 326250
+        },
+        {
+          "level": 2,
+          "width": 225,
+          "height": 363,
+          "cell_size_m": 4000,
+          "value_offset": 1631250,
+          "value_count": 81675
+        },
+        {
+          "level": 3,
+          "width": 113,
+          "height": 182,
+          "cell_size_m": 8000,
+          "value_offset": 1712925,
+          "value_count": 20566
+        },
+        {
+          "level": 4,
+          "width": 57,
+          "height": 91,
+          "cell_size_m": 16000,
+          "value_offset": 1733491,
+          "value_count": 5187
+        },
+        {
+          "level": 5,
+          "width": 29,
+          "height": 46,
+          "cell_size_m": 32000,
+          "value_offset": 1738678,
+          "value_count": 1334
+        },
+        {
+          "level": 6,
+          "width": 15,
+          "height": 23,
+          "cell_size_m": 64000,
+          "value_offset": 1740012,
+          "value_count": 345
+        },
+        {
+          "level": 7,
+          "width": 8,
+          "height": 12,
+          "cell_size_m": 128000,
+          "value_offset": 1740357,
+          "value_count": 96
+        },
+        {
+          "level": 8,
+          "width": 4,
+          "height": 6,
+          "cell_size_m": 256000,
+          "value_offset": 1740453,
+          "value_count": 24
+        },
+        {
+          "level": 9,
+          "width": 2,
+          "height": 3,
+          "cell_size_m": 512000,
+          "value_offset": 1740477,
+          "value_count": 6
+        },
+        {
+          "level": 10,
+          "width": 1,
+          "height": 2,
+          "cell_size_m": 1024000,
+          "value_offset": 1740483,
+          "value_count": 2
+        },
+        {
+          "level": 11,
+          "width": 1,
+          "height": 1,
+          "cell_size_m": 2048000,
+          "value_offset": 1740485,
+          "value_count": 1
+        }
+      ],
+      "blob_file": "heat_2026_summer_tmax_p95.u16.gz",
+      "blob_encoding": "gzip+uint16le",
+      "raw_bytes": 3480972,
+      "compressed_bytes": 296366,
+      "sha256_raw": "7f8317080bcca77372cd982e08b630340ea6ccf9a17634e49547dcbe72ccc74c"
+    },
+    {
+      "id": "heat_2026_tropical_nights_tmin_gt_20",
+      "category_id": "heat_2026",
+      "label": "2026 tropical nights: Tmin > 20\u00b0C",
+      "units": "days",
+      "period": "2026-01 to 2026-08",
+      "definition": "Observed number of days in the available 2026 period whose HadUK-Grid daily minimum temperature is strictly above 20\u00b0C. This is a year-to-date count, not an annual estimate; HadUK-Grid daily Tmin follows the Met Office observation-day convention rather than a literal sunset-to-sunrise minimum.",
+      "source_id": "hadukgrid",
+      "source_variable": "tasmin",
+      "scale": 1.0,
+      "offset": 0.0,
+      "decimals": 0,
+      "nodata": 65535,
+      "encoded_min": 0,
+      "encoded_max": 6,
+      "summary": {
+        "min": 0.0,
+        "max": 6.0
+      },
+      "coverage": {
+        "source_months": 8,
+        "daily_observations": 243,
+        "months_present": [
+          "2026-01",
+          "2026-02",
+          "2026-03",
+          "2026-04",
+          "2026-05",
+          "2026-06",
+          "2026-07",
+          "2026-08"
+        ],
+        "method": "Observed 2026 count through the latest published month; unpublished later months are not treated as zero and the result is not annualised."
+      },
+      "valid_cell_count": 245069,
+      "palette": [
+        "#1548ac",
+        "#1796b7",
+        "#18c096",
+        "#19c84c",
+        "#38cf1a",
+        "#8ed31a",
+        "#d7c71b",
+        "#d9721b",
+        "#da1b1b"
+      ],
+      "levels": [
+        {
+          "level": 0,
+          "width": 900,
+          "height": 1450,
+          "cell_size_m": 1000,
+          "value_offset": 0,
+          "value_count": 1305000
+        },
+        {
+          "level": 1,
+          "width": 450,
+          "height": 725,
+          "cell_size_m": 2000,
+          "value_offset": 1305000,
+          "value_count": 326250
+        },
+        {
+          "level": 2,
+          "width": 225,
+          "height": 363,
+          "cell_size_m": 4000,
+          "value_offset": 1631250,
+          "value_count": 81675
+        },
+        {
+          "level": 3,
+          "width": 113,
+          "height": 182,
+          "cell_size_m": 8000,
+          "value_offset": 1712925,
+          "value_count": 20566
+        },
+        {
+          "level": 4,
+          "width": 57,
+          "height": 91,
+          "cell_size_m": 16000,
+          "value_offset": 1733491,
+          "value_count": 5187
+        },
+        {
+          "level": 5,
+          "width": 29,
+          "height": 46,
+          "cell_size_m": 32000,
+          "value_offset": 1738678,
+          "value_count": 1334
+        },
+        {
+          "level": 6,
+          "width": 15,
+          "height": 23,
+          "cell_size_m": 64000,
+          "value_offset": 1740012,
+          "value_count": 345
+        },
+        {
+          "level": 7,
+          "width": 8,
+          "height": 12,
+          "cell_size_m": 128000,
+          "value_offset": 1740357,
+          "value_count": 96
+        },
+        {
+          "level": 8,
+          "width": 4,
+          "height": 6,
+          "cell_size_m": 256000,
+          "value_offset": 1740453,
+          "value_count": 24
+        },
+        {
+          "level": 9,
+          "width": 2,
+          "height": 3,
+          "cell_size_m": 512000,
+          "value_offset": 1740477,
+          "value_count": 6
+        },
+        {
+          "level": 10,
+          "width": 1,
+          "height": 2,
+          "cell_size_m": 1024000,
+          "value_offset": 1740483,
+          "value_count": 2
+        },
+        {
+          "level": 11,
+          "width": 1,
+          "height": 1,
+          "cell_size_m": 2048000,
+          "value_offset": 1740485,
+          "value_count": 1
+        }
+      ],
+      "blob_file": "heat_2026_tropical_nights_tmin_gt_20.u16.gz",
+      "blob_encoding": "gzip+uint16le",
+      "raw_bytes": 3480972,
+      "compressed_bytes": 35638,
+      "sha256_raw": "8df76540361b06fdbe27a807e2f5503c3295d8e839c790dfdcf82a0c904e0232"
+    },
+    {
       "id": "cold_air_frost_days",
       "category_id": "cold",
       "label": "Air-frost days",
@@ -1189,7 +1859,17 @@
         "method": "Calendar-month means are summed so incomplete 2026 coverage does not count unpublished months as zero."
       },
       "valid_cell_count": 245069,
-      "palette_reverse": true,
+      "palette": [
+        "#da1b1b",
+        "#d9721b",
+        "#d7c71b",
+        "#8ed31a",
+        "#38cf1a",
+        "#19c84c",
+        "#18c096",
+        "#1796b7",
+        "#1548ac"
+      ],
       "levels": [
         {
           "level": 0,
@@ -1363,7 +2043,17 @@
         "method": "Only complete December\u2013February (DJF) winters are included; partial winters at either end of the source period are excluded."
       },
       "valid_cell_count": 245069,
-      "palette_reverse": false,
+      "palette": [
+        "#1548ac",
+        "#1796b7",
+        "#18c096",
+        "#19c84c",
+        "#38cf1a",
+        "#8ed31a",
+        "#d7c71b",
+        "#d9721b",
+        "#da1b1b"
+      ],
       "levels": [
         {
           "level": 0,
@@ -6048,7 +6738,7 @@
     {
       "dataset_id": "climate",
       "manifest": "data/derived/climate-metrics/manifest.json",
-      "generated_at_unix": 1788622933
+      "generated_at_unix": 1788799744
     },
     {
       "dataset_id": "pollution",

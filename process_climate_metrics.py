@@ -25,7 +25,8 @@ PROVISIONAL_ROOT = SOURCE_ROOT / "provisional-2026"
 THRESHOLDS_C = (25.0, 28.0, 30.0)
 METRIC_CATEGORIES = (
     {"id": "heat", "label": "Heat", "order": 0},
-    {"id": "cold", "label": "Cold", "order": 1},
+    {"id": "heat_2026", "label": "Heat — 2026", "order": 1},
+    {"id": "cold", "label": "Cold", "order": 2},
 )
 
 HADUKGRID_DATASET_CITATION = (
@@ -529,6 +530,199 @@ def process_tasmax(
     return results
 
 
+
+def process_tasmax_2026(
+    months: list[SourceMonth],
+    grid: GridSpec,
+    land_mask: np.ndarray,
+    temp_dir: Path,
+) -> list[MetricResult]:
+    months = [item for item in months if item.year == 2026]
+    if not months:
+        return []
+
+    hot_days = np.zeros((grid.height, grid.width), dtype=np.uint16)
+    current_run = np.zeros((grid.height, grid.width), dtype=np.uint16)
+    longest_run = np.zeros((grid.height, grid.width), dtype=np.uint16)
+
+    summer_months = [item for item in months if item.month in {6, 7, 8}]
+    complete_summer = {6, 7, 8} <= {item.month for item in summer_months}
+    summer_days = sum(item.days for item in summer_months) if complete_summer else 0
+    land_indices = np.flatnonzero(land_mask.ravel(order="C"))
+    summer_path = temp_dir / "summer-2026-tasmax.float32"
+    summer = None
+    if summer_days:
+        summer = np.memmap(summer_path, mode="w+", dtype=np.float32, shape=(summer_days, land_indices.size))
+    summer_row = 0
+
+    previous: SourceMonth | None = None
+    started = time.perf_counter()
+    for file_index, item in enumerate(months, start=1):
+        if previous is None or item.month != previous.month + 1:
+            current_run.fill(0)
+        previous = item
+        monthly_valid = np.zeros((grid.height, grid.width), dtype=np.uint8)
+        with h5py.File(item.path, "r") as h5:
+            source = validate_file_grid(h5, item, grid)
+            for values, valid in read_blocks(source):
+                block_days = values.shape[0]
+                monthly_valid += np.sum(valid, axis=0, dtype=np.uint8)
+                hot_days += np.sum(valid & (values > 25.0), axis=0, dtype=np.uint16)
+                for day_index in range(block_days):
+                    hot = valid[day_index] & (values[day_index] > 25.0)
+                    current_run[~hot] = 0
+                    current_run[hot] += 1
+                    np.maximum(longest_run, current_run, out=longest_run)
+                if summer is not None and item.month in {6, 7, 8}:
+                    flat = values.reshape(block_days, -1)
+                    summer[summer_row : summer_row + block_days, :] = flat[:, land_indices]
+                    summer_row += block_days
+        if not np.all(monthly_valid[land_mask] == item.days):
+            bad = int(np.count_nonzero(monthly_valid[land_mask] != item.days))
+            raise RuntimeError(f"{item.path.name}: {bad} land cells do not have all {item.days} daily observations")
+        elapsed = time.perf_counter() - started
+        print(f"tasmax-2026 {file_index}/{len(months)} {item.year}-{item.month:02d} ({elapsed:.1f}s elapsed)", flush=True)
+
+    period = coverage_label(months)
+    coverage = {
+        "source_months": len(months),
+        "daily_observations": sum(item.days for item in months),
+        "months_present": [f"{item.year}-{item.month:02d}" for item in months],
+        "method": "Observed 2026 count through the latest published month; unpublished later months are not treated as zero and the result is not annualised.",
+    }
+    results = [
+        MetricResult(
+            id="heat_2026_days_tmax_gt_25",
+            category_id="heat_2026",
+            label="2026 days Tmax > 25°C",
+            units="days",
+            period=period,
+            definition=(
+                "Observed number of days in the available 2026 period with HadUK-Grid daily maximum temperature strictly above 25°C. "
+                "This is a year-to-date count, not an annual estimate; unpublished later months are not treated as zero."
+            ),
+            values=hot_days.astype(np.float32),
+            scale=1.0,
+            offset=0.0,
+            decimals=0,
+            source_id="hadukgrid",
+            source_variable="tasmax",
+            coverage=coverage,
+        ),
+        MetricResult(
+            id="heat_2026_longest_run_tmax_gt_25",
+            category_id="heat_2026",
+            label="2026 longest run Tmax > 25°C",
+            units="days",
+            period=period,
+            definition=(
+                "Longest observed consecutive run of days in the available 2026 period with HadUK-Grid daily maximum temperature strictly above 25°C. "
+                "Runs reset at any gap in the published monthly source record."
+            ),
+            values=longest_run.astype(np.float32),
+            scale=1.0,
+            offset=0.0,
+            decimals=0,
+            source_id="hadukgrid",
+            source_variable="tasmax",
+            coverage=coverage,
+        ),
+    ]
+
+    if summer is not None and summer_days:
+        if summer_row != summer_days:
+            raise RuntimeError(f"Summer 2026 Tmax buffer contains {summer_row} rows; expected {summer_days}")
+        summer.flush()
+        p95 = np.full((grid.height, grid.width), np.nan, dtype=np.float32)
+        flat95 = p95.ravel(order="C")
+        chunk_cells = 12_000
+        percentile_started = time.perf_counter()
+        for start in range(0, land_indices.size, chunk_cells):
+            stop = min(land_indices.size, start + chunk_cells)
+            block = np.asarray(summer[:, start:stop])
+            percentile = np.percentile(block, 95.0, axis=0, method="linear")
+            flat95[land_indices[start:stop]] = percentile.astype(np.float32)
+        percentile_elapsed = time.perf_counter() - percentile_started
+        print(f"Summer 2026 Tmax 95th percentile over {summer_days} daily rasters: {percentile_elapsed:.1f}s")
+        results.append(
+            MetricResult(
+                id="heat_2026_summer_tmax_p95",
+                category_id="heat_2026",
+                label="Summer 2026 Tmax 95th percentile",
+                units="°C",
+                period="Summer 2026",
+                definition="95th percentile of all June–August 2026 HadUK-Grid daily maximum temperatures.",
+                values=p95,
+                scale=0.1,
+                offset=-50.0,
+                decimals=1,
+                source_id="hadukgrid",
+                source_variable="tasmax",
+                coverage={
+                    "source_months": 3,
+                    "daily_observations": summer_days,
+                    "months_present": ["2026-06", "2026-07", "2026-08"],
+                    "method": "Complete meteorological summer (June–August) 2026 only.",
+                },
+            )
+        )
+        del summer
+        summer_path.unlink(missing_ok=True)
+
+    return results
+
+
+def process_tasmin_2026(
+    months: list[SourceMonth],
+    grid: GridSpec,
+    land_mask: np.ndarray,
+) -> list[MetricResult]:
+    months = [item for item in months if item.year == 2026]
+    if not months:
+        return []
+
+    tropical_nights = np.zeros((grid.height, grid.width), dtype=np.uint16)
+    started = time.perf_counter()
+    for file_index, item in enumerate(months, start=1):
+        monthly_valid = np.zeros((grid.height, grid.width), dtype=np.uint8)
+        with h5py.File(item.path, "r") as h5:
+            source = validate_file_grid(h5, item, grid)
+            for values, valid in read_blocks(source):
+                monthly_valid += np.sum(valid, axis=0, dtype=np.uint8)
+                tropical_nights += np.sum(valid & (values > 20.0), axis=0, dtype=np.uint16)
+        if not np.all(monthly_valid[land_mask] == item.days):
+            bad = int(np.count_nonzero(monthly_valid[land_mask] != item.days))
+            raise RuntimeError(f"{item.path.name}: {bad} land cells do not have all {item.days} daily observations")
+        elapsed = time.perf_counter() - started
+        print(f"tasmin-2026 {file_index}/{len(months)} {item.year}-{item.month:02d} ({elapsed:.1f}s elapsed)", flush=True)
+
+    period = coverage_label(months)
+    return [
+        MetricResult(
+            id="heat_2026_tropical_nights_tmin_gt_20",
+            category_id="heat_2026",
+            label="2026 tropical nights: Tmin > 20°C",
+            units="days",
+            period=period,
+            definition=(
+                "Observed number of days in the available 2026 period whose HadUK-Grid daily minimum temperature is strictly above 20°C. "
+                "This is a year-to-date count, not an annual estimate; HadUK-Grid daily Tmin follows the Met Office observation-day convention rather than a literal sunset-to-sunrise minimum."
+            ),
+            values=tropical_nights.astype(np.float32),
+            scale=1.0,
+            offset=0.0,
+            decimals=0,
+            source_id="hadukgrid",
+            source_variable="tasmin",
+            coverage={
+                "source_months": len(months),
+                "daily_observations": sum(item.days for item in months),
+                "months_present": [f"{item.year}-{item.month:02d}" for item in months],
+                "method": "Observed 2026 count through the latest published month; unpublished later months are not treated as zero and the result is not annualised.",
+            },
+        )
+    ]
+
 def process_tasmin(
     months: list[SourceMonth],
     grid: GridSpec,
@@ -838,7 +1032,9 @@ def main() -> int:
     try:
         metrics: list[MetricResult] = []
         metrics.extend(process_tasmax(tasmax_months, grid, land_mask, temp_dir))
+        metrics.extend(process_tasmax_2026(tasmax_months, grid, land_mask, temp_dir))
         metrics.extend(process_tasmin(tasmin_months, grid, land_mask, temp_dir))
+        metrics.extend(process_tasmin_2026(tasmin_months, grid, land_mask))
         order = {
             "heat_days_tmax_gt_25": 0,
             "heat_days_tmax_gt_28": 1,
@@ -847,8 +1043,12 @@ def main() -> int:
             "heat_summer_tmax_p99": 4,
             "heat_longest_run_tmax_gt_25": 5,
             "heat_tropical_nights_tmin_gt_20": 6,
-            "cold_air_frost_days": 7,
-            "cold_winter_tmin_p05": 8,
+            "heat_2026_days_tmax_gt_25": 7,
+            "heat_2026_longest_run_tmax_gt_25": 8,
+            "heat_2026_summer_tmax_p95": 9,
+            "heat_2026_tropical_nights_tmin_gt_20": 10,
+            "cold_air_frost_days": 11,
+            "cold_winter_tmin_p05": 12,
         }
         metrics.sort(key=lambda metric: order.get(metric.id, 999))
         build_manifest(

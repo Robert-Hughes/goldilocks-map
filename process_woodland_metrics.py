@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parent
 SOURCE_ROOT = ROOT / "data" / "source" / "woodland"
 DEFAULT_DISCOVERY = SOURCE_ROOT / "discovery.json"
 DEFAULT_OUTPUT_DIR = ROOT / "data" / "derived" / "woodland-metrics"
-CATEGORY = {"id": "woodland", "label": "Woodland", "order": 4}
+CATEGORY = {"id": "woodland", "label": "Woodland", "order": 5}
 WOODLAND_PALETTE = ("#ffffff", "#006400")
 CELL_AREA_M2 = 1_000_000.0
 
