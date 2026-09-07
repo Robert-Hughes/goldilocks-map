@@ -83,7 +83,6 @@ export function addInfoPanel(
           </fieldset>`;
       }).join("");
 
-
     const serviceRows = services.categories.map((category) => `
       <label class="service-option">
         <input type="checkbox" data-service-category="${category.id}" ${services.isEnabled(category.id) ? "checked" : ""}>
@@ -105,12 +104,10 @@ export function addInfoPanel(
           <strong class="panel-section-title">Measure</strong>
           <div class="metric-list">${metricGroups}</div>
         </div>
-
         <div class="panel-section services-control">
           <strong class="panel-section-title">Services</strong>
           <div class="service-list">${serviceRows}</div>
           <div class="service-status" aria-live="polite"></div>
-          <div class="service-source">${services.sourceSummary()}</div>
         </div>
         <div class="panel-section">
           <label class="panel-option">

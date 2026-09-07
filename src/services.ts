@@ -134,11 +134,6 @@ export class ServicesController {
     listener(this.statusText());
   }
 
-  sourceSummary(): string {
-    const date = this.transport.source.extract_date;
-    return date ? `OpenStreetMap · ${date}` : "OpenStreetMap";
-  }
-
   private ensurePayload(): ServicePayload {
     if (this.payload) return this.payload;
     const compressed = decodeBase64(this.transport.blob_base64);
