@@ -109,11 +109,15 @@
     .location-context-popup .leaflet-popup-content { margin: 6px; }
     .location-context-menu { display: flex; }
     .location-context-action { white-space: nowrap; }
+    .leaflet-top.goldilocks-narrow-panel-active { z-index: 1100; }
     @media (max-width: 600px) {
       .map-panel { width: min(290px, calc(100vw - 72px)); max-height: calc(100vh - 80px); }
       .map-panel-body { max-height: calc(100vh - 140px); }
       .location-panel { width: min(300px, calc(100vw - 72px)); max-height: calc(100vh - 80px); }
       .location-panel-body { max-height: calc(100vh - 140px); }
+      .map-panel.collapsed .map-panel-heading, .location-panel.collapsed .location-panel-heading { display: none; }
+      .map-panel.collapsed .map-panel-header, .location-panel.collapsed .location-panel-header { gap: 0; padding: 0; }
+      .map-panel.collapsed .map-panel-toggle, .location-panel.collapsed .location-panel-toggle { width: 2.25rem; height: 2.25rem; border: 0; border-radius: 5px; }
       .location-coordinate-row { grid-template-columns: 1fr; }
     }
   </style>

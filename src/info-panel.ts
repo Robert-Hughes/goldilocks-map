@@ -1,5 +1,6 @@
 import type { LocationsController } from "./locations";
 import { MetricState } from "./metrics";
+import { NARROW_PANEL_MEDIA_QUERY, syncNarrowPanelCorner } from "./panel-layout";
 import { RasterView } from "./raster";
 import { readStoredBoolean, readStoredString, writeStoredBoolean, writeStoredString } from "./storage";
 import type { DataSource, GoldilocksData } from "./types";
@@ -52,12 +53,13 @@ export function addInfoPanel(
       .join("<br>");
   }
 
+  const narrowPanelMedia = window.matchMedia(NARROW_PANEL_MEDIA_QUERY);
   const mapPanel = L.control({ position: "topleft" });
   mapPanel.onAdd = () => {
-    const div = L.DomUtil.create("section", "map-panel");
+    const div = L.DomUtil.create("section", "map-panel") as HTMLElement;
     const initiallyCollapsed = readStoredBoolean(
       PANEL_COLLAPSED_STORAGE_KEY,
-      window.matchMedia("(max-width: 600px)").matches,
+      narrowPanelMedia.matches,
     );
     if (initiallyCollapsed) div.classList.add("collapsed");
 
@@ -252,13 +254,23 @@ export function addInfoPanel(
     }
 
     const panelButton = div.querySelector(".map-panel-toggle") as HTMLButtonElement;
-    panelButton.addEventListener("click", () => {
-      const collapsed = div.classList.toggle("collapsed");
+    function setPanelCollapsed(collapsed: boolean, persist: boolean) {
+      if (!collapsed && narrowPanelMedia.matches) locations.setPanelCollapsed(true, true);
+      div.classList.toggle("collapsed", collapsed);
       panelButton.textContent = collapsed ? "+" : "−";
       panelButton.setAttribute("aria-expanded", String(!collapsed));
       panelButton.setAttribute("aria-label", `${collapsed ? "Expand" : "Collapse"} map panel`);
-      writeStoredBoolean(PANEL_COLLAPSED_STORAGE_KEY, collapsed);
+      syncNarrowPanelCorner(div, !collapsed, narrowPanelMedia);
+      if (persist) writeStoredBoolean(PANEL_COLLAPSED_STORAGE_KEY, collapsed);
+    }
+
+    locations.setNarrowPanelPeerCollapse(() => setPanelCollapsed(true, true));
+    panelButton.addEventListener("click", () => setPanelCollapsed(!div.classList.contains("collapsed"), true));
+    narrowPanelMedia.addEventListener("change", (event) => {
+      if (event.matches && !div.classList.contains("collapsed")) locations.setPanelCollapsed(true, true);
+      syncNarrowPanelCorner(div, !div.classList.contains("collapsed"), narrowPanelMedia);
     });
+    if (narrowPanelMedia.matches && !initiallyCollapsed) locations.setPanelCollapsed(true, true);
 
     const gridlinesCheckbox = div.querySelector(".gridlines-toggle") as HTMLInputElement;
     gridlinesCheckbox.addEventListener("change", () => {
@@ -342,6 +354,9 @@ export function addInfoPanel(
     refreshMetricText();
     L.DomEvent.disableClickPropagation(div);
     L.DomEvent.disableScrollPropagation(div);
+    window.requestAnimationFrame(() => {
+      syncNarrowPanelCorner(div, !div.classList.contains("collapsed"), narrowPanelMedia);
+    });
     return div;
   };
   mapPanel.addTo(map);

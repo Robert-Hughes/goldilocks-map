@@ -1,3 +1,4 @@
+import { NARROW_PANEL_MEDIA_QUERY, syncNarrowPanelCorner } from "./panel-layout";
 import { readStoredBoolean, writeStoredBoolean } from "./storage";
 
 declare const L: any;
@@ -131,6 +132,7 @@ export class LocationsController {
   private locations: SavedLocation[] = [];
   private readonly markerLayer: any;
   private readonly markers = new Map<string, any>();
+  private readonly narrowPanelMedia = window.matchMedia(NARROW_PANEL_MEDIA_QUERY);
   private panelRoot: HTMLElement | null = null;
   private panelBody: HTMLElement | null = null;
   private panelCount: HTMLElement | null = null;
@@ -142,6 +144,7 @@ export class LocationsController {
   private draft: LocationDraft | null = null;
   private storageMessage = "";
   private actionMessage = "";
+  private narrowPeerCollapse: (() => void) | null = null;
 
   constructor(private readonly map: any, initiallyVisible = true) {
     const loaded = this.loadLocations();
@@ -150,6 +153,7 @@ export class LocationsController {
     this.markerLayer = L.layerGroup();
     if (initiallyVisible) this.markerLayer.addTo(map);
     this.addPanel();
+    this.narrowPanelMedia.addEventListener("change", () => this.syncPanelCorner());
     this.renderMarkers();
     this.installContextMenus();
     if (loaded.generatedIds && this.locations.length) this.persistLocations();
@@ -160,6 +164,10 @@ export class LocationsController {
     if (visible === isVisible) return;
     if (visible) this.markerLayer.addTo(this.map);
     else this.markerLayer.removeFrom(this.map);
+  }
+
+  setNarrowPanelPeerCollapse(callback: () => void) {
+    this.narrowPeerCollapse = callback;
   }
 
   private loadLocations(): { locations: SavedLocation[]; generatedIds: boolean; message: string } {
@@ -207,7 +215,7 @@ export class LocationsController {
       this.panelRoot = root;
       const initiallyCollapsed = readStoredBoolean(
         LOCATIONS_PANEL_COLLAPSED_STORAGE_KEY,
-        window.matchMedia("(max-width: 600px)").matches,
+        this.narrowPanelMedia.matches,
       );
       if (initiallyCollapsed) root.classList.add("collapsed");
 
@@ -226,7 +234,7 @@ export class LocationsController {
       const toggle = button(initiallyCollapsed ? "+" : "−", "location-panel-toggle");
       toggle.setAttribute("aria-label", `${initiallyCollapsed ? "Expand" : "Collapse"} locations panel`);
       toggle.setAttribute("aria-expanded", String(!initiallyCollapsed));
-      toggle.addEventListener("click", () => this.setCollapsed(!root.classList.contains("collapsed"), true));
+      toggle.addEventListener("click", () => this.setPanelCollapsed(!root.classList.contains("collapsed"), true));
       this.panelToggle = toggle;
       header.append(heading, toggle);
 
@@ -297,15 +305,22 @@ export class LocationsController {
       return root;
     };
     control.addTo(this.map);
+    this.syncPanelCorner();
   }
 
-  private setCollapsed(collapsed: boolean, persist: boolean) {
+  setPanelCollapsed(collapsed: boolean, persist = true) {
     if (!this.panelRoot || !this.panelToggle) return;
+    if (!collapsed && this.narrowPanelMedia.matches) this.narrowPeerCollapse?.();
     this.panelRoot.classList.toggle("collapsed", collapsed);
     this.panelToggle.textContent = collapsed ? "+" : "−";
     this.panelToggle.setAttribute("aria-expanded", String(!collapsed));
     this.panelToggle.setAttribute("aria-label", `${collapsed ? "Expand" : "Collapse"} locations panel`);
+    this.syncPanelCorner();
     if (persist) writeStoredBoolean(LOCATIONS_PANEL_COLLAPSED_STORAGE_KEY, collapsed);
+  }
+
+  private syncPanelCorner() {
+    syncNarrowPanelCorner(this.panelRoot, !this.panelRoot?.classList.contains("collapsed"), this.narrowPanelMedia);
   }
 
   private installContextMenus() {
@@ -360,7 +375,7 @@ export class LocationsController {
       notes: "",
     };
     this.actionMessage = "";
-    this.setCollapsed(false, true);
+    this.setPanelCollapsed(false, true);
     this.renderList();
     this.focusDraft();
   }
@@ -376,7 +391,7 @@ export class LocationsController {
       notes: location.notes,
     };
     this.actionMessage = "";
-    this.setCollapsed(false, true);
+    this.setPanelCollapsed(false, true);
     this.renderList();
     this.focusDraft(id);
   }
