@@ -106,8 +106,28 @@ export type ServiceTransport = {
   blob_base64: string;
 };
 
+export type MilitaryAreaCategoryId = "dangerous" | "unspecified";
+
+export type MilitaryAreaCategory = {
+  id: MilitaryAreaCategoryId;
+  label: string;
+  order: number;
+  count: number;
+};
+
+export type MilitaryAreaTransport = {
+  format_version: 1;
+  categories: MilitaryAreaCategory[];
+  source: ServiceSource;
+  payload_encoding: "gzip+json";
+  raw_bytes: number;
+  compressed_bytes: number;
+  sha256_raw: string;
+  blob_base64: string;
+};
+
 export type GoldilocksData = {
-  format_version: 5;
+  format_version: 6;
   grid: {
     crs: string;
     proj4: string;
@@ -131,6 +151,7 @@ export type GoldilocksData = {
   preview_partial_sources: boolean;
   sources: Record<string, DataSource>;
   services: ServiceTransport;
+  military_areas: MilitaryAreaTransport;
   data_pruning: Array<{
     id: string;
     source_id?: string;

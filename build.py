@@ -20,6 +20,7 @@ APP_JS = DIST_DIR / "app.js"
 OUTPUT_HTML = DIST_DIR / "goldilocks.html"
 DEFAULT_MANIFEST = DATA_DIR / "derived" / "goldilocks-metrics" / "manifest.json"
 DEFAULT_SERVICES_MANIFEST = DATA_DIR / "derived" / "services" / "manifest.json"
+DEFAULT_MILITARY_MANIFEST = DATA_DIR / "derived" / "military-areas" / "manifest.json"
 
 
 def load_metric_bundle(manifest_path: Path) -> dict:
@@ -74,7 +75,7 @@ def load_metric_bundle(manifest_path: Path) -> dict:
         embedded_metrics.append(embedded)
 
     return {
-        "format_version": 5,
+        "format_version": 6,
         "grid": manifest["grid"],
         "categories": categories,
         "metrics": embedded_metrics,
@@ -123,6 +124,50 @@ def load_service_bundle(manifest_path: Path) -> dict:
         "categories": categories,
         "source_order": source_order,
         "sources": sources,
+        "payload_encoding": manifest["payload_encoding"],
+        "raw_bytes": int(manifest["raw_bytes"]),
+        "compressed_bytes": len(compressed),
+        "sha256_raw": manifest["sha256_raw"],
+        "blob_base64": base64.b64encode(compressed).decode("ascii"),
+    }
+
+
+
+def load_military_bundle(manifest_path: Path) -> dict:
+    manifest_path = manifest_path.resolve()
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if manifest.get("format_version") != 1 or manifest.get("kind") != "goldilocks-military-areas":
+        raise RuntimeError(
+            f"Unsupported Goldilocks military-area bundle: version={manifest.get('format_version')!r}, kind={manifest.get('kind')!r}"
+        )
+    categories = manifest.get("categories")
+    if not isinstance(categories, list) or not categories:
+        raise RuntimeError(f"Military-area manifest has no categories: {manifest_path}")
+    category_ids = [item.get("id") for item in categories if isinstance(item, dict)]
+    if category_ids != ["dangerous", "unspecified"]:
+        raise RuntimeError(f"Military-area manifest has unexpected categories: {category_ids!r}")
+    source = manifest.get("source")
+    if not isinstance(source, dict) or source.get("id") != "osm":
+        raise RuntimeError(f"Military-area manifest has invalid source: {manifest_path}")
+    payload_name = manifest.get("payload_file")
+    if not isinstance(payload_name, str) or Path(payload_name).name != payload_name:
+        raise RuntimeError(f"Military-area manifest has invalid payload filename: {payload_name!r}")
+    payload_path = manifest_path.parent / payload_name
+    compressed = payload_path.read_bytes()
+    if len(compressed) != int(manifest.get("compressed_bytes", -1)):
+        raise RuntimeError(f"Military-area payload {payload_path.name} compressed size does not match manifest")
+    raw = gzip.decompress(compressed)
+    if len(raw) != int(manifest.get("raw_bytes", -1)):
+        raise RuntimeError(f"Military-area payload {payload_path.name} raw size does not match manifest")
+    if hashlib.sha256(raw).hexdigest() != manifest.get("sha256_raw"):
+        raise RuntimeError(f"Military-area payload {payload_path.name} failed raw SHA-256 validation")
+    payload = json.loads(raw.decode("utf-8"))
+    if not isinstance(payload, dict) or not isinstance(payload.get("features"), list):
+        raise RuntimeError(f"Military-area payload {payload_path.name} is malformed")
+    return {
+        "format_version": 1,
+        "categories": categories,
+        "source": source,
         "payload_encoding": manifest["payload_encoding"],
         "raw_bytes": int(manifest["raw_bytes"]),
         "compressed_bytes": len(compressed),
@@ -193,6 +238,12 @@ def main() -> int:
         default=DEFAULT_SERVICES_MANIFEST,
         help=f"processed service POI manifest to embed (default: {DEFAULT_SERVICES_MANIFEST.relative_to(ROOT)})",
     )
+    parser.add_argument(
+        "--military-manifest",
+        type=Path,
+        default=DEFAULT_MILITARY_MANIFEST,
+        help=f"processed military-area manifest to embed (default: {DEFAULT_MILITARY_MANIFEST.relative_to(ROOT)})",
+    )
     args = parser.parse_args()
     if not args.metrics_manifest.is_file():
         raise SystemExit(
@@ -204,10 +255,17 @@ def main() -> int:
             f"Service POI manifest not found: {args.services_manifest}. "
             "Run download_service_sources.py and process_service_pois.py first, or pass --services-manifest for another processed bundle."
         )
+    if not args.military_manifest.is_file():
+        raise SystemExit(
+            f"Military-area manifest not found: {args.military_manifest}. "
+            "Run process_military_areas.py first, or pass --military-manifest for another processed bundle."
+        )
     print(f"Loading assembled Goldilocks metrics: {args.metrics_manifest}")
     data = load_metric_bundle(args.metrics_manifest)
     print(f"Loading processed Goldilocks services: {args.services_manifest}")
     data["services"] = load_service_bundle(args.services_manifest)
+    print(f"Loading processed military areas: {args.military_manifest}")
+    data["military_areas"] = load_military_bundle(args.military_manifest)
     app_js = bundle_typescript()
     render_html(data, app_js)
     print("Build complete.")

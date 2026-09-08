@@ -1,0 +1,40 @@
+{
+  "format_version": 1,
+  "kind": "goldilocks-military-areas",
+  "generated_at_unix": 1788891430,
+  "categories": [
+    {
+      "id": "dangerous",
+      "label": "Dangerous",
+      "order": 0,
+      "count": 276
+    },
+    {
+      "id": "unspecified",
+      "label": "Unspecified",
+      "order": 1,
+      "count": 1339
+    }
+  ],
+  "source": {
+    "id": "osm",
+    "provider": "OpenStreetMap contributors",
+    "distributor": "Geofabrik GmbH",
+    "dataset": "OpenStreetMap Great Britain extract",
+    "extract_date": "2026-09-06",
+    "homepage_url": "https://www.openstreetmap.org/",
+    "licence_name": "Open Database License (ODbL) 1.0",
+    "licence_url": "https://opendatacommons.org/licenses/odbl/1-0/",
+    "attribution": "\u00a9 OpenStreetMap contributors"
+  },
+  "classification": {
+    "dangerous": "military=danger_area or military=range",
+    "unspecified": "landuse=military without a dangerous military tag"
+  },
+  "simplify_tolerance_degrees": 5e-05,
+  "payload_file": "military-areas.json.gz",
+  "payload_encoding": "gzip+json",
+  "raw_bytes": 894197,
+  "compressed_bytes": 291659,
+  "sha256_raw": "e7413cb044c2f6176a4d14f4ae2777cbe8aeffb343f452732b15bbd4265bc777"
+}

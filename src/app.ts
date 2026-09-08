@@ -1,5 +1,6 @@
 import { addInfoPanel, readMapPanelPreferences } from "./info-panel";
 import { LocationsController } from "./locations";
+import { MilitaryAreasController } from "./military-areas";
 import { MetricState } from "./metrics";
 import { RasterView } from "./raster";
 import { ServicesController } from "./services";
@@ -15,8 +16,8 @@ dataElement.textContent = "";
 const thirdPartyNoticesTemplate = document.getElementById("goldilocks-third-party-notices") as HTMLTemplateElement | null;
 const thirdPartyNotices = thirdPartyNoticesTemplate?.content.textContent?.trim() ?? "";
 
-if (data.format_version !== 5 || !data.metrics?.length || !data.categories?.length || !data.services) {
-  throw new Error("This frontend requires Goldilocks metric/service data format v5");
+if (data.format_version !== 6 || !data.metrics?.length || !data.categories?.length || !data.services || !data.military_areas) {
+  throw new Error("This frontend requires Goldilocks data format v6");
 }
 const categoryById = new Map(data.categories.map((category) => [category.id, category]));
 if (categoryById.size !== data.categories.length) throw new Error("Metric category IDs must be unique");
@@ -81,6 +82,7 @@ const raster = new RasterView(map, data, metrics, {
   opacity: preferences.layerOpacity,
 });
 const services = new ServicesController(map, data.services);
+const militaryAreas = new MilitaryAreasController(map, data.military_areas);
 const locations = new LocationsController(map, preferences.locationsVisible);
 map.fitBounds(L.latLngBounds(data.grid.bounds_wgs84), { padding: [18, 18] });
 setBasemapMonochrome(preferences.basemapMonochrome);
@@ -95,4 +97,4 @@ map.on("click", (event: any) => {
     .openOn(map);
 });
 
-addInfoPanel(map, data, metrics, raster, services, locations, thirdPartyNotices, preferences, setBasemapMonochrome);
+addInfoPanel(map, data, metrics, raster, services, militaryAreas, locations, thirdPartyNotices, preferences, setBasemapMonochrome);

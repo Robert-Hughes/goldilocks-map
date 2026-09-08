@@ -1,10 +1,11 @@
 import type { LocationsController } from "./locations";
+import type { MilitaryAreasController } from "./military-areas";
 import { MetricState } from "./metrics";
 import { NARROW_PANEL_MEDIA_QUERY, syncNarrowPanelCorner } from "./panel-layout";
 import { RasterView } from "./raster";
 import type { ServicesController } from "./services";
 import { readStoredBoolean, readStoredString, writeStoredBoolean, writeStoredString } from "./storage";
-import type { DataSource, GoldilocksData, ServiceCategoryId } from "./types";
+import type { DataSource, GoldilocksData, MilitaryAreaCategoryId, ServiceCategoryId } from "./types";
 
 declare const L: any;
 
@@ -47,6 +48,7 @@ export function addInfoPanel(
   metrics: MetricState,
   raster: RasterView,
   services: ServicesController,
+  militaryAreas: MilitaryAreasController,
   locations: LocationsController,
   thirdPartyNotices: string,
   preferences: MapPanelPreferences,
@@ -94,6 +96,12 @@ export function addInfoPanel(
         <span>${category.label}</span>
       </label>`).join("");
 
+    const militaryAreaOptions = militaryAreas.categories.map((category) => `
+      <label class="military-area-option">
+        <input type="checkbox" data-military-area-category="${category.id}" ${militaryAreas.isEnabled(category.id) ? "checked" : ""}>
+        <span>${category.label}</span>
+      </label>`).join("");
+
     div.innerHTML = `
       <div class="map-panel-header">
         <div class="map-panel-heading">
@@ -112,6 +120,10 @@ export function addInfoPanel(
           <strong class="panel-section-title">Services</strong>
           <div class="service-list">${serviceRows}</div>
           <div class="service-status" aria-live="polite"></div>
+        </div>
+        <div class="panel-section military-area-control">
+          <strong class="military-area-title">Military areas:</strong>
+          <div class="military-area-options">${militaryAreaOptions}</div>
         </div>
         <div class="panel-section">
           <label class="panel-option">
@@ -328,6 +340,15 @@ export function addInfoPanel(
       serviceStatus.textContent = text;
       serviceStatus.hidden = !text;
     });
+
+    const militaryAreaInputs = Array.from(div.querySelectorAll('input[data-military-area-category]') as NodeListOf<HTMLInputElement>);
+    for (const input of militaryAreaInputs) {
+      input.addEventListener("change", () => {
+        const categoryId = input.dataset.militaryAreaCategory as MilitaryAreaCategoryId | undefined;
+        if (!categoryId) return;
+        militaryAreas.setEnabled(categoryId, input.checked);
+      });
+    }
 
     opacityInput.addEventListener("input", () => {
       const percent = Math.max(0, Math.min(100, Math.round(Number(opacityInput.value))));

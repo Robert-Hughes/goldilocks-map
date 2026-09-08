@@ -1,12 +1,12 @@
 # Data licence and attribution
 
-Goldilocks Map contains derived raster metrics from multiple UK public datasets plus a compact point-of-interest database assembled from OpenStreetMap and official NHS/OS reference data. The current service build combines selected OSM POIs, NHS England Organisation Data Service GP/dental records, Public Health Scotland GP/dental and hospital-reference records, NHS England ERIC hospital sites, and OS Code-Point Open postcode coordinates.
+Goldilocks Map contains derived raster metrics from multiple UK public datasets, a compact point-of-interest database assembled from OpenStreetMap and official NHS/OS reference data, and a simplified military-area polygon overlay derived from OpenStreetMap. The current service build combines selected OSM POIs, NHS England Organisation Data Service GP/dental records, Public Health Scotland GP/dental and hospital-reference records, NHS England ERIC hospital sites, and OS Code-Point Open postcode coordinates.
 
 ## Licence
 
-HadUK-Grid, Defra PCM, OS OpenData products, Forestry Commission NFI, Natural England AWI, Natural Resources Wales AWI, DfT local-road statistics, National Highways travel-time data, ONS helper boundaries and the NHS/PHS reference datasets used here are open-data inputs whose source-specific terms and acknowledgements are recorded below. OpenStreetMap service POIs are subject to the Open Database License (ODbL) 1.0. Do not replace source-specific acknowledgements with a single generic attribution. NHS API data, if an authorised acceptance-status snapshot is added later, remains subject to the connection/API terms agreed during onboarding and must not be assumed to inherit the open-data licence of ODS/ERIC.
+HadUK-Grid, Defra PCM, OS OpenData products, Forestry Commission NFI, Natural England AWI, Natural Resources Wales AWI, DfT local-road statistics, National Highways travel-time data, ONS helper boundaries and the NHS/PHS reference datasets used here are open-data inputs whose source-specific terms and acknowledgements are recorded below. OpenStreetMap service POIs and military-area polygons are subject to the Open Database License (ODbL) 1.0. Do not replace source-specific acknowledgements with a single generic attribution. NHS API data, if an authorised acceptance-status snapshot is added later, remains subject to the connection/API terms agreed during onboarding and must not be assumed to inherit the open-data licence of ODS/ERIC.
 
-Goldilocks Map publishes derived raster summaries plus a compact processed service database needed by the browser; it does not publish the raw source archives. Goldilocks processing choices and classifications are not official products of the source agencies.
+Goldilocks Map publishes derived raster summaries plus compact processed service and military-area databases needed by the browser; it does not publish the raw source archives. Goldilocks processing choices and classifications are not official products of the source agencies.
 
 ## Met Office HadUK-Grid
 
@@ -86,15 +86,17 @@ ONS December 2025 Local Authority District boundaries are used solely as a proce
 
 The travel-time rasters inherit important limitations from the model. OS Open Roads is a generalised network rather than a navigation-grade road graph; detailed turn/one-way/access restrictions and ferry connectivity are not comprehensively represented. Observed National Highways costs cover the English SRN, while non-SRN and Scottish/Welsh trunk roads rely more heavily on DfT observations or transparent road-class fallbacks. The metrics represent historic typical regimes rather than current incidents, closures or live traffic. Goldilocks assigns each covered 1 km cell the travel time of its nearest usable Open Roads graph node without an additional driveway/access-time penalty. Northern Ireland is nodata because OS Open Roads covers Great Britain.
 
-## OpenStreetMap service POIs
+## OpenStreetMap service POIs and military areas
 
-The Services controls use a pinned **OpenStreetMap Great Britain** extract dated **2026-09-06**, distributed by [Geofabrik](https://download.geofabrik.de/). Goldilocks extracts only `shop=supermarket`, `amenity=post_office` and `amenity=pharmacy`. Node POIs are retained directly; qualifying mapped areas are reduced to a representative interior point. Same-name near-coincident representations are de-duplicated.
+The Services and Military areas controls use a pinned **OpenStreetMap Great Britain** extract dated **2026-09-06**, distributed by [Geofabrik](https://download.geofabrik.de/). Goldilocks service processing extracts only `shop=supermarket`, `amenity=post_office` and `amenity=pharmacy`; node POIs are retained directly, qualifying mapped areas are reduced to a representative interior point, and same-name near-coincident representations are de-duplicated.
 
-OpenStreetMap data is © OpenStreetMap contributors and available under the [Open Database License (ODbL) 1.0](https://opendatacommons.org/licenses/odbl/1-0/). The required attribution is shown in the Leaflet attribution control whenever the embedded service database is available:
+The military overlays retain OSM polygon geometry rather than reducing areas to points. Goldilocks classifies polygons tagged `military=danger_area` or `military=range` as **Dangerous**; other polygons tagged `landuse=military` are **Unspecified**, which means only that no explicit dangerous military tag was used for the Goldilocks classification. Boundaries are simplified offline for browser rendering. This is an OSM-derived screening layer, not an authoritative statement of legal access, live range status or firing schedules.
+
+OpenStreetMap data is © OpenStreetMap contributors and available under the [Open Database License (ODbL) 1.0](https://opendatacommons.org/licenses/odbl/1-0/). The required attribution is shown in the Leaflet attribution control:
 
 > © OpenStreetMap contributors
 
-The OSM-derived portion of the processed service database remains subject to the ODbL. Source OSM element references are retained for traceability.
+The OSM-derived portions of the processed service and military-area databases remain subject to the ODbL. Source OSM element references are retained for traceability.
 
 ## NHS primary-care and hospital service data
 
@@ -116,4 +118,4 @@ Goldilocks publishes only the resulting service-point coordinates, not the raw C
 
 ## What Goldilocks publishes
 
-Raw HadUK-Grid NetCDF files, Defra PCM CSV files, OS source archives, NFI/AWI vector downloads, DfT workbooks, National Highways link observations, ONS helper boundaries, the Geofabrik OSM PBF and raw NHS/PHS/ERIC/Code-Point service inputs are build inputs under `data/source/` and are not committed. The tracked public snapshots contain Goldilocks-derived quantised metric rasters and the compact processed service database with source metadata. Metric definitions, averaging choices, quality-control masking, routing/traversal-time modelling, service filtering/de-duplication, postcode geocoding and presentation are Goldilocks Map processing choices rather than official source-agency products.
+Raw HadUK-Grid NetCDF files, Defra PCM CSV files, OS source archives, NFI/AWI vector downloads, DfT workbooks, National Highways link observations, ONS helper boundaries, the Geofabrik OSM PBF and raw NHS/PHS/ERIC/Code-Point service inputs are build inputs under `data/source/` and are not committed. The tracked public snapshots contain Goldilocks-derived quantised metric rasters, the compact processed service database and the simplified OSM-derived military polygon bundle with source metadata. Metric definitions, averaging choices, quality-control masking, routing/traversal-time modelling, service filtering/de-duplication, postcode geocoding, military-area classification/simplification and presentation are Goldilocks Map processing choices rather than official source-agency products.

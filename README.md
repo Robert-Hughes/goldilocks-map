@@ -118,6 +118,7 @@ python process_woodland_metrics.py
 python process_travel_metrics.py
 python assemble_metrics.py
 python process_service_pois.py
+python process_military_areas.py
 python build.py
 ```
 
@@ -125,10 +126,9 @@ python build.py
 
 `process_climate_metrics.py` streams the monthly NetCDF/HDF5 files; summer percentile input is staged in a temporary memory-mapped file so the full multi-year daily cube is never held in RAM. `process_pollution_metrics.py` aligns the 2022–2024 Defra PCM CSV grids to the canonical Goldilocks/HadUK 1 km grid and derives the three-year arithmetic means. `process_terrain_metrics.py` reads the nested OS Terrain 50 ASCII tiles directly from the national zip, reduces each aligned 20 × 20 block of 50 m pixel-centre heights to 1 km relief (`max - min`), and leaves canonical cells outside Great Britain as nodata. `process_woodland_metrics.py` uses Fiona/Shapely to intersect pinned NFI/AWI polygons exactly with the canonical grid, including overlap-unioning for the stitched ancient-woodland layer. `process_travel_metrics.py` builds the pinned OS Open Roads GB graph, joins National Highways and DfT observed speed data, performs four reverse shortest-path searches and samples the resulting node-time fields to the canonical 1 km grid; expensive source-to-graph classifications and cell snaps are cached under ignored `data/source/travel-time/cache/`.
 
+`process_service_pois.py` uses GDAL's OSM driver to stream the pinned Great Britain `.osm.pbf`, extracts supermarket/post-office/pharmacy node and area features, de-duplicates coincident node/area representations, spatially buckets the result and writes a compressed service bundle under `data/derived/services/`. `process_military_areas.py` uses the same pinned OSM extract to select military polygons, separates explicit danger/range areas from other `landuse=military` polygons, simplifies their boundaries offline and writes a separate compressed overlay bundle under `data/derived/military-areas/`.
 
-`process_service_pois.py` uses GDAL's OSM driver to stream the pinned Great Britain `.osm.pbf`, extracts only supermarket/post-office/pharmacy node and area features, de-duplicates coincident node/area representations, spatially buckets the result and writes a separate compressed service bundle under `data/derived/services/`.
-
-`build.py` validates the assembled blobs and source references, bundles/minifies the TypeScript frontend (including `proj4` and `fflate`), base64-embeds the compressed blobs and metadata, and writes the self-contained application to `dist/goldilocks.html`.
+`build.py` validates the assembled raster, service and military-area blobs and source references, bundles/minifies the TypeScript frontend (including `proj4` and `fflate`), base64-embeds the compressed blobs and metadata, and writes the self-contained application to `dist/goldilocks.html`.
 
 For development while the source archive is still downloading, a partial preview can be generated explicitly, for example:
 
@@ -142,17 +142,18 @@ python build.py --metrics-manifest data/derived/goldilocks-metrics-preview/manif
 
 The public repository is intended to be named `goldilocks-map`, giving a default project-site URL of `https://<account>.github.io/goldilocks-map/`.
 
-The raw CEDA/Met Office NetCDF archive, Defra PCM CSV inputs, OS Terrain 50 archive, woodland vectors and the ~2 GB OSM PBF are never required by GitHub Actions and remain git-ignored. After regenerating local data, explicitly refresh both small publishable snapshots with:
+The raw CEDA/Met Office NetCDF archive, Defra PCM CSV inputs, OS Terrain 50 archive, woodland vectors and the ~2 GB OSM PBF are never required by GitHub Actions and remain git-ignored. After regenerating local data, explicitly refresh the publishable snapshots with:
 
 ```sh
 python publish_metrics_snapshot.py
 python publish_services_snapshot.py
+python publish_military_snapshot.py
 ```
 
-This copies only the assembled raster manifest/blobs into `published-data/goldilocks-metrics/` and the processed compressed POI bundle into `published-data/goldilocks-services/`. Commit those snapshots along with the source changes. The Pages workflow then installs the JavaScript build dependencies and runs:
+This copies only the assembled raster manifest/blobs into `published-data/goldilocks-metrics/`, the processed compressed POI bundle into `published-data/goldilocks-services/`, and the simplified military polygon bundle into `published-data/goldilocks-military-areas/`. Commit those snapshots along with the source changes. The Pages workflow then installs the JavaScript build dependencies and runs:
 
 ```sh
-python3 build.py --metrics-manifest published-data/goldilocks-metrics/manifest.json --services-manifest published-data/goldilocks-services/manifest.json
+python3 build.py --metrics-manifest published-data/goldilocks-metrics/manifest.json --services-manifest published-data/goldilocks-services/manifest.json --military-manifest published-data/goldilocks-military-areas/manifest.json
 ```
 
 and publishes the generated `goldilocks.html` as the artifact-root `index.html`. No CEDA account token, raw OSM extract or other repository secret is required for deployment.
@@ -249,9 +250,9 @@ python process_travel_metrics.py
 
 Raw sources and reproducible intermediate caches remain under git-ignored `data/source/travel-time/`. The two OS archives are the large inputs (Open Roads is about 606 MB compressed; Open Built Up Areas about 44 MB). The generated Travel fragment is only about 1.1 MB of compressed metric blobs. See [`docs/travel-time-investigation.md`](docs/travel-time-investigation.md) for the model rationale, validation results, rejected alternatives and limitations.
 
-## Service POI source download
+## Service and military-area source download
 
-`download_service_sources.py` prepares the complete offline Services source set. It retains the pinned Geofabrik OpenStreetMap Great Britain PBF dated **2026-09-06**, pins OS Code-Point Open **2026-08**, Public Health Scotland GP **July 2026** and dental **March 2026** distributions, pins the PHS **2024/25 Hospital Profile** and **Costs hospital classification** workbooks, pins ERIC **2024/25**, and refreshes the current NHS England ODS GP/dental reports plus the current PHS NHS-hospital code list. The large OSM PBF and all NHS/PHS/OS source files remain git-ignored under `data/source/services/`.
+`download_service_sources.py` prepares the shared offline source set. It retains the pinned Geofabrik OpenStreetMap Great Britain PBF dated **2026-09-06**, pins OS Code-Point Open **2026-08**, Public Health Scotland GP **July 2026** and dental **March 2026** distributions, pins the PHS **2024/25 Hospital Profile** and **Costs hospital classification** workbooks, pins ERIC **2024/25**, and refreshes the current NHS England ODS GP/dental reports plus the current PHS NHS-hospital code list. The large OSM PBF and all NHS/PHS/OS source files remain git-ignored under `data/source/services/`.
 
 ```sh
 # Show the selected sources without downloading them.
@@ -260,11 +261,12 @@ python download_service_sources.py --dry-run
 # Download/update all open-data sources; --verify additionally re-hashes the 2 GiB OSM PBF.
 python download_service_sources.py --verify
 
-# Build the combined OSM/NHS service database.
+# Build the combined OSM/NHS service database and OSM military polygon overlays.
 python process_service_pois.py
+python process_military_areas.py
 ```
 
-No NHS HTML is scraped. `process_service_pois.py` requires `ogr2ogr` with GDAL's OSM driver and uses `pyproj` for Code-Point Open postcode coordinates. It caches the OSM node/area extraction so subsequent NHS refreshes do not rescan the 2 GiB PBF. The derived `data/derived/services/manifest.json` plus `services.json.gz` are the local build inputs; `publish_services_snapshot.py` copies only those processed files into the tracked public snapshot.
+No NHS HTML is scraped. `process_service_pois.py` requires `ogr2ogr` with GDAL's OSM driver and uses `pyproj` for Code-Point Open postcode coordinates. It caches the OSM node/area extraction so subsequent NHS refreshes do not rescan the 2 GiB PBF. `process_military_areas.py` also requires GDAL and caches its simplified military polygon extraction beside the service OSM caches. The derived service and military-area manifests/payloads are local build inputs; the corresponding publish scripts copy only those processed files into the tracked public snapshots.
 
 ## Browser architecture
 
@@ -278,7 +280,9 @@ For each Leaflet tile zoom, the renderer chooses the finest metric LOD whose nom
 
 Services are handled by a separate `ServicesController`, not by the raster renderer. The gzip service payload is decoded only when at least one service filter is enabled. Within each 0.25° spatial bucket the POIs are grouped by service category, so sparse selections do not scan unrelated service records. On each pan/zoom/filter change the controller counts only selected POIs in the current viewport, using category-array lengths for fully enclosed buckets and coordinate checks only on edge buckets; the count short-circuits as soon as it exceeds the configured 200-marker ceiling. At most 200 selected services are instantiated as Leaflet markers; above that threshold all service markers are suppressed until the user zooms in or selects fewer categories. Each service type has a distinct CSS/SVG `DivIcon`, and every service type is independently toggleable.
 
-Clicking always resolves against active-metric LOD0, so popups retain the exact quantised 1 km value rather than a coarse averaged value. The selected-cell outline is a separate lightweight Leaflet vector overlay, so changing the selection does not regenerate any metric canvas tiles. The collapsible left-side panel groups metric radio buttons by the categories declared in the processed manifest (currently `heat`, `heat_2026`, `cold`, `pollution`, `terrain`, `woodland` and `travel`), followed by a monochrome-basemap toggle, gridline visibility, saved-location-pin visibility, data-layer opacity, a per-metric dual-ended display-range slider with integrated colour samples, description and provenance. Layer opacity defaults to 62% to preserve the original map appearance and is applied by Leaflet to the existing tile layer without repainting raster canvases. Narrowing the display range clips only the colour mapping; underlying raster and popup values remain unchanged. Display-range scrubbing repaints the existing cached metric canvases in place rather than invoking Leaflet `GridLayer.redraw()`, avoiding tile removal/recreation and the resulting basemap flicker. Display ranges, layer opacity, panel state, monochrome-basemap state, gridline visibility, location-pin visibility and selected metric are stored independently in `localStorage`, and each range can be reset to that metric's configured full display range (normally its observed minimum/maximum; woodland is fixed at 0–100%). Metric identifiers are category-prefixed (for example `heat_days_tmax_gt_25`, `cold_air_frost_days`, `terrain_relief`, `woodland_cover` and `travel_york_weekend`) so the same grouping remains explicit in code and generated data; legacy unprefixed Heat metric selections are migrated automatically. Gridlines and monochrome basemap default to off and location pins default to visible when no preference has yet been saved. Leaflet's zoom control is positioned at bottom-right so the main information panel can occupy the top-left corner cleanly.
+Military polygons are handled by a separate `MilitaryAreasController`. The OSM-derived payload is decoded lazily only if one of the military-area checkboxes is enabled. Explicit `military=danger_area` and `military=range` polygons form the **Dangerous** overlay; other `landuse=military` polygons form **Unspecified**, meaning that Goldilocks is not claiming an explicit OSM danger classification for them. Both overlays are independent, persisted toggles and retain exact OSM feature links in their popups.
+
+Clicking always resolves against active-metric LOD0, so popups retain the exact quantised 1 km value rather than a coarse averaged value. The selected-cell outline is a separate lightweight Leaflet vector overlay, so changing the selection does not regenerate any metric canvas tiles. The collapsible left-side panel groups metric radio buttons by the categories declared in the processed manifest (currently `heat`, `heat_2026`, `cold`, `pollution`, `terrain`, `woodland` and `travel`), followed by service controls, the same-line **Military areas: Dangerous / Unspecified** toggles, a monochrome-basemap toggle, gridline visibility, saved-location-pin visibility, data-layer opacity, a per-metric dual-ended display-range slider with integrated colour samples, description and provenance. Layer opacity defaults to 62% to preserve the original map appearance and is applied by Leaflet to the existing tile layer without repainting raster canvases. Narrowing the display range clips only the colour mapping; underlying raster and popup values remain unchanged. Display-range scrubbing repaints the existing cached metric canvases in place rather than invoking Leaflet `GridLayer.redraw()`, avoiding tile removal/recreation and the resulting basemap flicker. Display ranges, layer opacity, panel state, military-area visibility, monochrome-basemap state, gridline visibility, location-pin visibility and selected metric are stored independently in `localStorage`, and each range can be reset to that metric's configured full display range (normally its observed minimum/maximum; woodland is fixed at 0–100%). Metric identifiers are category-prefixed (for example `heat_days_tmax_gt_25`, `cold_air_frost_days`, `terrain_relief`, `woodland_cover` and `travel_york_weekend`) so the same grouping remains explicit in code and generated data; legacy unprefixed Heat metric selections are migrated automatically. Gridlines, military overlays and monochrome basemap default to off and location pins default to visible when no preference has yet been saved. Leaflet's zoom control is positioned at bottom-right so the main information panel can occupy the top-left corner cleanly.
 
 Saved locations are a separate browser-only layer. Each location has a stable ID, name, WGS84 latitude/longitude and free-text notes, and the ordered list is stored under a versioned `localStorage` key. A collapsible top-right panel supports editing, up/down reordering, deletion and panning to a location. Export and import are separate expandable sections: export copies versioned JSON directly to the clipboard, while import accepts pasted JSON and replaces the complete list only after confirmation. Location names are rendered directly on the map as Leaflet label markers, and the top-left display controls can hide/show those markers without changing the saved list. Right-clicking the map (or long-pressing on touch devices through Leaflet's tap-hold handler) offers `Add location here`; right-clicking/long-pressing a saved marker offers `View / edit location`, which opens the corresponding panel editor. Location data is intentionally independent of metric decoding; there is currently no metric-at-location summary or comparison view. On narrow viewports (600 px or less), both top controls collapse to compact `+` buttons, expanding either panel automatically collapses the other, and the expanded panel's Leaflet corner is raised above the opposite control as a final overlap safeguard.
 
@@ -310,8 +314,11 @@ Direct `file://` opening still renders the embedded Goldilocks data layer, but i
 - `process_service_pois.py` — filters, postcode-geocodes, de-duplicates, buckets and compresses the combined service POIs
 - `publish_services_snapshot.py` — copies the validated processed service bundle into the tracked public snapshot
 - `docs/nhs-services-investigation.md` — NHS source/API decisions, ERIC hospital classification and current coverage limitations
+- `process_military_areas.py` — extracts, classifies, simplifies and compresses OSM military-area polygons
+- `publish_military_snapshot.py` — copies the validated military-area bundle into the tracked public snapshot
+- `docs/military-areas-investigation.md` — OSM tag classification, processing choices and safety/access limitations
 - `assemble_metrics.py` — validates and combines dataset fragments into the common Goldilocks metric bundle
-- `build.py` — validates/embeds the raster and service bundles, bundles the frontend and embeds third-party software notices
+- `build.py` — validates/embeds the raster, service and military-area bundles, bundles the frontend and embeds third-party software notices
 - `publish_metrics_snapshot.py` — copies the validated assembled raster bundle into the tracked public snapshot used by Pages
 - `.github/workflows/pages.yml` — builds the static artifact from the public snapshots and deploys it to GitHub Pages
 - `templates/goldilocks.html` — single-page HTML shell and control/marker styling
@@ -319,14 +326,16 @@ Direct `file://` opening still renders the embedded Goldilocks data layer, but i
 - `src/metrics.ts` — lazy metric decoding, display ranges and palette handling
 - `src/raster.ts` — projected custom Leaflet raster layer, cell hit-testing and selection outline
 - `src/services.ts` — lazy service-payload decoding, viewport buckets, toggles and Leaflet POI markers
-- `src/info-panel.ts` — top-left metric/service/data controls and provenance panel
+- `src/military-areas.ts` — lazy military-polygon decoding, persisted toggles, styling and OSM-linked popups
+- `src/info-panel.ts` — top-left metric/service/military/data controls and provenance panel
 - `src/locations.ts` — saved-location persistence, labels, context actions, editing and JSON import/export
 - `src/storage.ts` — small resilient helpers for persisted UI preferences
 - `src/types.ts` — shared frontend data-model types
-- `data/source/` — cached raw source data (HadUK NetCDF + Defra PCM CSV + OS Terrain 50 + woodland vectors + Travel inputs + OSM/NHS/PHS/ERIC/Code-Point service inputs; git-ignored and never published)
-- `data/derived/` — local generated metric and service bundles (git-ignored)
+- `data/source/` — cached raw source data (HadUK NetCDF + Defra PCM CSV + OS Terrain 50 + woodland vectors + Travel inputs + OSM/NHS/PHS/ERIC/Code-Point inputs; git-ignored and never published)
+- `data/derived/` — local generated metric, service and military-area bundles (git-ignored)
 - `published-data/goldilocks-metrics/` — tracked, publishable snapshot of the derived raster bundle used by GitHub Pages
 - `published-data/goldilocks-services/` — tracked, publishable snapshot of the compact processed service database used by GitHub Pages
+- `published-data/goldilocks-military-areas/` — tracked, publishable snapshot of the simplified military polygon overlays used by GitHub Pages
 - `dist/goldilocks.html` — generated application artifact (git-ignored)
 - `DATA-LICENCE.md` — source-data licences, attribution and provenance notes
 - `THIRD-PARTY-NOTICES.txt` — licences for JavaScript incorporated into the generated HTML

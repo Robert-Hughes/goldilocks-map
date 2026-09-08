@@ -32,7 +32,7 @@ jobs:
         run: npm ci
 
       - name: Build static application
-        run: python3 build.py --metrics-manifest published-data/goldilocks-metrics/manifest.json --services-manifest published-data/goldilocks-services/manifest.json
+        run: python3 build.py --metrics-manifest published-data/goldilocks-metrics/manifest.json --services-manifest published-data/goldilocks-services/manifest.json --military-manifest published-data/goldilocks-military-areas/manifest.json
 
       - name: Prepare Pages artifact
         run: |
