@@ -1,6 +1,6 @@
 # Data licence and attribution
 
-Goldilocks Map contains derived raster metrics from multiple UK public datasets plus a compact point-of-interest database assembled from OpenStreetMap and official NHS/OS reference data. The current service build combines selected OSM POIs, NHS England Organisation Data Service GP/dental records, Public Health Scotland GP/dental records, NHS England ERIC hospital sites, and OS Code-Point Open postcode coordinates.
+Goldilocks Map contains derived raster metrics from multiple UK public datasets plus a compact point-of-interest database assembled from OpenStreetMap and official NHS/OS reference data. The current service build combines selected OSM POIs, NHS England Organisation Data Service GP/dental records, Public Health Scotland GP/dental and hospital-reference records, NHS England ERIC hospital sites, and OS Code-Point Open postcode coordinates.
 
 ## Licence
 
@@ -100,7 +100,9 @@ The OSM-derived portion of the processed service database remains subject to the
 
 GP and NHS-dental organisation presence is assembled from NHS England Organisation Data Service Data Search and Export reports (`epraccur` and `egdpprac`) together with Public Health Scotland's **GP Practice Contact Details and List Sizes** (July 2026) and **Dental Practices and Patient Registrations** (March 2026). These public reference datasets are reused under the Open Government Licence. Goldilocks retains only the practice identity/name/postcode needed for the service map.
 
-The hospital layers use NHS England **Estates Returns Information Collection (ERIC) 2024/25** site data. Goldilocks includes only ERIC `General acute hospital`, `Mixed service hospital` and `Community hospital (with inpatient beds)` site types, combining the first two into the General hospital display category. ERIC is an England secondary-care estate collection; the current hospital layer therefore does not claim equivalent Scottish/Welsh coverage.
+For England, the hospital layers use NHS England **Estates Returns Information Collection (ERIC) 2024/25** site data. Goldilocks includes only ERIC `General acute hospital`, `Mixed service hospital` and `Community hospital (with inpatient beds)` site types, combining the first two into the General hospital display category.
+
+For Scotland, Goldilocks uses Public Health Scotland's **Current NHS Hospitals in Scotland** reference file together with the **Scottish Health Service Costs 2024/25 Hospital Profile** and its accompanying **Costs hospital classification 2024-2025** reference workbook. Costs Book hospital groups `A1`, `A2` and `A3` are mapped to the General hospital display category, and `J26` to Community hospitals; other Costs Book groups are excluded. These PHS sources are reused under the Open Government Licence. The current implementation does not claim equivalent Welsh hospital classification coverage.
 
 The current public bundle contains no NHS API-derived acceptance data. If acceptance enrichment is enabled later, use of the NHS Directory of Healthcare Services API is conditional on the approved onboarding/connection terms for that integration; those API terms must be reviewed before publishing or redistributing a refreshed acceptance snapshot.
 

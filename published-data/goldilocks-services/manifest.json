@@ -1,7 +1,7 @@
 {
   "format_version": 3,
   "kind": "goldilocks-services",
-  "generated_at_unix": 1788818677,
+  "generated_at_unix": 1788855042,
   "max_visible_markers": 200,
   "bucket_scale": 4,
   "coordinate_scale": 100000,
@@ -40,13 +40,13 @@
       "id": "hospital_general",
       "label": "General hospitals",
       "order": 5,
-      "count": 261
+      "count": 290
     },
     {
       "id": "hospital_community",
       "label": "Community hospitals",
       "order": 6,
-      "count": 220
+      "count": 271
     }
   ],
   "counts": {
@@ -55,8 +55,8 @@
     "pharmacy": 9081,
     "gp": 7435,
     "dentist": 10665,
-    "hospital_general": 261,
-    "hospital_community": 220
+    "hospital_general": 290,
+    "hospital_community": 271
   },
   "raw_counts_before_spatial_dedup": {
     "supermarket": 10066,
@@ -64,8 +64,8 @@
     "pharmacy": 9093,
     "gp": 7435,
     "dentist": 10735,
-    "hospital_general": 263,
-    "hospital_community": 223
+    "hospital_general": 292,
+    "hospital_community": 274
   },
   "spatial_duplicates_removed": 101,
   "missing_postcode_geocodes": {
@@ -80,7 +80,8 @@
     "nhs-ods-dental",
     "phs-gp",
     "phs-dental",
-    "nhs-eric"
+    "nhs-eric",
+    "phs-hospital-codes"
   ],
   "sources": {
     "osm": {
@@ -141,6 +142,38 @@
       "licence_name": "Open Government Licence v3.0",
       "licence_url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
       "attribution": "NHS England"
+    },
+    "phs-hospital-codes": {
+      "id": "phs-hospital-codes",
+      "provider": "Public Health Scotland",
+      "dataset": "Current NHS Hospitals in Scotland",
+      "release": "September 2026",
+      "homepage_url": "https://www.opendata.nhs.scot/dataset/hospital-codes",
+      "licence_name": "Open Government Licence v3.0",
+      "licence_url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+      "attribution": "Public Health Scotland"
+    }
+  },
+  "supporting_sources": {
+    "phs-hospital-profile": {
+      "id": "phs-hospital-profile",
+      "provider": "Public Health Scotland",
+      "dataset": "Hospital profile 2024-2025",
+      "release": "2024/25",
+      "homepage_url": "https://publichealthscotland.scot/publications/scottish-health-service-costs-reference-files-2024-to-2025/",
+      "licence_name": "Open Government Licence v3.0",
+      "licence_url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+      "attribution": "Public Health Scotland"
+    },
+    "phs-hospital-classification": {
+      "id": "phs-hospital-classification",
+      "provider": "Public Health Scotland",
+      "dataset": "Costs hospital classification 2024-2025",
+      "release": "2024/25",
+      "homepage_url": "https://publichealthscotland.scot/publications/scottish-health-service-costs-reference-files-2024-to-2025/",
+      "licence_name": "Open Government Licence v3.0",
+      "licence_url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+      "attribution": "Public Health Scotland"
     }
   },
   "geocoder_source": {
@@ -155,7 +188,7 @@
   },
   "payload_file": "services.json.gz",
   "payload_encoding": "gzip+json",
-  "raw_bytes": 3834130,
-  "compressed_bytes": 1054433,
-  "sha256_raw": "c366e042a027da55c7b27b7a3b1f340a5bbb64a075f87737c6cf8fbea1a1a4a9"
+  "raw_bytes": 3842067,
+  "compressed_bytes": 1056679,
+  "sha256_raw": "b988ae97aed00192460dae0517210c88442c69ba749a9043f1976140428973f3"
 }

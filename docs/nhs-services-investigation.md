@@ -1,6 +1,6 @@
 # NHS services investigation
 
-Date: 2026-09-07
+Date: 2026-09-08
 
 ## Scope agreed for Goldilocks
 
@@ -36,29 +36,37 @@ A postcode centroid is an appropriate screening-map location, but it is not a cl
 
 ## Hospitals
 
-The hospital source is NHS England **Estates Returns Information Collection (ERIC) 2024/25 site data**, an official site-level CSV for NHS secondary-care estate in England. Exact observed site-type counts in the source were:
+### England
+
+The England hospital source is NHS England **Estates Returns Information Collection (ERIC) 2024/25 site data**, an official site-level CSV for NHS secondary-care estate. Exact observed site-type counts in the source were:
 
 - General acute hospital: 219
 - Mixed service hospital: 47
 - Community hospital (with inpatient beds): 230
 
-The exact filtering correctly identifies the motivating examples as General hospitals: York Hospital (`RCB55`), Addenbrooke's Hospital (`RGT01`) and Lister Hospital (`RWH01`). Other ERIC records at the same hospital postcode belonging to mental-health trusts are excluded because their ERIC site type is not one of the accepted types.
+Goldilocks maps `General acute hospital` and `Mixed service hospital` to **General hospitals**, and `Community hospital (with inpatient beds)` to **Community hospitals**. The exact filtering correctly identifies the motivating examples as General hospitals: York Hospital (`RCB55`), Addenbrooke's Hospital (`RGT01`) and Lister Hospital (`RWH01`). Other ERIC records at the same hospital postcode belonging to mental-health trusts are excluded because their ERIC site type is not one of the accepted types.
 
-The current hospital overlay is **England-only**. Public Health Scotland publishes a current NHS hospital list, but the investigated distribution is an all-hospitals reference list and does not provide the same General acute/Mixed/Community site classification. Goldilocks does not infer an equivalent class from names or OSM tags. Wales/Scotland can be added later if a suitable authoritative classification or an explicitly reviewed mapping is found.
+### Scotland
+
+Public Health Scotland's monthly **Current NHS Hospitals in Scotland** reference file provides the current open-hospital identity, name and postcode. Because that file intentionally includes all NHS hospitals, Goldilocks joins it by hospital code to the PHS **Scottish Health Service Costs 2024/25 Hospital Profile**. The accompanying **Costs hospital classification 2024-2025** workbook defines the functional group codes used in that profile.
+
+Goldilocks maps Costs Book groups `A1` (major teaching hospitals), `A2` (large general hospitals) and `A3` (general/mixed specialist hospitals) to **General hospitals**, and `J26` to **Community hospitals**. Children's, long-stay, psychiatric, learning-disability, maternity, dental, miscellaneous and clinic groups are excluded. The 2024/25 profile contains 29 selected `A1`/`A2`/`A3` hospitals and 51 `J26` hospitals, and all 80 join to the September 2026 current-hospital list. Examples include Glasgow Royal Infirmary, Queen Elizabeth University Hospital, Aberdeen Royal Infirmary, Royal Infirmary of Edinburgh, Raigmore Hospital, Belford Hospital and Borders General Hospital in the General category, plus Hawick, St Andrews, Falkirk and numerous rural Community hospitals in the Community category.
+
+Wales still lacks an equivalent implemented hospital classification in the current Goldilocks service bundle; no classification is inferred from hospital names or OSM tags.
 
 ## Current generated bundle
 
-With the 2026-09-07 source refresh, the processed bundle contains 46,671 POIs after de-duplication:
+With the 2026-09-08 source refresh, the processed bundle contains 46,751 POIs after de-duplication:
 
 - Supermarkets: 10,057
 - Post offices: 8,952
 - Pharmacies: 9,081
 - GPs: 7,435
 - NHS dentists: 10,665
-- General hospitals: 261
-- Community hospitals: 220
+- General hospitals: 290 (261 England + 29 Scotland)
+- Community hospitals: 271 (220 England + 51 Scotland)
 
-There are 61 source records omitted because their postcodes are not present/resolvable in the pinned GB Code-Point source: 4 GP, 47 dental, 3 general-hospital and 7 community-hospital records. The resulting service payload is 3,834,130 bytes as compact JSON and 1,054,433 bytes gzip-compressed.
+There are 61 source records omitted because their postcodes are not present/resolvable in the pinned GB Code-Point source: 4 GP, 47 dental, 3 English general-hospital and 7 English community-hospital records. All 80 selected Scottish hospitals resolve successfully. The resulting service payload is 3,842,067 bytes as compact JSON and 1,056,679 bytes gzip-compressed.
 
 ## Browser/data design
 

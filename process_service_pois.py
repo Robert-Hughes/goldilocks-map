@@ -10,6 +10,7 @@ import math
 import shutil
 import subprocess
 import time
+import xml.etree.ElementTree as ET
 import zipfile
 from collections import Counter, defaultdict
 from pathlib import Path
@@ -35,7 +36,8 @@ CATEGORIES = (
     {"id":"hospital_community","label":"Community hospitals","order":6},
 )
 CATEGORY_INDEX = {item["id"]: i for i,item in enumerate(CATEGORIES)}
-SOURCE_PRIORITY = ["osm","nhs-ods-gp","nhs-ods-dental","phs-gp","phs-dental","nhs-eric","os-code-point-open"]
+SOURCE_PRIORITY = ["osm","nhs-ods-gp","nhs-ods-dental","phs-gp","phs-dental","nhs-eric","phs-hospital-codes","os-code-point-open"]
+SUPPORTING_SOURCE_IDS = ["phs-hospital-profile","phs-hospital-classification"]
 
 OSMCONF = """[general]
 closed_ways_are_polygons=aeroway,amenity,boundary,building,craft,geological,historic,landuse,leisure,military,natural,office,place,shop,sport,tourism,highway=platform,public_transport=platform
@@ -128,6 +130,79 @@ def load_eric(path: Path) -> list[dict]:
     return result
 
 
+def excel_column_index(reference: str) -> int:
+    letters="".join(char for char in reference if char.isalpha())
+    value=0
+    for char in letters: value=value*26+ord(char.upper())-64
+    return value-1
+
+
+def load_xlsx_rows(path: Path, sheet_name: str) -> list[list[str]]:
+    main_ns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+    rel_ns="http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+    package_rel_ns="http://schemas.openxmlformats.org/package/2006/relationships"
+    with zipfile.ZipFile(path) as archive:
+        shared=[]
+        if "xl/sharedStrings.xml" in archive.namelist():
+            root=ET.fromstring(archive.read("xl/sharedStrings.xml"))
+            for item in root.findall(f"{{{main_ns}}}si"):
+                shared.append("".join(node.text or "" for node in item.iter(f"{{{main_ns}}}t")))
+        workbook=ET.fromstring(archive.read("xl/workbook.xml"))
+        relationships=ET.fromstring(archive.read("xl/_rels/workbook.xml.rels"))
+        relationship_targets={item.attrib["Id"]:item.attrib["Target"] for item in relationships.findall(f"{{{package_rel_ns}}}Relationship")}
+        target=None
+        sheets=workbook.find(f"{{{main_ns}}}sheets")
+        if sheets is None: raise RuntimeError(f"{path.name}: workbook has no sheets")
+        for sheet in sheets:
+            if sheet.attrib.get("name") != sheet_name: continue
+            target=relationship_targets.get(sheet.attrib.get(f"{{{rel_ns}}}id", "")); break
+        if not target: raise RuntimeError(f"{path.name}: missing sheet {sheet_name!r}")
+        sheet_path=target.lstrip("/") if target.startswith("/xl/") else f"xl/{target.lstrip('/')}"
+        root=ET.fromstring(archive.read(sheet_path))
+        rows=[]
+        for row_node in root.findall(f".//{{{main_ns}}}sheetData/{{{main_ns}}}row"):
+            values=[]
+            for cell in row_node.findall(f"{{{main_ns}}}c"):
+                index=excel_column_index(cell.attrib.get("r", "A1"))
+                while len(values)<index: values.append("")
+                cell_type=cell.attrib.get("t")
+                value=""
+                if cell_type=="inlineStr":
+                    inline=cell.find(f"{{{main_ns}}}is")
+                    if inline is not None: value="".join(node.text or "" for node in inline.iter(f"{{{main_ns}}}t"))
+                else:
+                    raw=cell.find(f"{{{main_ns}}}v")
+                    if raw is not None:
+                        value=raw.text or ""
+                        if cell_type=="s": value=shared[int(value)]
+                values.append(value)
+            rows.append(values)
+        return rows
+
+
+def load_phs_hospitals(codes_path: Path, profile_path: Path) -> list[dict]:
+    accepted={"A1":"hospital_general","A2":"hospital_general","A3":"hospital_general","J26":"hospital_community"}
+    rows=load_xlsx_rows(profile_path,"Hospital profile 2025")
+    if not rows: raise RuntimeError(f"{profile_path.name}: empty hospital profile")
+    header={value:index for index,value in enumerate(rows[0])}
+    required={"hospital_code","hospital_name","specialty","hospital_group"}
+    if not required.issubset(header): raise RuntimeError(f"{profile_path.name}: unexpected hospital profile columns")
+    classified={}
+    for row in rows[1:]:
+        if len(row)<=max(header.values()) or row[header["specialty"]].strip() != "TOTAL": continue
+        code=row[header["hospital_code"]].strip(); group=row[header["hospital_group"]].strip(); category=accepted.get(group)
+        if code and category: classified[code]=category
+    if not classified: raise RuntimeError(f"{profile_path.name}: no selected Scottish hospital classifications")
+    result=[]
+    with codes_path.open("r",encoding="utf-8-sig",newline="") as handle:
+        for row in csv.DictReader(handle):
+            code=(row.get("HospitalCode") or "").strip(); category=classified.get(code)
+            if not category: continue
+            result.append({"category_id":category,"code":code,"name":row.get("HospitalName") or "NHS hospital","postcode":row.get("Postcode") or "","source_id":"phs-hospital-codes","source_rank":10})
+    if not result: raise RuntimeError(f"{codes_path.name}: no current hospitals matched selected PHS classifications")
+    return result
+
+
 def geocode_postcodes(codepoint_zip: Path, needed: set[str]) -> dict[str,tuple[float,float]]:
     transformer=Transformer.from_crs("EPSG:27700","EPSG:4326",always_xy=True); result={}
     with zipfile.ZipFile(codepoint_zip) as archive:
@@ -209,14 +284,21 @@ def main()->int:
     else: print(f"Using cached area POIs: {areas}")
     pois=load_osm_geojsonseq(points,0)+load_osm_geojsonseq(areas,1)
 
-    records=load_ods_records(source_path("nhs-ods-gp"),"gp")+load_ods_records(source_path("nhs-ods-dental"),"dentist")+load_phs_gp(source_path("phs-gp"))+load_phs_dental(source_path("phs-dental"))+load_eric(source_path("nhs-eric"))
+    records=(
+        load_ods_records(source_path("nhs-ods-gp"),"gp")
+        +load_ods_records(source_path("nhs-ods-dental"),"dentist")
+        +load_phs_gp(source_path("phs-gp"))
+        +load_phs_dental(source_path("phs-dental"))
+        +load_eric(source_path("nhs-eric"))
+        +load_phs_hospitals(source_path("phs-hospital-codes"),source_path("phs-hospital-profile"))
+    )
     needed={norm_postcode(r["postcode"]) for r in records if r.get("postcode")}; geocodes=geocode_postcodes(source_path("os-code-point-open"),needed)
     missing=Counter(); pois.extend(add_geocoded(records,geocodes,missing))
     raw_counts=Counter(str(x["category_id"]) for x in pois); deduped,duplicates=deduplicate(pois); counts=Counter(str(x["category_id"]) for x in deduped)
     used_sources=[s for s in SOURCE_PRIORITY if any(x["source_id"]==s for x in deduped)]; payload=build_payload(deduped,used_sources); raw=json.dumps(payload,separators=(",",":"),ensure_ascii=False).encode(); compressed=gzip.compress(raw,compresslevel=9,mtime=0)
     output=args.output_dir.resolve(); output.mkdir(parents=True,exist_ok=True); (output/"services.json.gz").write_bytes(compressed)
     categories=[dict(item,count=int(counts[item["id"]])) for item in CATEGORIES]
-    manifest={"format_version":3,"kind":"goldilocks-services","generated_at_unix":int(time.time()),"max_visible_markers":MAX_VISIBLE_MARKERS,"bucket_scale":BUCKET_SCALE,"coordinate_scale":COORDINATE_SCALE,"categories":categories,"counts":{x["id"]:int(counts[x["id"]]) for x in CATEGORIES},"raw_counts_before_spatial_dedup":{x["id"]:int(raw_counts[x["id"]]) for x in CATEGORIES},"spatial_duplicates_removed":duplicates,"missing_postcode_geocodes":dict(missing),"source_order":used_sources,"sources":{s:public_source(sources[s]) for s in used_sources},"geocoder_source":public_source(sources["os-code-point-open"]),"payload_file":"services.json.gz","payload_encoding":"gzip+json","raw_bytes":len(raw),"compressed_bytes":len(compressed),"sha256_raw":hashlib.sha256(raw).hexdigest()}
+    manifest={"format_version":3,"kind":"goldilocks-services","generated_at_unix":int(time.time()),"max_visible_markers":MAX_VISIBLE_MARKERS,"bucket_scale":BUCKET_SCALE,"coordinate_scale":COORDINATE_SCALE,"categories":categories,"counts":{x["id"]:int(counts[x["id"]]) for x in CATEGORIES},"raw_counts_before_spatial_dedup":{x["id"]:int(raw_counts[x["id"]]) for x in CATEGORIES},"spatial_duplicates_removed":duplicates,"missing_postcode_geocodes":dict(missing),"source_order":used_sources,"sources":{s:public_source(sources[s]) for s in used_sources},"supporting_sources":{s:public_source(sources[s]) for s in SUPPORTING_SOURCE_IDS},"geocoder_source":public_source(sources["os-code-point-open"]),"payload_file":"services.json.gz","payload_encoding":"gzip+json","raw_bytes":len(raw),"compressed_bytes":len(compressed),"sha256_raw":hashlib.sha256(raw).hexdigest()}
     (output/"manifest.json").write_text(json.dumps(manifest,indent=2)+"\n",encoding="utf-8")
     print(f"Service POIs: {len(deduped):,}; removed {duplicates:,} duplicates; missing postcode geocodes {sum(missing.values()):,}")
     print("Counts: "+", ".join(f"{x['id']}={counts[x['id']]:,}" for x in CATEGORIES)); print(f"Payload {len(raw):,} -> {len(compressed):,} bytes gzip"); print(f"Wrote {output/'manifest.json'}")
