@@ -96,7 +96,7 @@ OpenStreetMap data is © OpenStreetMap contributors and available under the [Ope
 
 > © OpenStreetMap contributors
 
-The OSM-derived portions of the processed service and military-area databases remain subject to the ODbL. Source OSM element references are retained for traceability.
+The OSM-derived portions of the processed service and military-area databases are redistributed under the ODbL 1.0. The tracked processed snapshots and the source code used to derive them are both published in this repository, and source OSM element references are retained for traceability.
 
 ## NHS primary-care and hospital service data
 
@@ -105,6 +105,8 @@ GP and NHS-dental organisation presence is assembled from NHS England Organisati
 For England, the hospital layers use NHS England **Estates Returns Information Collection (ERIC) 2024/25** site data. Goldilocks includes only ERIC `General acute hospital`, `Mixed service hospital` and `Community hospital (with inpatient beds)` site types, combining the first two into the General hospital display category.
 
 For Scotland, Goldilocks uses Public Health Scotland's **Current NHS Hospitals in Scotland** reference file together with the **Scottish Health Service Costs 2024/25 Hospital Profile** and its accompanying **Costs hospital classification 2024-2025** reference workbook. Costs Book hospital groups `A1`, `A2` and `A3` are mapped to the General hospital display category, and `J26` to Community hospitals; other Costs Book groups are excluded. These PHS sources are reused under the Open Government Licence. The current implementation does not claim equivalent Welsh hospital classification coverage.
+
+Public Health Scotland asks reusers to identify adapted material and its source. For these service layers the attribution is: **Adapted from GP Practice Contact Details and List Sizes, Public Health Scotland, July 2026; Dental Practices and Patient Registrations, Public Health Scotland, March 2026; Current NHS Hospitals in Scotland, Public Health Scotland, September 2026; and Scottish health service costs reference files (2024 to 2025), Public Health Scotland, 12 August 2026 — licensed under the Open Government Licence v3.0.**
 
 The current public bundle contains no NHS API-derived acceptance data. If acceptance enrichment is enabled later, use of the NHS Directory of Healthcare Services API is conditional on the approved onboarding/connection terms for that integration; those API terms must be reviewed before publishing or redistributing a refreshed acceptance snapshot.
 
