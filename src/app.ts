@@ -57,6 +57,10 @@ const map = L.map("map", {
 L.control.zoom({ position: "bottomright" }).addTo(map);
 
 const isFileUrl = window.location.protocol === "file:";
+let basemapLayer: any = null;
+function setBasemapMonochrome(enabled: boolean) {
+  basemapLayer?.getContainer()?.classList.toggle("goldilocks-basemap-monochrome", enabled);
+}
 if (isFileUrl) {
   const fileBasemapWarning = L.control({ position: "bottomleft" });
   fileBasemapWarning.onAdd = () => {
@@ -66,7 +70,7 @@ if (isFileUrl) {
   };
   fileBasemapWarning.addTo(map);
 } else {
-  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  basemapLayer = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
   }).addTo(map);
@@ -79,6 +83,7 @@ const raster = new RasterView(map, data, metrics, {
 const services = new ServicesController(map, data.services);
 const locations = new LocationsController(map, preferences.locationsVisible);
 map.fitBounds(L.latLngBounds(data.grid.bounds_wgs84), { padding: [18, 18] });
+setBasemapMonochrome(preferences.basemapMonochrome);
 
 map.on("click", (event: any) => {
   const cell = raster.cellAtLatLng(event.latlng);
@@ -90,4 +95,4 @@ map.on("click", (event: any) => {
     .openOn(map);
 });
 
-addInfoPanel(map, data, metrics, raster, services, locations, thirdPartyNotices, preferences);
+addInfoPanel(map, data, metrics, raster, services, locations, thirdPartyNotices, preferences, setBasemapMonochrome);

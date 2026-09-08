@@ -9,6 +9,7 @@
     html, body { height: 100%; margin: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #17212b; }
     body { background: #f7f8f8; }
     #map { height: 100%; width: 100%; }
+    .goldilocks-basemap-monochrome .leaflet-tile { filter: grayscale(100%); }
     .map-panel { width: min(320px, calc(100vw - 80px)); max-height: calc(100vh - 84px); overflow: hidden; background: rgba(255,255,255,0.96); box-shadow: 0 1px 5px rgba(0,0,0,0.25); border-radius: 5px; font-size: 0.82rem; line-height: 1.35; }
     .map-panel-header { display: flex; align-items: center; gap: 0.55rem; padding: 0.55rem 0.6rem; }
     .map-panel-heading { flex: 1; min-width: 0; }

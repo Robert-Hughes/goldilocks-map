@@ -11,12 +11,14 @@ declare const L: any;
 const PANEL_COLLAPSED_STORAGE_KEY = "goldilocks.infoPanelCollapsed";
 const GRIDLINES_STORAGE_KEY = "goldilocks.showGridLines";
 const LOCATIONS_VISIBLE_STORAGE_KEY = "goldilocks.showLocationPins";
+const BASEMAP_MONOCHROME_STORAGE_KEY = "goldilocks.basemapMonochrome";
 const LAYER_OPACITY_STORAGE_KEY = "goldilocks.layerOpacity";
 const DEFAULT_LAYER_OPACITY = 0.62;
 
 export type MapPanelPreferences = {
   gridLinesVisible: boolean;
   locationsVisible: boolean;
+  basemapMonochrome: boolean;
   layerOpacity: number;
 };
 
@@ -26,6 +28,7 @@ export function readMapPanelPreferences(): MapPanelPreferences {
   return {
     gridLinesVisible: readStoredBoolean(GRIDLINES_STORAGE_KEY, false),
     locationsVisible: readStoredBoolean(LOCATIONS_VISIBLE_STORAGE_KEY, true),
+    basemapMonochrome: readStoredBoolean(BASEMAP_MONOCHROME_STORAGE_KEY, false),
     layerOpacity: Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : DEFAULT_LAYER_OPACITY,
   };
 }
@@ -47,6 +50,7 @@ export function addInfoPanel(
   locations: LocationsController,
   thirdPartyNotices: string,
   preferences: MapPanelPreferences,
+  setBasemapMonochrome: (enabled: boolean) => void,
 ) {
   function pruningDescription(): string {
     return data.data_pruning
@@ -110,6 +114,10 @@ export function addInfoPanel(
           <div class="service-status" aria-live="polite"></div>
         </div>
         <div class="panel-section">
+          <label class="panel-option">
+            <input class="basemap-monochrome-toggle" type="checkbox" ${preferences.basemapMonochrome ? "checked" : ""}>
+            <span>Monochrome basemap</span>
+          </label>
           <label class="panel-option">
             <input class="gridlines-toggle" type="checkbox" ${preferences.gridLinesVisible ? "checked" : ""}>
             <span>Show gridlines</span>
@@ -286,6 +294,13 @@ export function addInfoPanel(
       syncNarrowPanelCorner(div, !div.classList.contains("collapsed"), narrowPanelMedia);
     });
     if (narrowPanelMedia.matches && !initiallyCollapsed) locations.setPanelCollapsed(true, true);
+
+    const basemapMonochromeCheckbox = div.querySelector(".basemap-monochrome-toggle") as HTMLInputElement;
+    basemapMonochromeCheckbox.addEventListener("change", () => {
+      const monochrome = basemapMonochromeCheckbox.checked;
+      setBasemapMonochrome(monochrome);
+      writeStoredBoolean(BASEMAP_MONOCHROME_STORAGE_KEY, monochrome);
+    });
 
     const gridlinesCheckbox = div.querySelector(".gridlines-toggle") as HTMLInputElement;
     gridlinesCheckbox.addEventListener("change", () => {
