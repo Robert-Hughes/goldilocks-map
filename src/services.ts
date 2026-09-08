@@ -36,6 +36,7 @@ function decodeBase64(value: string): Uint8Array {
 
 function markerInner(categoryId: ServiceCategoryId): string {
   if (categoryId === "supermarket") return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h2l1.4 9h9.3l1.5-6.5H7.1M9 18a1.3 1.3 0 1 0 0 .01M16 18a1.3 1.3 0 1 0 0 .01"/></svg>';
+  if (categoryId === "convenience") return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9h14M6 9v10h12V9M5 9l2-4h10l2 4M9 19v-5h6v5"/></svg>';
   if (categoryId === "post_office") return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14v10H5zM5.5 8l6.5 5 6.5-5"/></svg>';
   if (categoryId === "pharmacy") return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
   if (categoryId === "gp") return '<span class="service-marker-letters">GP</span>';
@@ -51,6 +52,7 @@ function markerHtml(categoryId: ServiceCategoryId, legend = false): string {
 
 function categoryLabel(category: ServiceCategory): string {
   if (category.id === "supermarket") return "Supermarket";
+  if (category.id === "convenience") return "Convenience / village shop";
   if (category.id === "post_office") return "Post office";
   if (category.id === "pharmacy") return "Pharmacy";
   if (category.id === "gp") return "GP practice";

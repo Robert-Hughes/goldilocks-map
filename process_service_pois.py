@@ -28,12 +28,13 @@ DEDUP_DISTANCE_M = 25.0
 
 CATEGORIES = (
     {"id":"supermarket","label":"Supermarkets","order":0},
-    {"id":"post_office","label":"Post offices","order":1},
-    {"id":"pharmacy","label":"Pharmacies","order":2},
-    {"id":"gp","label":"GPs","order":3},
-    {"id":"dentist","label":"NHS dentists","order":4},
-    {"id":"hospital_general","label":"General hospitals","order":5},
-    {"id":"hospital_community","label":"Community hospitals","order":6},
+    {"id":"convenience","label":"Convenience / village shops","order":1},
+    {"id":"post_office","label":"Post offices","order":2},
+    {"id":"pharmacy","label":"Pharmacies","order":3},
+    {"id":"gp","label":"GPs","order":4},
+    {"id":"dentist","label":"NHS dentists","order":5},
+    {"id":"hospital_general","label":"General hospitals","order":6},
+    {"id":"hospital_community","label":"Community hospitals","order":7},
 )
 CATEGORY_INDEX = {item["id"]: i for i,item in enumerate(CATEGORIES)}
 SOURCE_PRIORITY = ["osm","nhs-ods-gp","nhs-ods-dental","phs-gp","phs-dental","nhs-eric","phs-hospital-codes","os-code-point-open"]
@@ -74,9 +75,9 @@ def clean_name(value: str, fallback: str) -> str:
 
 def run_ogr_extract(pbf: Path, osmconf: Path, output: Path, polygons: bool) -> None:
     if polygons:
-        sql = "SELECT CASE WHEN osm_id IS NOT NULL THEN 'r/' || CAST(osm_id AS TEXT) ELSE 'w/' || CAST(osm_way_id AS TEXT) END AS osm_ref, name, amenity, shop, brand, operator, ST_PointOnSurface(geometry) AS geometry FROM multipolygons WHERE shop = 'supermarket' OR amenity IN ('post_office','pharmacy')"
+        sql = "SELECT CASE WHEN osm_id IS NOT NULL THEN 'r/' || CAST(osm_id AS TEXT) ELSE 'w/' || CAST(osm_way_id AS TEXT) END AS osm_ref, name, amenity, shop, brand, operator, ST_PointOnSurface(geometry) AS geometry FROM multipolygons WHERE shop IN ('supermarket','convenience') OR amenity IN ('post_office','pharmacy')"
     else:
-        sql = "SELECT 'n/' || CAST(osm_id AS TEXT) AS osm_ref, name, amenity, shop, brand, operator, geometry FROM points WHERE shop = 'supermarket' OR amenity IN ('post_office','pharmacy')"
+        sql = "SELECT 'n/' || CAST(osm_id AS TEXT) AS osm_ref, name, amenity, shop, brand, operator, geometry FROM points WHERE shop IN ('supermarket','convenience') OR amenity IN ('post_office','pharmacy')"
     command = ["ogr2ogr","-f","GeoJSONSeq",str(output),str(pbf),"-oo",f"CONFIG_FILE={osmconf}","-dialect","SQLITE","-sql",sql,"-lco","RS=NO"]
     print("Extracting", "area POIs" if polygons else "node POIs", flush=True)
     subprocess.run(command, check=True)
@@ -84,6 +85,7 @@ def run_ogr_extract(pbf: Path, osmconf: Path, output: Path, polygons: bool) -> N
 def osm_categories(properties: dict) -> list[str]:
     result=[]
     if properties.get("shop") == "supermarket": result.append("supermarket")
+    if properties.get("shop") == "convenience": result.append("convenience")
     if properties.get("amenity") == "post_office": result.append("post_office")
     if properties.get("amenity") == "pharmacy": result.append("pharmacy")
     return result
@@ -99,7 +101,7 @@ def load_osm_geojsonseq(path: Path, source_rank: int) -> list[Poi]:
             if not (-10 <= lon <= 4 and 49 <= lat <= 62) or not ref: raise RuntimeError(f"{path.name}:{line_number}: invalid OSM POI")
             for category in osm_categories(props):
                 name=next((clean_name(str(props.get(k) or ""),"") for k in ("name","brand","operator") if str(props.get(k) or "").strip()),"")
-                if not name: name={"supermarket":"Unnamed supermarket","post_office":"Unnamed post office","pharmacy":"Unnamed pharmacy"}[category]
+                if not name: name={"supermarket":"Unnamed supermarket","convenience":"Unnamed convenience shop","post_office":"Unnamed post office","pharmacy":"Unnamed pharmacy"}[category]
                 result.append(Poi(category_id=category,lat=lat,lon=lon,name=name,source_id="osm",source_ref=ref,source_rank=source_rank))
     return result
 
@@ -277,7 +279,7 @@ def main()->int:
         return path
 
     pbf=source_path("osm"); cache_dir=SOURCE_ROOT/"cache"/pbf.stem; cache_dir.mkdir(parents=True,exist_ok=True); osmconf=cache_dir/"osmconf.ini"; osmconf.write_text(OSMCONF,encoding="utf-8")
-    points=cache_dir/"points.geojsonl"; areas=cache_dir/"areas.geojsonl"
+    points=cache_dir/"points-food-v2.geojsonl"; areas=cache_dir/"areas-food-v2.geojsonl"
     if not points.is_file() or points.stat().st_size==0: points.unlink(missing_ok=True); run_ogr_extract(pbf,osmconf,points,False)
     else: print(f"Using cached node POIs: {points}")
     if not areas.is_file() or areas.stat().st_size==0: areas.unlink(missing_ok=True); run_ogr_extract(pbf,osmconf,areas,True)

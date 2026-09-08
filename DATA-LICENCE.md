@@ -88,7 +88,7 @@ The travel-time rasters inherit important limitations from the model. OS Open Ro
 
 ## OpenStreetMap service POIs and military areas
 
-The Services and Military areas controls use a pinned **OpenStreetMap Great Britain** extract dated **2026-09-06**, distributed by [Geofabrik](https://download.geofabrik.de/). Goldilocks service processing extracts only `shop=supermarket`, `amenity=post_office` and `amenity=pharmacy`; node POIs are retained directly, qualifying mapped areas are reduced to a representative interior point, and same-name near-coincident representations are de-duplicated.
+The Services and Military areas controls use a pinned **OpenStreetMap Great Britain** extract dated **2026-09-06**, distributed by [Geofabrik](https://download.geofabrik.de/). Goldilocks service processing extracts `shop=supermarket`, `shop=convenience`, `amenity=post_office` and `amenity=pharmacy`; supermarket and convenience shops remain separate service categories. Node POIs are retained directly, qualifying mapped areas are reduced to a representative interior point, and same-name near-coincident representations are de-duplicated.
 
 The military overlays retain OSM polygon geometry rather than reducing areas to points. Goldilocks classifies polygons tagged `military=danger_area` or `military=range` as **Dangerous**; other polygons tagged `landuse=military` are **Unspecified**, which means only that no explicit dangerous military tag was used for the Goldilocks classification. Boundaries are simplified offline for browser rendering. This is an OSM-derived screening layer, not an authoritative statement of legal access, live range status or firing schedules.
 

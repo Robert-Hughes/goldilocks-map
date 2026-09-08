@@ -64,6 +64,7 @@ export type DataSource = {
 
 export type ServiceCategoryId =
   | "supermarket"
+  | "convenience"
   | "post_office"
   | "pharmacy"
   | "gp"

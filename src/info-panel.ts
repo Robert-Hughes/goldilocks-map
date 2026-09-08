@@ -89,12 +89,20 @@ export function addInfoPanel(
           </fieldset>`;
       }).join("");
 
-    const serviceRows = services.categories.map((category) => `
+    const serviceOption = (category: typeof services.categories[number]) => `
       <label class="service-option">
         <input type="checkbox" data-service-category="${category.id}" ${services.isEnabled(category.id) ? "checked" : ""}>
         ${services.legendIconHtml(category.id)}
         <span>${category.label}</span>
-      </label>`).join("");
+      </label>`;
+    const foodShopOptions = services.categories
+      .filter((category) => category.id === "supermarket" || category.id === "convenience")
+      .map(serviceOption)
+      .join("");
+    const serviceRows = services.categories
+      .filter((category) => category.id !== "supermarket" && category.id !== "convenience")
+      .map(serviceOption)
+      .join("");
 
     const militaryAreaOptions = militaryAreas.categories.map((category) => `
       <label class="military-area-option">
@@ -118,6 +126,10 @@ export function addInfoPanel(
         </div>
         <div class="panel-section services-control">
           <strong class="panel-section-title">Services</strong>
+          <div class="food-shop-control">
+            <strong class="food-shop-title">Food shops:</strong>
+            <div class="food-shop-options">${foodShopOptions}</div>
+          </div>
           <div class="service-list">${serviceRows}</div>
           <div class="service-status" aria-live="polite"></div>
         </div>

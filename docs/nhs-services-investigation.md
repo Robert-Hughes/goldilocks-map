@@ -54,11 +54,16 @@ Goldilocks maps Costs Book groups `A1` (major teaching hospitals), `A2` (large g
 
 Wales still lacks an equivalent implemented hospital classification in the current Goldilocks service bundle; no classification is inferred from hospital names or OSM tags.
 
+## Food-shop classification
+
+Goldilocks keeps OSM `shop=supermarket` and `shop=convenience` as separate service toggles. This preserves a useful, if imperfect, OSM distinction between larger/full-range grocery shops and smaller local/convenience shops instead of silently labelling all grocery provision as a supermarket. The distinction is mapper-supplied rather than a measured store-size threshold, so it should be treated as a screening aid rather than a guarantee of stock range or floor area. Both food-shop toggles default to off; like the other service controls, an explicit user choice is persisted in `localStorage`.
+
 ## Current generated bundle
 
-With the 2026-09-08 source refresh, the processed bundle contains 46,751 POIs after de-duplication:
+With the 2026-09-08 source refresh, the processed bundle contains 80,342 POIs after de-duplication:
 
 - Supermarkets: 10,057
+- Convenience / village shops: 33,591
 - Post offices: 8,952
 - Pharmacies: 9,081
 - GPs: 7,435
@@ -66,10 +71,10 @@ With the 2026-09-08 source refresh, the processed bundle contains 46,751 POIs af
 - General hospitals: 290 (261 England + 29 Scotland)
 - Community hospitals: 271 (220 England + 51 Scotland)
 
-There are 61 source records omitted because their postcodes are not present/resolvable in the pinned GB Code-Point source: 4 GP, 47 dental, 3 English general-hospital and 7 English community-hospital records. All 80 selected Scottish hospitals resolve successfully. The resulting service payload is 3,842,067 bytes as compact JSON and 1,056,679 bytes gzip-compressed.
+There are 61 source records omitted because their postcodes are not present/resolvable in the pinned GB Code-Point source: 4 GP, 47 dental, 3 English general-hospital and 7 English community-hospital records. All 80 selected Scottish hospitals resolve successfully. The resulting service payload is 6,618,519 bytes as compact JSON and 1,807,090 bytes gzip-compressed.
 
 ## Browser/data design
 
-The service transport is version 3. POIs remain spatially bucketed in 0.25-degree WGS84 buckets, with each bucket split into category-specific arrays. This permits the browser to count a sparse selection without scanning unrelated service types. There is no fixed zoom threshold: the browser shows selected services whenever no more than 200 fall inside the viewport, and otherwise renders none with a prompt to zoom in or select fewer categories. Fully enclosed bucket/category arrays are counted from their lengths, only edge buckets require coordinate tests, and counting stops immediately after the 201st match. Each tuple records coordinate, display name and source identity/reference; its category is supplied by the containing array. All seven service types are ordinary independent toggles persisted in `localStorage`.
+The service transport is version 3. POIs remain spatially bucketed in 0.25-degree WGS84 buckets, with each bucket split into category-specific arrays. This permits the browser to count a sparse selection without scanning unrelated service types. There is no fixed zoom threshold: the browser shows selected services whenever no more than 200 fall inside the viewport, and otherwise renders none with a prompt to zoom in or select fewer categories. Fully enclosed bucket/category arrays are counted from their lengths, only edge buckets require coordinate tests, and counting stops immediately after the 201st match. Each tuple records coordinate, display name and source identity/reference; its category is supplied by the containing array. All eight service types are ordinary independent toggles persisted in `localStorage`.
 
 Acceptance status is deliberately absent from the current transport and browser model. If approved machine-readable NHS access becomes available later, it can be reconsidered as a future feature rather than imposing unused states on the present UI.

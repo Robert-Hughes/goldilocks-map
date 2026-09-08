@@ -1,7 +1,7 @@
 {
   "format_version": 3,
   "kind": "goldilocks-services",
-  "generated_at_unix": 1788855042,
+  "generated_at_unix": 1788897746,
   "max_visible_markers": 200,
   "bucket_scale": 4,
   "coordinate_scale": 100000,
@@ -13,44 +13,51 @@
       "count": 10057
     },
     {
+      "id": "convenience",
+      "label": "Convenience / village shops",
+      "order": 1,
+      "count": 33591
+    },
+    {
       "id": "post_office",
       "label": "Post offices",
-      "order": 1,
+      "order": 2,
       "count": 8952
     },
     {
       "id": "pharmacy",
       "label": "Pharmacies",
-      "order": 2,
+      "order": 3,
       "count": 9081
     },
     {
       "id": "gp",
       "label": "GPs",
-      "order": 3,
+      "order": 4,
       "count": 7435
     },
     {
       "id": "dentist",
       "label": "NHS dentists",
-      "order": 4,
+      "order": 5,
       "count": 10665
     },
     {
       "id": "hospital_general",
       "label": "General hospitals",
-      "order": 5,
+      "order": 6,
       "count": 290
     },
     {
       "id": "hospital_community",
       "label": "Community hospitals",
-      "order": 6,
+      "order": 7,
       "count": 271
     }
   ],
   "counts": {
     "supermarket": 10057,
+    "convenience": 33591,
     "post_office": 8952,
     "pharmacy": 9081,
     "gp": 7435,
@@ -60,6 +67,7 @@
   },
   "raw_counts_before_spatial_dedup": {
     "supermarket": 10066,
+    "convenience": 33633,
     "post_office": 8957,
     "pharmacy": 9093,
     "gp": 7435,
@@ -67,7 +75,7 @@
     "hospital_general": 292,
     "hospital_community": 274
   },
-  "spatial_duplicates_removed": 101,
+  "spatial_duplicates_removed": 143,
   "missing_postcode_geocodes": {
     "gp": 4,
     "dentist": 47,
@@ -188,7 +196,7 @@
   },
   "payload_file": "services.json.gz",
   "payload_encoding": "gzip+json",
-  "raw_bytes": 3842067,
-  "compressed_bytes": 1056679,
-  "sha256_raw": "b988ae97aed00192460dae0517210c88442c69ba749a9043f1976140428973f3"
+  "raw_bytes": 6618519,
+  "compressed_bytes": 1807090,
+  "sha256_raw": "ee047e5a64e104132d12bdf179c92bb4f3bdbe53ff1e2aef64b99129361c1109"
 }
