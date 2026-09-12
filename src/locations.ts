@@ -28,6 +28,7 @@ type LocationDraft = {
 type ParsedLocations = {
   locations: SavedLocation[];
   generatedIds: boolean;
+  normalizedWhitespaceCount?: number;
 };
 
 const LOCATIONS_STORAGE_KEY = "goldilocks.locations.v1";
@@ -97,12 +98,91 @@ function parseLocationsPayload(value: unknown): ParsedLocations {
   return { locations, generatedIds };
 }
 
+type JsonWhitespaceNormalization = {
+  text: string;
+  count: number;
+  firstDescription: string;
+  firstLine: number;
+  firstColumn: number;
+};
+
+function jsonParseMessage(error: unknown): string {
+  return error instanceof Error && error.message ? error.message : "Unknown JSON parser error.";
+}
+
+function describeNonStandardWhitespace(character: string): string {
+  const codePoint = character.codePointAt(0) ?? 0;
+  if (codePoint === 0x00a0) return "a non-breaking space (U+00A0)";
+  if (codePoint === 0xfeff) return "a byte-order mark / zero-width no-break space (U+FEFF)";
+  return `non-standard whitespace (U+${codePoint.toString(16).toUpperCase().padStart(4, "0")})`;
+}
+
+function normalizeNonStandardJsonWhitespace(text: string): JsonWhitespaceNormalization {
+  let normalized = "";
+  let count = 0;
+  let inString = false;
+  let escaped = false;
+  let line = 1;
+  let column = 1;
+  let firstDescription = "";
+  let firstLine = 0;
+  let firstColumn = 0;
+
+  for (const character of text) {
+    let output = character;
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (character === "\\") escaped = true;
+      else if (character === '"') inString = false;
+    } else if (character === '"') {
+      inString = true;
+    } else if (
+      /\s/u.test(character)
+      && character !== " "
+      && character !== "\t"
+      && character !== "\r"
+      && character !== "\n"
+    ) {
+      output = " ";
+      count += 1;
+      if (!firstDescription) {
+        firstDescription = describeNonStandardWhitespace(character);
+        firstLine = line;
+        firstColumn = column;
+      }
+    }
+
+    normalized += output;
+    if (character === "\n") {
+      line += 1;
+      column = 1;
+    } else {
+      column += 1;
+    }
+  }
+
+  return { text: normalized, count, firstDescription, firstLine, firstColumn };
+}
+
 function parseLocationsJson(text: string): ParsedLocations {
   let parsed: unknown;
   try {
     parsed = JSON.parse(text);
-  } catch {
-    throw new Error("The locations text is not valid JSON.");
+  } catch (error) {
+    const normalization = normalizeNonStandardJsonWhitespace(text);
+    if (normalization.count > 0) {
+      try {
+        parsed = JSON.parse(normalization.text);
+      } catch (normalizedError) {
+        const replacements = `${normalization.count} non-standard whitespace character${normalization.count === 1 ? "" : "s"}`;
+        throw new Error(
+          `The locations text is not valid JSON. Found ${replacements}; the first is ${normalization.firstDescription} at line ${normalization.firstLine}, column ${normalization.firstColumn}. After normalizing that copied formatting, the JSON parser still reports: ${jsonParseMessage(normalizedError)}`,
+        );
+      }
+      const result = parseLocationsPayload(parsed);
+      return { ...result, normalizedWhitespaceCount: normalization.count };
+    }
+    throw new Error(`The locations text is not valid JSON. JSON parser: ${jsonParseMessage(error)}`);
   }
   return parseLocationsPayload(parsed);
 }
@@ -672,7 +752,10 @@ export class LocationsController {
 
     this.locations = parsed.locations;
     this.draft = null;
-    this.actionMessage = `Imported ${newCount} location${newCount === 1 ? "" : "s"}, replacing the previous list.`;
+    const whitespaceNote = parsed.normalizedWhitespaceCount
+      ? ` Normalized ${parsed.normalizedWhitespaceCount} copied non-standard whitespace character${parsed.normalizedWhitespaceCount === 1 ? "" : "s"}.`
+      : "";
+    this.actionMessage = `Imported ${newCount} location${newCount === 1 ? "" : "s"}, replacing the previous list.${whitespaceNote}`;
     this.persistLocations();
     this.renderMarkers();
     this.renderList();
